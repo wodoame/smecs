@@ -165,7 +165,7 @@ public class AdminController {
             errorMessage += "Please select a category!\n";
         }
 
-        if (errorMessage.length() == 0) {
+        if (errorMessage.isEmpty()) {
             return true;
         } else {
             showAlert("Invalid Fields", errorMessage);
