@@ -13,8 +13,10 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/main_layout.fxml")));
-        primaryStage.setTitle("Smart E-Commerce System");
+        primaryStage.setTitle("Login - Smart E-Commerce System");
+//        primaryStage.setScene(new Scene(root, 400, 500)); // size for login / signup screens
         primaryStage.setScene(new Scene(root, 900, 600));
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
 
