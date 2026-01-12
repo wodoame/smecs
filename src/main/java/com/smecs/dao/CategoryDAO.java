@@ -30,4 +30,81 @@ public class CategoryDAO {
         }
         return categories;
     }
+
+    public boolean createCategory(Category category) {
+        String sql = "INSERT INTO Categories (category_name, description) VALUES (?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setString(1, category.getCategoryName());
+            pstmt.setString(2, category.getDescription());
+
+            int rowsAffected = pstmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        category.setCategoryId(generatedKeys.getInt(1));
+                    }
+                }
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error creating category: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateCategory(Category category) {
+        String sql = "UPDATE Categories SET category_name = ?, description = ? WHERE category_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, category.getCategoryName());
+            pstmt.setString(2, category.getDescription());
+            pstmt.setInt(3, category.getCategoryId());
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating category: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean deleteCategory(int categoryId) {
+        String sql = "DELETE FROM Categories WHERE category_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, categoryId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting category: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean categoryNameExists(String categoryName) {
+        String sql = "SELECT COUNT(*) FROM Categories WHERE category_name = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, categoryName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking category name: " + e.getMessage());
+        }
+        return false;
+    }
 }
