@@ -15,5 +15,6 @@ module com.smecs {
     exports com.smecs.service;
     exports com.smecs.dao;
     exports com.smecs.util;
+    exports com.smecs.cache;
 }
 
