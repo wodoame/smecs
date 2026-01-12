@@ -58,3 +58,18 @@ Buttons should have a consistent padding, rounded corners, and clear focus state
 - Background: Danger Base
 - Text: White
 
+### Input Fields
+
+Input fields should have comfortable padding and a clean border.
+
+#### Base Input Style (TextField, ComboBox)
+- **Padding**: 10px 12px (0.625rem 0.75rem)
+- **Border Radius**: 6px (0.375rem)
+- **Border**: 1px solid #e5e7eb (gray-200)
+- **Background**: #ffffff (white)
+- **Font Size**: 14px
+- **Focus Ring**: 2px solid #3b82f6 (blue-500)
+
+#### Text Area
+- **Container**: Similar border and radius
+- **Content Padding**: 10px 12px (applied to content, not scroll container)

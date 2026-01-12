@@ -38,7 +38,6 @@
       </VBox.margin>
    </Label>
    <TextField fx:id="usernameField" promptText="Enter username"
-              style="-fx-font-size: 14px; -fx-padding: 10;"
               maxWidth="300.0" />
 
    <!-- Email Field -->
@@ -48,7 +47,6 @@
       </VBox.margin>
    </Label>
    <TextField fx:id="emailField" promptText="Enter email address"
-              style="-fx-font-size: 14px; -fx-padding: 10;"
               maxWidth="300.0" />
 
    <!-- Password Field -->
@@ -58,7 +56,6 @@
       </VBox.margin>
    </Label>
    <PasswordField fx:id="passwordField" promptText="Enter password"
-                  style="-fx-font-size: 14px; -fx-padding: 10;"
                   maxWidth="300.0" />
 
    <!-- Confirm Password Field -->
@@ -68,7 +65,6 @@
       </VBox.margin>
    </Label>
    <PasswordField fx:id="confirmPasswordField" promptText="Re-enter password"
-                  style="-fx-font-size: 14px; -fx-padding: 10;"
                   maxWidth="300.0" />
 
    <!-- Message Label -->

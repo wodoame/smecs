@@ -73,3 +73,33 @@
     -fx-background-color: #b91c1c; /* Red-700 */
 }
 
+/* Input Fields */
+.text-field, .combo-box {
+    -fx-padding: 10px 12px;
+    -fx-background-radius: 6px;
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb; /* Gray-200 */
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-font-size: 14px;
+}
+
+.text-area {
+    -fx-background-radius: 6px;
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb; /* Gray-200 */
+    -fx-border-radius: 6px;
+    -fx-border-width: 1px;
+    -fx-font-size: 14px;
+    /* Do NOT set padding here for TextArea as it spaces the ScrollPane itself */
+}
+
+.text-area .content {
+    -fx-padding: 10px 12px;
+    -fx-background-color: white;
+}
+
+.text-field:focused, .text-area:focused, .combo-box:focused {
+    -fx-border-color: #3b82f6; /* Blue-500 */
+    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.3), 5, 0, 0, 0);
+}

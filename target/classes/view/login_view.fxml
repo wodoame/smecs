@@ -38,7 +38,6 @@
          </VBox.margin>
       </Label>
       <TextField fx:id="usernameField" promptText="Enter username or email"
-                 style="-fx-font-size: 14px; -fx-padding: 10;"
                  maxWidth="300.0" />
 
       <!-- Password Field -->
@@ -48,7 +47,6 @@
          </VBox.margin>
       </Label>
       <PasswordField fx:id="passwordField" promptText="Enter password"
-                     style="-fx-font-size: 14px; -fx-padding: 10;"
                      maxWidth="300.0" />
 
       <!-- Message Label -->
