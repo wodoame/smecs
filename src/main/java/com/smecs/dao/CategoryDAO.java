@@ -14,8 +14,8 @@ public class CategoryDAO {
         String sql = "SELECT * FROM Categories ORDER BY category_name";
 
         try (Connection conn = DatabaseConnection.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 Category category = new Category();
