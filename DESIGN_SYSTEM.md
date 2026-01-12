@@ -73,3 +73,11 @@ Input fields should have comfortable padding and a clean border.
 #### Text Area
 - **Container**: Similar border and radius
 - **Content Padding**: 10px 12px (applied to content, not scroll container)
+
+### Tables
+
+Table headers should be aligned to the start of the column for better readability.
+
+#### Table Headers
+- **Alignment**: Center-Left (Start)
+- **Selector**: `.table-view .column-header .label`
