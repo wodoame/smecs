@@ -1,0 +1,75 @@
+.root {
+    -fx-font-family: 'Segoe UI', sans-serif;
+    -fx-background-color: #f3f4f6; /* Gray-100 */
+}
+
+/* Button Base Styles */
+.button {
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 6px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.1), 3, 0, 0, 1);
+}
+
+.button:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.2), 5, 0, 0, 2);
+}
+
+.button:pressed {
+    -fx-effect: none;
+}
+
+/* Primary Button */
+.button-primary {
+    -fx-background-color: #3b82f6; /* Blue-500 */
+    -fx-text-fill: white;
+}
+
+.button-primary:hover {
+    -fx-background-color: #2563eb; /* Blue-600 */
+}
+
+.button-primary:pressed {
+    -fx-background-color: #1d4ed8; /* Blue-700 */
+}
+
+/* Secondary Button (Default) */
+.button-secondary {
+    -fx-background-color: #6b7280; /* Gray-500 */
+    -fx-text-fill: white;
+}
+
+.button-secondary:hover {
+    -fx-background-color: #4b5563; /* Gray-600 */
+}
+
+.button-secondary:pressed {
+    -fx-background-color: #374151; /* Gray-700 */
+}
+
+/* Success Button (Green) */
+.button-success {
+    -fx-background-color: #10b981; /* Green-500 */
+    -fx-text-fill: white;
+}
+
+.button-success:hover {
+    -fx-background-color: #059669; /* Green-600 */
+}
+
+/* Danger Button (Red) */
+.button-danger {
+    -fx-background-color: #ef4444; /* Red-500 */
+    -fx-text-fill: white;
+}
+
+.button-danger:hover {
+    -fx-background-color: #dc2626; /* Red-600 */
+}
+
+.button-danger:pressed {
+    -fx-background-color: #b91c1c; /* Red-700 */
+}
+
