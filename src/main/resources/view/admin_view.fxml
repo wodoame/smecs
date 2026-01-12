@@ -17,7 +17,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.smecs.controller.AdminController">
+      fx:controller="com.smecs.controller.AdminController" stylesheets="@../css/styles.css">
     <padding>
         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
@@ -41,34 +41,35 @@
                 </VBox>
                 <VBox spacing="10.0" prefWidth="300.0">
                     <Label style="-fx-font-weight: bold;" text="Product Details"/>
-                    <GridPane hgap="5.0" vgap="5.0">
-                        <columnConstraints>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="80.0"/>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
-                        </columnConstraints>
-                        <rowConstraints>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            <RowConstraints minHeight="10.0" prefHeight="80.0" vgrow="SOMETIMES"/>
-                        </rowConstraints>
-                        <Label text="Name:"/>
-                        <TextField fx:id="nameField" GridPane.columnIndex="1"/>
-                        <Label text="Category:" GridPane.rowIndex="1"/>
-                        <ComboBox fx:id="categoryComboBox" prefWidth="150.0" GridPane.columnIndex="1"
-                                  GridPane.rowIndex="1"/>
-                        <Label text="Price:" GridPane.rowIndex="2"/>
-                        <TextField fx:id="priceField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                        <Label text="Description:" GridPane.rowIndex="3"/>
-                        <TextArea fx:id="descriptionArea" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1"
-                                  GridPane.rowIndex="3"/>
-                    </GridPane>
+
+                    <VBox spacing="15.0">
+                        <VBox spacing="5.0">
+                            <Label text="Name:" styleClass="form-label"/>
+                            <TextField fx:id="nameField" promptText="Enter Product Name"/>
+                        </VBox>
+
+                        <VBox spacing="5.0">
+                            <Label text="Category:" styleClass="form-label"/>
+                            <ComboBox fx:id="categoryComboBox" prefWidth="300.0" promptText="Select Category"/>
+                        </VBox>
+
+                        <VBox spacing="5.0">
+                            <Label text="Price:" styleClass="form-label"/>
+                            <TextField fx:id="priceField" promptText="0.00"/>
+                        </VBox>
+
+                        <VBox spacing="5.0" VBox.vgrow="ALWAYS">
+                            <Label text="Description:" styleClass="form-label"/>
+                            <TextArea fx:id="descriptionArea" prefHeight="100.0" prefWidth="300.0" wrapText="true"/>
+                        </VBox>
+                    </VBox>
+
                     <HBox alignment="CENTER" spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleAdd" text="Add"/>
-                        <Button mnemonicParsing="false" onAction="#handleUpdate" text="Update"/>
-                        <Button mnemonicParsing="false" onAction="#handleDelete" text="Delete"/>
+                        <Button mnemonicParsing="false" onAction="#handleAdd" text="Add" styleClass="button-success"/>
+                        <Button mnemonicParsing="false" onAction="#handleUpdate" text="Update" styleClass="button-primary"/>
+                        <Button mnemonicParsing="false" onAction="#handleDelete" text="Delete" styleClass="button-danger"/>
                     </HBox>
-                    <Button mnemonicParsing="false" onAction="#handleClear" text="Clear Form" maxWidth="Infinity"/>
+                    <Button mnemonicParsing="false" onAction="#handleClear" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
                 </VBox>
             </HBox>
         </Tab>
@@ -90,27 +91,25 @@
                 </VBox>
                 <VBox spacing="10.0" prefWidth="300.0">
                     <Label style="-fx-font-weight: bold;" text="Category Details"/>
-                    <GridPane hgap="5.0" vgap="5.0">
-                        <columnConstraints>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="80.0"/>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
-                        </columnConstraints>
-                        <rowConstraints>
-                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
-                            <RowConstraints minHeight="10.0" prefHeight="80.0" vgrow="SOMETIMES"/>
-                        </rowConstraints>
-                        <Label text="Name:"/>
-                        <TextField fx:id="categoryNameField" GridPane.columnIndex="1"/>
-                        <Label text="Description:" GridPane.rowIndex="1"/>
-                        <TextArea fx:id="categoryDescArea" prefHeight="100.0" prefWidth="200.0"
-                                  GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-                    </GridPane>
+
+                    <VBox spacing="15.0">
+                        <VBox spacing="5.0">
+                            <Label text="Name:" styleClass="form-label"/>
+                            <TextField fx:id="categoryNameField" promptText="Enter Category Name"/>
+                        </VBox>
+
+                        <VBox spacing="5.0" VBox.vgrow="ALWAYS">
+                            <Label text="Description:" styleClass="form-label"/>
+                            <TextArea fx:id="categoryDescArea" prefHeight="100.0" prefWidth="300.0" wrapText="true"/>
+                        </VBox>
+                    </VBox>
+
                     <HBox alignment="CENTER" spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleAddCategory" text="Add"/>
-                        <Button mnemonicParsing="false" onAction="#handleUpdateCategory" text="Update"/>
-                        <Button mnemonicParsing="false" onAction="#handleDeleteCategory" text="Delete"/>
+                        <Button mnemonicParsing="false" onAction="#handleAddCategory" text="Add" styleClass="button-success"/>
+                        <Button mnemonicParsing="false" onAction="#handleUpdateCategory" text="Update" styleClass="button-primary"/>
+                        <Button mnemonicParsing="false" onAction="#handleDeleteCategory" text="Delete" styleClass="button-danger"/>
                     </HBox>
-                    <Button mnemonicParsing="false" onAction="#handleClearCategory" text="Clear Form" maxWidth="Infinity"/>
+                    <Button mnemonicParsing="false" onAction="#handleClearCategory" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
                 </VBox>
             </HBox>
         </Tab>

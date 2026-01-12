@@ -11,7 +11,7 @@
 
 <VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.smecs.controller.RegistrationController"
-      style="-fx-background-color: #f5f5f5;">
+      stylesheets="@../css/styles.css">
    <padding>
       <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
    </padding>
@@ -38,7 +38,6 @@
       </VBox.margin>
    </Label>
    <TextField fx:id="usernameField" promptText="Enter username"
-              style="-fx-font-size: 14px; -fx-padding: 10;"
               maxWidth="300.0" />
 
    <!-- Email Field -->
@@ -48,7 +47,6 @@
       </VBox.margin>
    </Label>
    <TextField fx:id="emailField" promptText="Enter email address"
-              style="-fx-font-size: 14px; -fx-padding: 10;"
               maxWidth="300.0" />
 
    <!-- Password Field -->
@@ -58,7 +56,6 @@
       </VBox.margin>
    </Label>
    <PasswordField fx:id="passwordField" promptText="Enter password"
-                  style="-fx-font-size: 14px; -fx-padding: 10;"
                   maxWidth="300.0" />
 
    <!-- Confirm Password Field -->
@@ -68,7 +65,6 @@
       </VBox.margin>
    </Label>
    <PasswordField fx:id="confirmPasswordField" promptText="Re-enter password"
-                  style="-fx-font-size: 14px; -fx-padding: 10;"
                   maxWidth="300.0" />
 
    <!-- Message Label -->
@@ -80,7 +76,7 @@
 
    <!-- Register Button -->
    <Button fx:id="registerButton" text="Create Account" onAction="#handleRegister"
-           style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40;"
+           styleClass="button-success"
            maxWidth="300.0">
       <VBox.margin>
          <Insets top="10.0" />
