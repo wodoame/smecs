@@ -36,6 +36,20 @@ public class AdminController {
     @FXML
     private TextArea descriptionArea;
 
+    // Category management fields
+    @FXML
+    private TableView<Category> categoryTable;
+    @FXML
+    private TableColumn<Category, Integer> catIdColumn;
+    @FXML
+    private TableColumn<Category, String> catNameColumn;
+    @FXML
+    private TableColumn<Category, String> catDescColumn;
+    @FXML
+    private TextField categoryNameField;
+    @FXML
+    private TextArea categoryDescArea;
+
     private final ProductService productService;
     private final CategoryService categoryService;
     private final ObservableList<Product> productList;
@@ -50,6 +64,7 @@ public class AdminController {
 
     @FXML
     public void initialize() {
+        // Setup product table
         idColumn.setCellValueFactory(new PropertyValueFactory<>("productId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("productName"));
         categoryColumn.setCellValueFactory(new PropertyValueFactory<>("categoryName"));
@@ -60,6 +75,17 @@ public class AdminController {
         // Listen for selection changes
         productTable.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> showProductDetails(newValue));
+
+        // Setup category table
+        catIdColumn.setCellValueFactory(new PropertyValueFactory<>("categoryId"));
+        catNameColumn.setCellValueFactory(new PropertyValueFactory<>("categoryName"));
+        catDescColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+        categoryTable.setItems(categoryList);
+
+        // Listen for category selection changes
+        categoryTable.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> showCategoryDetails(newValue));
 
         loadData();
     }
@@ -176,6 +202,118 @@ public class AdminController {
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
+        alert.setHeaderText(title);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    // Category Management Methods
+    private void showCategoryDetails(Category category) {
+        if (category != null) {
+            categoryNameField.setText(category.getCategoryName());
+            categoryDescArea.setText(category.getDescription());
+        } else {
+            clearCategoryForm();
+        }
+    }
+
+    @FXML
+    private void handleAddCategory() {
+        if (isCategoryInputValid()) {
+            // Check if category name already exists
+            if (categoryService.categoryNameExists(categoryNameField.getText().trim())) {
+                showAlert("Duplicate Category", "A category with this name already exists.");
+                return;
+            }
+
+            Category category = new Category();
+            category.setCategoryName(categoryNameField.getText().trim());
+            category.setDescription(categoryDescArea.getText().trim());
+
+            if (categoryService.createCategory(category)) {
+                loadData();
+                clearCategoryForm();
+                showSuccessAlert("Success", "Category added successfully!");
+            } else {
+                showAlert("Error", "Failed to add category.");
+            }
+        }
+    }
+
+    @FXML
+    private void handleUpdateCategory() {
+        Category selected = categoryTable.getSelectionModel().getSelectedItem();
+        if (selected != null && isCategoryInputValid()) {
+            selected.setCategoryName(categoryNameField.getText().trim());
+            selected.setDescription(categoryDescArea.getText().trim());
+
+            if (categoryService.updateCategory(selected)) {
+                loadData();
+                clearCategoryForm();
+                showSuccessAlert("Success", "Category updated successfully!");
+            } else {
+                showAlert("Error", "Failed to update category.");
+            }
+        } else if (selected == null) {
+            showAlert("No Selection", "Please select a category to update.");
+        }
+    }
+
+    @FXML
+    private void handleDeleteCategory() {
+        Category selected = categoryTable.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            // Confirm deletion
+            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmAlert.setTitle("Confirm Deletion");
+            confirmAlert.setHeaderText("Delete Category");
+            confirmAlert.setContentText("Are you sure you want to delete this category? Products using this category may be affected.");
+
+            confirmAlert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    if (categoryService.deleteCategory(selected.getCategoryId())) {
+                        loadData();
+                        clearCategoryForm();
+                        showSuccessAlert("Success", "Category deleted successfully!");
+                    } else {
+                        showAlert("Error", "Failed to delete category. It may be in use by products.");
+                    }
+                }
+            });
+        } else {
+            showAlert("No Selection", "Please select a category to delete.");
+        }
+    }
+
+    @FXML
+    private void handleClearCategory() {
+        clearCategoryForm();
+        categoryTable.getSelectionModel().clearSelection();
+    }
+
+    private void clearCategoryForm() {
+        categoryNameField.setText("");
+        categoryDescArea.setText("");
+    }
+
+    private boolean isCategoryInputValid() {
+        String errorMessage = "";
+
+        if (categoryNameField.getText() == null || categoryNameField.getText().trim().isEmpty()) {
+            errorMessage += "No valid category name!\n";
+        }
+
+        if (errorMessage.isEmpty()) {
+            return true;
+        } else {
+            showAlert("Invalid Fields", errorMessage);
+            return false;
+        }
+    }
+
+    private void showSuccessAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Success");
         alert.setHeaderText(title);
         alert.setContentText(content);
         alert.showAndWait();
