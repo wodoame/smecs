@@ -31,6 +31,7 @@
           <TableColumn fx:id="nameColumn" prefWidth="150.0" text="Product Name"/>
           <TableColumn fx:id="categoryColumn" prefWidth="120.0" text="Category"/>
           <TableColumn fx:id="priceColumn" text="Price"/>
+          <TableColumn fx:id="stockColumn" prefWidth="100.0" text="Stock"/>
           <TableColumn fx:id="descriptionColumn" prefWidth="250.0" text="Description"/>
       </columns>
     </TableView>

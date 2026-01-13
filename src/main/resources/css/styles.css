@@ -108,3 +108,44 @@
 .table-view .column-header .label {
     -fx-alignment: center-left;
 }
+
+.table-row-cell {
+    -fx-cell-size: 40px; /* Increase row height */
+}
+
+.table-cell {
+    -fx-padding: 8px 10px; /* Add padding to table cells */
+    -fx-alignment: center-left;
+}
+
+/* ==================== */
+/* Status Badges        */
+/* ==================== */
+
+/* Base Badge Style */
+.badge {
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 12px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+/* In Stock Badge (Green) */
+.badge-success {
+    -fx-background-color: #d1fae5; /* Green-100 */
+    -fx-text-fill: #065f46; /* Green-800 */
+}
+
+/* Low Stock Badge (Yellow/Amber) */
+.badge-warning {
+    -fx-background-color: #fef3c7; /* Amber-100 */
+    -fx-text-fill: #92400e; /* Amber-800 */
+}
+
+/* Out of Stock Badge (Red) */
+.badge-danger {
+    -fx-background-color: #fee2e2; /* Red-100 */
+    -fx-text-fill: #991b1b; /* Red-800 */
+}
+

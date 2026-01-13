@@ -15,8 +15,8 @@ public class MainApp extends Application {
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/main_layout.fxml")));
         primaryStage.setTitle("Login - Smart E-Commerce System");
 //        primaryStage.setScene(new Scene(root, 400, 500)); // size for login / signup screens
-        primaryStage.setScene(new Scene(root, 900, 600));
-        primaryStage.setResizable(false);
+        primaryStage.setScene(new Scene(root));
+        primaryStage.setResizable(true);
         primaryStage.show();
     }
 

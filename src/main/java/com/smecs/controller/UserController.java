@@ -1,7 +1,9 @@
 package com.smecs.controller;
 
 import com.smecs.cache.ProductCache;
+import com.smecs.model.Inventory;
 import com.smecs.model.Product;
+import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
 import com.smecs.util.ProductSorter.SortCriteria;
 import javafx.collections.FXCollections;
@@ -10,7 +12,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller for the user view with search, sort, and cache support.
@@ -31,6 +35,8 @@ public class UserController {
     @FXML
     private TableColumn<Product, Double> priceColumn;
     @FXML
+    private TableColumn<Product, Void> stockColumn;
+    @FXML
     private TableColumn<Product, String> descriptionColumn;
     @FXML
     private Label statusLabel;
@@ -38,12 +44,16 @@ public class UserController {
     private Label cacheStatsLabel;
 
     private final ProductService productService;
+    private final InventoryService inventoryService;
     private final ObservableList<Product> productList;
+    private Map<Integer, Inventory> inventoryMap;
     private SortCriteria currentSortCriteria = SortCriteria.NAME_ASC;
 
     public UserController() {
         this.productService = new ProductService();
+        this.inventoryService = new InventoryService();
         this.productList = FXCollections.observableArrayList();
+        this.inventoryMap = new HashMap<>();
     }
 
     @FXML
@@ -53,6 +63,9 @@ public class UserController {
         categoryColumn.setCellValueFactory(new PropertyValueFactory<>("categoryName"));
         priceColumn.setCellValueFactory(new PropertyValueFactory<>("price"));
         descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+        // Setup stock column with badge cell factory
+        setupStockColumn();
 
         productTable.setItems(productList);
 
@@ -68,6 +81,41 @@ public class UserController {
 
         loadProducts();
         updateCacheStats();
+    }
+
+    private void setupStockColumn() {
+        stockColumn.setCellFactory(column -> new TableCell<Product, Void>() {
+            private final Label badge = new Label();
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Product product = getTableView().getItems().get(getIndex());
+                    Inventory inventory = inventoryMap.get(product.getProductId());
+
+                    int quantity = inventory != null ? inventory.getQuantity() : 0;
+
+                    badge.getStyleClass().removeAll("badge", "badge-success", "badge-warning", "badge-danger");
+                    badge.getStyleClass().add("badge");
+
+                    if (quantity <= 0) {
+                        badge.setText("Out of Stock");
+                        badge.getStyleClass().add("badge-danger");
+                    } else if (quantity <= 10) {
+                        badge.setText("Low Stock");
+                        badge.getStyleClass().add("badge-warning");
+                    } else {
+                        badge.setText("In Stock");
+                        badge.getStyleClass().add("badge-success");
+                    }
+
+                    setGraphic(badge);
+                }
+            }
+        });
     }
 
     private void setupColumnSorting() {
@@ -108,11 +156,20 @@ public class UserController {
     private void loadProducts() {
         long startTime = System.currentTimeMillis();
         List<Product> products = productService.getAllProductsSorted(currentSortCriteria);
+        loadInventoryMap();
         long endTime = System.currentTimeMillis();
 
         productList.setAll(products);
         updateStatus(String.format("Loaded %d products in %d ms", products.size(), endTime - startTime));
         updateCacheStats();
+    }
+
+    private void loadInventoryMap() {
+        inventoryMap.clear();
+        List<Inventory> inventoryList = inventoryService.getAllInventory();
+        for (Inventory inv : inventoryList) {
+            inventoryMap.put(inv.getProductId(), inv);
+        }
     }
 
     @FXML
@@ -121,6 +178,7 @@ public class UserController {
 
         long startTime = System.currentTimeMillis();
         List<Product> results = productService.searchProductsSorted(query, currentSortCriteria);
+        loadInventoryMap();
         long endTime = System.currentTimeMillis();
 
         productList.setAll(results);
