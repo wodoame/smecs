@@ -35,7 +35,8 @@
                             <TableColumn fx:id="idColumn" prefWidth="50.0" text="ID"/>
                             <TableColumn fx:id="nameColumn" prefWidth="150.0" text="Name"/>
                             <TableColumn fx:id="categoryColumn" prefWidth="100.0" text="Category"/>
-                            <TableColumn fx:id="priceColumn" prefWidth="100.0" text="Price"/>
+                            <TableColumn fx:id="priceColumn" prefWidth="80.0" text="Price"/>
+                            <TableColumn fx:id="stockColumn" prefWidth="100.0" text="Stock"/>
                         </columns>
                     </TableView>
                 </VBox>
@@ -56,6 +57,11 @@
                         <VBox spacing="5.0">
                             <Label text="Price:" styleClass="form-label"/>
                             <TextField fx:id="priceField" promptText="0.00"/>
+                        </VBox>
+
+                        <VBox spacing="5.0">
+                            <Label text="Quantity in Stock:" styleClass="form-label"/>
+                            <TextField fx:id="productQuantityField" promptText="0"/>
                         </VBox>
 
                         <VBox spacing="5.0" VBox.vgrow="ALWAYS">
@@ -110,6 +116,53 @@
                         <Button mnemonicParsing="false" onAction="#handleDeleteCategory" text="Delete" styleClass="button-danger"/>
                     </HBox>
                     <Button mnemonicParsing="false" onAction="#handleClearCategory" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
+                </VBox>
+            </HBox>
+        </Tab>
+
+        <!-- Inventory Tab -->
+        <Tab text="Inventory" closable="false">
+            <HBox spacing="10.0">
+                <padding>
+                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                </padding>
+                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                    <TableView fx:id="inventoryTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="invIdColumn" prefWidth="50.0" text="ID"/>
+                            <TableColumn fx:id="invProductColumn" prefWidth="200.0" text="Product"/>
+                            <TableColumn fx:id="invQuantityColumn" prefWidth="100.0" text="Quantity"/>
+                            <TableColumn fx:id="invStatusColumn" prefWidth="100.0" text="Status"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+                <VBox spacing="10.0" prefWidth="300.0">
+                    <Label style="-fx-font-weight: bold;" text="Inventory Details"/>
+
+                    <VBox spacing="15.0">
+                        <VBox spacing="5.0">
+                            <Label text="Product:" styleClass="form-label"/>
+                            <ComboBox fx:id="inventoryProductComboBox" prefWidth="300.0" promptText="Select Product"/>
+                        </VBox>
+
+                        <VBox spacing="5.0">
+                            <Label text="Quantity:" styleClass="form-label"/>
+                            <TextField fx:id="quantityField" promptText="Enter quantity"/>
+                        </VBox>
+                    </VBox>
+
+                    <HBox alignment="CENTER" spacing="10.0">
+                        <Button mnemonicParsing="false" onAction="#handleAddInventory" text="Add" styleClass="button-success"/>
+                        <Button mnemonicParsing="false" onAction="#handleUpdateInventory" text="Update" styleClass="button-primary"/>
+                        <Button mnemonicParsing="false" onAction="#handleDeleteInventory" text="Delete" styleClass="button-danger"/>
+                    </HBox>
+                    <Button mnemonicParsing="false" onAction="#handleClearInventory" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
+
+                    <Label style="-fx-font-weight: bold; -fx-padding: 10 0 0 0;" text="Quick Actions"/>
+                    <HBox spacing="10.0">
+                        <Button mnemonicParsing="false" onAction="#handleShowLowStock" text="Show Low Stock" styleClass="button-primary"/>
+                        <Button mnemonicParsing="false" onAction="#handleShowAllInventory" text="Show All" styleClass="button-secondary"/>
+                    </HBox>
                 </VBox>
             </HBox>
         </Tab>

@@ -25,6 +25,29 @@ public class ProductDAO {
         }
     }
 
+    public int addProductAndGetId(Product product) {
+        String sql = "INSERT INTO Products (category_id, product_name, description, price) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setInt(1, product.getCategoryId());
+            pstmt.setString(2, product.getProductName());
+            pstmt.setString(3, product.getDescription());
+            pstmt.setBigDecimal(4, product.getPrice());
+
+            pstmt.executeUpdate();
+
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return -1;
+    }
+
     public void updateProduct(Product product) {
         String sql = "UPDATE Products SET category_id = ?, product_name = ?, description = ?, price = ? WHERE product_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();

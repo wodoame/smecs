@@ -128,6 +128,24 @@ public class ProductService {
     }
 
     /**
+     * Create a new product and return its generated ID.
+     */
+    public int createProductAndGetId(Product product) {
+        if (product.getPrice() != null && product.getPrice().doubleValue() < 0) {
+            throw new IllegalArgumentException("Price cannot be negative");
+        }
+        int productId = productDAO.addProductAndGetId(product);
+
+        // Invalidate cache since data changed
+        if (cachingEnabled) {
+            cache.invalidateAll();
+            System.out.println("[Cache] Invalidated after product creation");
+        }
+
+        return productId;
+    }
+
+    /**
      * Update an existing product with cache invalidation.
      */
     public void updateProduct(Product product) {

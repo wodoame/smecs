@@ -81,3 +81,39 @@ Table headers should be aligned to the start of the column for better readabilit
 #### Table Headers
 - **Alignment**: Center-Left (Start)
 - **Selector**: `.table-view .column-header .label`
+
+#### Table Rows (`.table-row-cell`)
+- **Row Height**: 40px
+
+#### Table Cells (`.table-cell`)
+- **Padding**: 8px 10px (vertical horizontal)
+- **Alignment**: Center-Left
+
+### Badges
+
+Badges are small, pill-shaped labels used to display status information. They are commonly used for stock status indicators.
+
+#### Base Badge Style (`.badge`)
+- **Padding**: 4px 10px (0.25rem 0.625rem)
+- **Border Radius**: 12px (pill shape)
+- **Font Size**: 12px
+- **Font Weight**: Bold
+- **Alignment**: Center
+
+#### Success Badge (`.badge-success`) - "In Stock"
+- **Background**: #d1fae5 (green-100)
+- **Text**: #065f46 (green-800)
+
+#### Warning Badge (`.badge-warning`) - "Low Stock"
+- **Background**: #fef3c7 (amber-100)
+- **Text**: #92400e (amber-800)
+
+#### Danger Badge (`.badge-danger`) - "Out of Stock"
+- **Background**: #fee2e2 (red-100)
+- **Text**: #991b1b (red-800)
+
+#### Stock Status Logic
+- **In Stock**: quantity > 10
+- **Low Stock**: quantity > 0 and quantity <= 10
+- **Out of Stock**: quantity <= 0
+
