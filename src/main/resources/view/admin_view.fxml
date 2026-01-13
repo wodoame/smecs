@@ -71,11 +71,39 @@
                     </VBox>
 
                     <HBox alignment="CENTER" spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleAdd" text="Add" styleClass="button-success"/>
-                        <Button mnemonicParsing="false" onAction="#handleUpdate" text="Update" styleClass="button-primary"/>
-                        <Button mnemonicParsing="false" onAction="#handleDelete" text="Delete" styleClass="button-danger"/>
+                        <Button mnemonicParsing="false" onAction="#handleAdd" styleClass="button-success">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Add Product"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleUpdate" styleClass="button-primary">
+                            <graphic>
+                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
+                            </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Update Product"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleDelete" styleClass="button-danger">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Delete Product"/>
+                             </tooltip>
+                        </Button>
                     </HBox>
-                    <Button mnemonicParsing="false" onAction="#handleClear" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
+                    <Button mnemonicParsing="false" onAction="#handleClear" maxWidth="Infinity" styleClass="button-secondary">
+                        <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="WHITE"/>
+                        </graphic>
+                         <tooltip>
+                                <javafx.scene.control.Tooltip text="Clear Form"/>
+                         </tooltip>
+                    </Button>
                 </VBox>
             </HBox>
         </Tab>
@@ -111,11 +139,39 @@
                     </VBox>
 
                     <HBox alignment="CENTER" spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleAddCategory" text="Add" styleClass="button-success"/>
-                        <Button mnemonicParsing="false" onAction="#handleUpdateCategory" text="Update" styleClass="button-primary"/>
-                        <Button mnemonicParsing="false" onAction="#handleDeleteCategory" text="Delete" styleClass="button-danger"/>
+                        <Button mnemonicParsing="false" onAction="#handleAddCategory" styleClass="button-success">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Add Category"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleUpdateCategory" styleClass="button-primary">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Update Category"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleDeleteCategory" styleClass="button-danger">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Delete Category"/>
+                             </tooltip>
+                        </Button>
                     </HBox>
-                    <Button mnemonicParsing="false" onAction="#handleClearCategory" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
+                    <Button mnemonicParsing="false" onAction="#handleClearCategory" maxWidth="Infinity" styleClass="button-secondary">
+                        <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="WHITE"/>
+                        </graphic>
+                         <tooltip>
+                                <javafx.scene.control.Tooltip text="Clear Form"/>
+                         </tooltip>
+                    </Button>
                 </VBox>
             </HBox>
         </Tab>
@@ -152,16 +208,58 @@
                     </VBox>
 
                     <HBox alignment="CENTER" spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleAddInventory" text="Add" styleClass="button-success"/>
-                        <Button mnemonicParsing="false" onAction="#handleUpdateInventory" text="Update" styleClass="button-primary"/>
-                        <Button mnemonicParsing="false" onAction="#handleDeleteInventory" text="Delete" styleClass="button-danger"/>
+                        <Button mnemonicParsing="false" onAction="#handleAddInventory" styleClass="button-success">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Add Inventory Item"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleUpdateInventory" styleClass="button-primary">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Update Inventory Item"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleDeleteInventory" styleClass="button-danger">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Delete Inventory Item"/>
+                             </tooltip>
+                        </Button>
                     </HBox>
-                    <Button mnemonicParsing="false" onAction="#handleClearInventory" text="Clear Form" maxWidth="Infinity" styleClass="button-secondary"/>
+                    <Button mnemonicParsing="false" onAction="#handleClearInventory" maxWidth="Infinity" styleClass="button-secondary">
+                        <graphic>
+                                <javafx.scene.shape.SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="WHITE"/>
+                        </graphic>
+                         <tooltip>
+                                <javafx.scene.control.Tooltip text="Clear Form"/>
+                         </tooltip>
+                    </Button>
 
                     <Label style="-fx-font-weight: bold; -fx-padding: 10 0 0 0;" text="Quick Actions"/>
                     <HBox spacing="10.0">
-                        <Button mnemonicParsing="false" onAction="#handleShowLowStock" text="Show Low Stock" styleClass="button-primary"/>
-                        <Button mnemonicParsing="false" onAction="#handleShowAllInventory" text="Show All" styleClass="button-secondary"/>
+                        <Button mnemonicParsing="false" onAction="#handleShowLowStock" styleClass="button-primary">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Show Low Stock"/>
+                             </tooltip>
+                        </Button>
+                        <Button mnemonicParsing="false" onAction="#handleShowAllInventory" styleClass="button-secondary">
+                             <graphic>
+                                <javafx.scene.shape.SVGPath content="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" fill="WHITE"/>
+                             </graphic>
+                             <tooltip>
+                                <javafx.scene.control.Tooltip text="Show All Inventory"/>
+                             </tooltip>
+                        </Button>
                     </HBox>
                 </VBox>
             </HBox>
