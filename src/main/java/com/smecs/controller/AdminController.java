@@ -11,10 +11,14 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import javafx.stage.Modality;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.util.Optional;
 
 public class AdminController {
 
@@ -31,16 +35,7 @@ public class AdminController {
     @FXML
     private TableColumn<Product, Void> stockColumn;
 
-    @FXML
-    private TextField nameField;
-    @FXML
-    private ComboBox<Category> categoryComboBox;
-    @FXML
-    private TextField priceField;
-    @FXML
-    private TextField productQuantityField;
-    @FXML
-    private TextArea descriptionArea;
+    // References to the main application for context if needed, but not strictly required if we use Stages.
 
     // Category management fields
     @FXML
@@ -51,10 +46,6 @@ public class AdminController {
     private TableColumn<Category, String> catNameColumn;
     @FXML
     private TableColumn<Category, String> catDescColumn;
-    @FXML
-    private TextField categoryNameField;
-    @FXML
-    private TextArea categoryDescArea;
 
     // Inventory management fields
     @FXML
@@ -67,10 +58,6 @@ public class AdminController {
     private TableColumn<Inventory, Integer> invQuantityColumn;
     @FXML
     private TableColumn<Inventory, String> invStatusColumn;
-    @FXML
-    private ComboBox<Product> inventoryProductComboBox;
-    @FXML
-    private TextField quantityField;
 
     private final ProductService productService;
     private final CategoryService categoryService;
@@ -103,10 +90,6 @@ public class AdminController {
 
         productTable.setItems(productList);
 
-        // Listen for selection changes
-        productTable.getSelectionModel().selectedItemProperty().addListener(
-                (observable, oldValue, newValue) -> showProductDetails(newValue));
-
         // Setup category table if available
         if (catIdColumn != null) {
             catIdColumn.setCellValueFactory(new PropertyValueFactory<>("categoryId"));
@@ -114,10 +97,6 @@ public class AdminController {
             catDescColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
 
             categoryTable.setItems(categoryList);
-
-            // Listen for category selection changes
-            categoryTable.getSelectionModel().selectedItemProperty().addListener(
-                    (observable, oldValue, newValue) -> showCategoryDetails(newValue));
         }
 
         // Setup inventory table if available
@@ -128,10 +107,6 @@ public class AdminController {
             invStatusColumn.setCellValueFactory(new PropertyValueFactory<>("stockStatus"));
 
             inventoryTable.setItems(inventoryList);
-
-            // Listen for inventory selection changes
-            inventoryTable.getSelectionModel().selectedItemProperty().addListener(
-                    (observable, oldValue, newValue) -> showInventoryDetails(newValue));
         }
 
         loadData();
@@ -185,377 +160,231 @@ public class AdminController {
         productList.setAll(productService.getAllProducts());
         categoryList.setAll(categoryService.getAllCategories());
         inventoryList.setAll(inventoryService.getAllInventory());
-        categoryComboBox.setItems(categoryList);
-
-        // Setup inventory product combo box with custom display
-        if (inventoryProductComboBox != null) {
-            inventoryProductComboBox.setItems(productList);
-            inventoryProductComboBox.setButtonCell(new javafx.scene.control.ListCell<Product>() {
-                @Override
-                protected void updateItem(Product item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? "" : item.getProductName());
-                }
-            });
-            inventoryProductComboBox.setCellFactory(lv -> new javafx.scene.control.ListCell<Product>() {
-                @Override
-                protected void updateItem(Product item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? "" : item.getProductName());
-                }
-            });
-        }
     }
 
-    private void showProductDetails(Product product) {
-        if (product != null) {
-            nameField.setText(product.getProductName());
-            priceField.setText(product.getPrice() != null ? product.getPrice().toString() : "");
-            descriptionArea.setText(product.getDescription());
-
-            // Load inventory quantity for this product
-            if (productQuantityField != null) {
-                Inventory inventory = inventoryService.getInventoryByProductId(product.getProductId());
-                productQuantityField.setText(inventory != null ? String.valueOf(inventory.getQuantity()) : "0");
-            }
-
-            // Select the category in combo box
-            for (Category cat : categoryList) {
-                if (cat.getCategoryId() == product.getCategoryId()) {
-                    categoryComboBox.getSelectionModel().select(cat);
-                    break;
-                }
-            }
-        }
-    }
-
-    private void showCategoryDetails(Category category) {
-        if (category != null && categoryNameField != null) {
-            categoryNameField.setText(category.getCategoryName());
-            categoryDescArea.setText(category.getDescription());
-        }
-    }
+    // --- Product Handlers ---
 
     @FXML
     private void handleAdd() {
-        if (isInputValid()) {
-            Product product = new Product();
-            product.setProductName(nameField.getText());
-            product.setPrice(new BigDecimal(priceField.getText()));
-            product.setDescription(descriptionArea.getText());
-            product.setCategoryId(categoryComboBox.getSelectionModel().getSelectedItem().getCategoryId());
-            product.setCreatedAt(Timestamp.from(Instant.now()));
-
-            int productId = productService.createProductAndGetId(product);
-
-            // Create inventory record if quantity is provided
-            if (productId > 0 && productQuantityField != null) {
-                int quantity = getProductQuantityFromField();
-                if (quantity >= 0) {
-                    inventoryService.setInventoryForProduct(productId, quantity);
-                }
-            }
-
+        boolean okClicked = showProductDialog(null);
+        if (okClicked) {
             loadData();
-            clearForm();
         }
     }
 
     @FXML
     private void handleUpdate() {
-        Product selected = productTable.getSelectionModel().getSelectedItem();
-        if (selected != null && isInputValid()) {
-            selected.setProductName(nameField.getText());
-            selected.setPrice(new BigDecimal(priceField.getText()));
-            selected.setDescription(descriptionArea.getText());
-            selected.setCategoryId(categoryComboBox.getSelectionModel().getSelectedItem().getCategoryId());
-
-            productService.updateProduct(selected);
-
-            // Update inventory quantity
-            if (productQuantityField != null) {
-                int quantity = getProductQuantityFromField();
-                if (quantity >= 0) {
-                    inventoryService.setInventoryForProduct(selected.getProductId(), quantity);
-                }
+        Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
+        if (selectedProduct != null) {
+            boolean okClicked = showProductDialog(selectedProduct);
+            if (okClicked) {
+                loadData();
             }
-
-            loadData();
-            clearForm();
         } else {
-            showAlert("No Selection", "Please select a product to update.");
+            showAlert("No Selection", "No Product Selected", "Please select a product in the table.");
         }
     }
 
-    private int getProductQuantityFromField() {
-        if (productQuantityField == null || productQuantityField.getText() == null ||
-            productQuantityField.getText().trim().isEmpty()) {
-            return 0;
-        }
+    private boolean showProductDialog(Product product) {
         try {
-            return Integer.parseInt(productQuantityField.getText().trim());
-        } catch (NumberFormatException e) {
-            return 0;
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(getClass().getResource("/view/product_form.fxml"));
+            Parent page = loader.load();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Product Details");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(productTable.getScene().getWindow());
+            Scene scene = new Scene(page);
+            dialogStage.setScene(scene);
+
+            ProductFormController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            controller.setServices(productService, categoryService);
+            controller.setProduct(product);
+
+            dialogStage.showAndWait();
+
+            return controller.isSaveClicked();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
     @FXML
     private void handleDelete() {
-        Product selected = productTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            productService.deleteProduct(selected.getProductId());
-            loadData();
-            clearForm();
+        Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
+        if (selectedProduct != null) {
+            if (showConfirmation("Delete Product", "Are you sure you want to delete " + selectedProduct.getProductName() + "?")) {
+               productService.deleteProduct(selectedProduct.getProductId());
+               loadData();
+            }
         } else {
-            showAlert("No Selection", "Please select a product to delete.");
+            showAlert("No Selection", "No Product Selected", "Please select a product in the table.");
         }
     }
 
-    @FXML
-    private void handleClear() {
-        clearForm();
-        productTable.getSelectionModel().clearSelection();
-    }
+    // --- Category Handlers ---
 
-    // Category management methods
     @FXML
     private void handleAddCategory() {
-        if (isCategoryInputValid()) {
-            Category category = new Category();
-            category.setCategoryName(categoryNameField.getText().trim());
-            category.setDescription(categoryDescArea.getText());
-
-            if (categoryService.categoryNameExists(category.getCategoryName())) {
-                showAlert("Duplicate Category", "A category with this name already exists.");
-                return;
-            }
-
-            categoryService.createCategory(category);
+        boolean okClicked = showCategoryDialog(null);
+        if (okClicked) {
             loadData();
-            clearCategoryForm();
         }
     }
 
     @FXML
     private void handleUpdateCategory() {
-        Category selected = categoryTable.getSelectionModel().getSelectedItem();
-        if (selected != null && isCategoryInputValid()) {
-            selected.setCategoryName(categoryNameField.getText().trim());
-            selected.setDescription(categoryDescArea.getText());
-
-            categoryService.updateCategory(selected);
-            loadData();
-            clearCategoryForm();
+        Category selectedCategory = categoryTable.getSelectionModel().getSelectedItem();
+        if (selectedCategory != null) {
+            boolean okClicked = showCategoryDialog(selectedCategory);
+            if (okClicked) {
+                loadData();
+            }
         } else {
-            showAlert("No Selection", "Please select a category to update.");
+            showAlert("No Selection", "No Category Selected", "Please select a category in the table.");
+        }
+    }
+
+    private boolean showCategoryDialog(Category category) {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(getClass().getResource("/view/category_form.fxml"));
+            Parent page = loader.load();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Category Details");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(categoryTable.getScene().getWindow());
+            Scene scene = new Scene(page);
+            dialogStage.setScene(scene);
+
+            CategoryFormController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            controller.setCategoryService(categoryService);
+            controller.setCategory(category);
+
+            dialogStage.showAndWait();
+
+            return controller.isSaveClicked();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
     @FXML
     private void handleDeleteCategory() {
-        Category selected = categoryTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            categoryService.deleteCategory(selected.getCategoryId());
-            loadData();
-            clearCategoryForm();
+        Category selectedCategory = categoryTable.getSelectionModel().getSelectedItem();
+        if (selectedCategory != null) {
+            // Note: CategoryService usually returns boolean for delete
+             if (showConfirmation("Delete Category", "Are you sure you want to delete " + selectedCategory.getCategoryName() + "?")) {
+                categoryService.deleteCategory(selectedCategory.getCategoryId());
+                loadData();
+             }
         } else {
-            showAlert("No Selection", "Please select a category to delete.");
+            showAlert("No Selection", "No Category Selected", "Please select a category in the table.");
         }
     }
 
-    @FXML
-    private void handleClearCategory() {
-        clearCategoryForm();
-        if (categoryTable != null) {
-            categoryTable.getSelectionModel().clearSelection();
-        }
-    }
-
-    private void clearForm() {
-        nameField.setText("");
-        priceField.setText("");
-        descriptionArea.setText("");
-        categoryComboBox.getSelectionModel().clearSelection();
-        if (productQuantityField != null) {
-            productQuantityField.setText("");
-        }
-    }
-
-    private void clearCategoryForm() {
-        if (categoryNameField != null) {
-            categoryNameField.setText("");
-        }
-        if (categoryDescArea != null) {
-            categoryDescArea.setText("");
-        }
-    }
-
-    private boolean isInputValid() {
-        String errorMessage = "";
-
-        if (nameField.getText() == null || nameField.getText().trim().isEmpty()) {
-            errorMessage += "No valid product name!\n";
-        }
-        if (priceField.getText() == null || priceField.getText().trim().isEmpty()) {
-            errorMessage += "No valid price!\n";
-        } else {
-            try {
-                Double.parseDouble(priceField.getText());
-            } catch (NumberFormatException e) {
-                errorMessage += "Price must be a number!\n";
-            }
-        }
-        if (categoryComboBox.getSelectionModel().getSelectedItem() == null) {
-            errorMessage += "Please select a category!\n";
-        }
-
-        if (errorMessage.isEmpty()) {
-            return true;
-        } else {
-            showAlert("Invalid Fields", errorMessage);
-            return false;
-        }
-    }
-
-    private boolean isCategoryInputValid() {
-        String errorMessage = "";
-
-        if (categoryNameField == null || categoryNameField.getText() == null ||
-            categoryNameField.getText().trim().isEmpty()) {
-            errorMessage += "No valid category name!\n";
-        }
-
-        if (errorMessage.isEmpty()) {
-            return true;
-        } else {
-            showAlert("Invalid Fields", errorMessage);
-            return false;
-        }
-    }
-
-    // Inventory management methods
-    private void showInventoryDetails(Inventory inventory) {
-        if (inventory != null && quantityField != null) {
-            quantityField.setText(String.valueOf(inventory.getQuantity()));
-
-            // Select the product in combo box
-            for (Product product : productList) {
-                if (product.getProductId() == inventory.getProductId()) {
-                    inventoryProductComboBox.getSelectionModel().select(product);
-                    break;
-                }
-            }
-        }
-    }
+    // --- Inventory Handlers ---
 
     @FXML
     private void handleAddInventory() {
-        if (isInventoryInputValid()) {
-            Product selectedProduct = inventoryProductComboBox.getSelectionModel().getSelectedItem();
-
-            // Check if inventory already exists for this product
-            if (inventoryService.inventoryExistsForProduct(selectedProduct.getProductId())) {
-                showAlert("Duplicate Entry", "Inventory already exists for this product. Please update instead.");
-                return;
-            }
-
-            Inventory inventory = new Inventory();
-            inventory.setProductId(selectedProduct.getProductId());
-            inventory.setQuantity(Integer.parseInt(quantityField.getText().trim()));
-
-            inventoryService.createInventory(inventory);
+        boolean okClicked = showInventoryDialog(null);
+        if (okClicked) {
             loadData();
-            clearInventoryForm();
         }
     }
 
     @FXML
     private void handleUpdateInventory() {
-        Inventory selected = inventoryTable.getSelectionModel().getSelectedItem();
-        if (selected != null && isInventoryInputValid()) {
-            selected.setQuantity(Integer.parseInt(quantityField.getText().trim()));
+        Inventory selectedInventory = inventoryTable.getSelectionModel().getSelectedItem();
+        if (selectedInventory != null) {
+            boolean okClicked = showInventoryDialog(selectedInventory);
+            if (okClicked) {
+                loadData();
+            }
+        } else {
+            showAlert("No Selection", "No Inventory Item Selected", "Please select an item in the table.");
+        }
+    }
 
-            inventoryService.updateInventory(selected);
-            loadData();
-            clearInventoryForm();
-        } else if (selected == null) {
-            showAlert("No Selection", "Please select an inventory item to update.");
+    private boolean showInventoryDialog(Inventory inventory) {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(getClass().getResource("/view/inventory_form.fxml"));
+            Parent page = loader.load();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Inventory Details");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner(inventoryTable.getScene().getWindow());
+            Scene scene = new Scene(page);
+            dialogStage.setScene(scene);
+
+            InventoryFormController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            controller.setServices(inventoryService, productService);
+            controller.setInventory(inventory);
+
+            dialogStage.showAndWait();
+
+            return controller.isSaveClicked();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
     @FXML
     private void handleDeleteInventory() {
-        Inventory selected = inventoryTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            inventoryService.deleteInventory(selected.getInventoryId());
-            loadData();
-            clearInventoryForm();
+        Inventory selectedInventory = inventoryTable.getSelectionModel().getSelectedItem();
+        if (selectedInventory != null) {
+            if (showConfirmation("Delete Inventory", "Are you sure you want to delete this inventory item?")) {
+                inventoryService.deleteInventory(selectedInventory.getInventoryId());
+                loadData();
+            }
         } else {
-            showAlert("No Selection", "Please select an inventory item to delete.");
-        }
-    }
-
-    @FXML
-    private void handleClearInventory() {
-        clearInventoryForm();
-        if (inventoryTable != null) {
-            inventoryTable.getSelectionModel().clearSelection();
+             showAlert("No Selection", "No Inventory Item Selected", "Please select an item in the table.");
         }
     }
 
     @FXML
     private void handleShowLowStock() {
-        inventoryList.setAll(inventoryService.getLowStockItems(10));
+        // Filter inventory to show only low stock items (quantity <= 10)
+        inventoryList.setAll(
+            inventoryService.getAllInventory().stream()
+                .filter(inv -> inv.getQuantity() <= 10)
+                .collect(java.util.stream.Collectors.toList())
+        );
     }
 
     @FXML
     private void handleShowAllInventory() {
+        // Reload all inventory items
         inventoryList.setAll(inventoryService.getAllInventory());
     }
 
-    private void clearInventoryForm() {
-        if (quantityField != null) {
-            quantityField.setText("");
-        }
-        if (inventoryProductComboBox != null) {
-            inventoryProductComboBox.getSelectionModel().clearSelection();
-        }
-    }
-
-    private boolean isInventoryInputValid() {
-        String errorMessage = "";
-
-        if (inventoryProductComboBox == null ||
-            inventoryProductComboBox.getSelectionModel().getSelectedItem() == null) {
-            errorMessage += "Please select a product!\n";
-        }
-        if (quantityField == null || quantityField.getText() == null ||
-            quantityField.getText().trim().isEmpty()) {
-            errorMessage += "Please enter a quantity!\n";
-        } else {
-            try {
-                int quantity = Integer.parseInt(quantityField.getText().trim());
-                if (quantity < 0) {
-                    errorMessage += "Quantity cannot be negative!\n";
-                }
-            } catch (NumberFormatException e) {
-                errorMessage += "Quantity must be a whole number!\n";
-            }
-        }
-
-        if (errorMessage.isEmpty()) {
-            return true;
-        } else {
-            showAlert("Invalid Fields", errorMessage);
-            return false;
-        }
-    }
-
-    private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText(title);
+    private void showAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private boolean showConfirmation(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
     }
 }
