@@ -1,20 +1,32 @@
 package com.smecs.controller;
 
 import com.smecs.cache.ProductCache;
+import com.smecs.model.CartItem;
 import com.smecs.model.Inventory;
 import com.smecs.model.Product;
+import com.smecs.model.User;
+import com.smecs.service.CartService;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
 import com.smecs.util.ProductSorter.SortCriteria;
+import com.smecs.util.SessionManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.shape.SVGPath;
+import javafx.stage.Modality;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Controller for the user view with search, sort, and cache support.
@@ -39,12 +51,17 @@ public class UserController {
     @FXML
     private TableColumn<Product, String> descriptionColumn;
     @FXML
+    private TableColumn<Product, Void> actionColumn;
+    @FXML
     private Label statusLabel;
     @FXML
     private Label cacheStatsLabel;
+    @FXML
+    private Label cartCountLabel;
 
     private final ProductService productService;
     private final InventoryService inventoryService;
+    private final CartService cartService;
     private final ObservableList<Product> productList;
     private Map<Integer, Inventory> inventoryMap;
     private SortCriteria currentSortCriteria = SortCriteria.NAME_ASC;
@@ -52,6 +69,7 @@ public class UserController {
     public UserController() {
         this.productService = new ProductService();
         this.inventoryService = new InventoryService();
+        this.cartService = new CartService();
         this.productList = FXCollections.observableArrayList();
         this.inventoryMap = new HashMap<>();
     }
@@ -67,6 +85,9 @@ public class UserController {
         // Setup stock column with badge cell factory
         setupStockColumn();
 
+        // Setup action column with add to cart button
+        setupActionColumn();
+
         productTable.setItems(productList);
 
         // Setup sort combo box
@@ -81,6 +102,7 @@ public class UserController {
 
         loadProducts();
         updateCacheStats();
+        updateCartCount();
     }
 
     private void setupStockColumn() {
@@ -116,6 +138,223 @@ public class UserController {
                 }
             }
         });
+    }
+
+    private void setupActionColumn() {
+        if (actionColumn == null) return;
+
+        actionColumn.setCellFactory(column -> new TableCell<Product, Void>() {
+            private final Button addToCartBtn = new Button();
+            private final HBox container = new HBox();
+
+            {
+                // Setup cart icon using SVG path
+                SVGPath cartIcon = new SVGPath();
+                // Shopping cart icon path
+                cartIcon.setContent("M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z");
+                cartIcon.setFill(javafx.scene.paint.Color.WHITE);
+                cartIcon.setScaleX(0.8);
+                cartIcon.setScaleY(0.8);
+
+                addToCartBtn.setGraphic(cartIcon);
+                addToCartBtn.getStyleClass().addAll("button", "button-success", "button-icon-only");
+                addToCartBtn.setTooltip(new Tooltip("Add to Cart"));
+
+                container.setAlignment(Pos.CENTER);
+                container.getChildren().add(addToCartBtn);
+
+                addToCartBtn.setOnAction(event -> {
+                    Product product = getTableView().getItems().get(getIndex());
+                    handleAddToCart(product);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Product product = getTableView().getItems().get(getIndex());
+                    Inventory inventory = inventoryMap.get(product.getProductId());
+                    int quantity = inventory != null ? inventory.getQuantity() : 0;
+
+                    // Disable button if out of stock
+                    addToCartBtn.setDisable(quantity <= 0);
+                    setGraphic(container);
+                }
+            }
+        });
+    }
+
+    private void handleAddToCart(Product product) {
+        SessionManager session = SessionManager.getInstance();
+
+        // Check if user is logged in
+        if (!session.isLoggedIn()) {
+            // Show login dialog
+            boolean loggedIn = showLoginDialog();
+            if (!loggedIn) {
+                return; // User cancelled or login failed
+            }
+        }
+
+        // User is now logged in, add to cart
+        try {
+            CartItem cartItem = cartService.addToCart(product, 1);
+            if (cartItem != null) {
+                updateCartCount();
+                showAlert(Alert.AlertType.INFORMATION, "Added to Cart",
+                    product.getProductName() + " has been added to your cart.");
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Error",
+                    "Failed to add item to cart. Please try again.");
+            }
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Error",
+                "Error adding to cart: " + e.getMessage());
+        }
+    }
+
+    private boolean showLoginDialog() {
+        try {
+            // Create a dialog for login
+            Dialog<User> dialog = new Dialog<>();
+            dialog.setTitle("Login Required");
+            dialog.setHeaderText("Please log in to add items to your cart");
+            dialog.initModality(Modality.APPLICATION_MODAL);
+
+            // Load the login view
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login_view.fxml"));
+            Parent loginContent = loader.load();
+
+            dialog.getDialogPane().setContent(loginContent);
+            dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+
+            // Get the LoginController and modify behavior
+            LoginController loginController = loader.getController();
+
+            // We need a custom approach - let's create a simple login form instead
+            dialog.close();
+
+            return showSimpleLoginDialog();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return showSimpleLoginDialog();
+        }
+    }
+
+    private boolean showSimpleLoginDialog() {
+        // Create a simple login dialog
+        Dialog<Boolean> dialog = new Dialog<>();
+        dialog.setTitle("Login Required");
+        dialog.setHeaderText("Please log in to add items to your cart");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+
+        // Create the form fields
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username or Email");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red;");
+
+        javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(10);
+        content.getChildren().addAll(
+            new Label("Username or Email:"),
+            usernameField,
+            new Label("Password:"),
+            passwordField,
+            errorLabel
+        );
+        content.setPadding(new javafx.geometry.Insets(20));
+
+        dialog.getDialogPane().setContent(content);
+
+        // Add buttons
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        // Disable login button initially
+        Button loginButton = (Button) dialog.getDialogPane().lookupButton(loginButtonType);
+        loginButton.setDisable(true);
+
+        // Enable/disable login button based on input
+        usernameField.textProperty().addListener((obs, old, newVal) -> {
+            loginButton.setDisable(newVal.trim().isEmpty() || passwordField.getText().isEmpty());
+        });
+        passwordField.textProperty().addListener((obs, old, newVal) -> {
+            loginButton.setDisable(usernameField.getText().trim().isEmpty() || newVal.isEmpty());
+        });
+
+        // Handle login
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return attemptLogin(usernameField.getText().trim(), passwordField.getText());
+            }
+            return false;
+        });
+
+        Optional<Boolean> result = dialog.showAndWait();
+        return result.orElse(false);
+    }
+
+    private boolean attemptLogin(String usernameOrEmail, String password) {
+        try {
+            // Hash the password (same as LoginController)
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            String hashedPassword = hexString.toString();
+
+            // Try to find and validate user
+            com.smecs.dao.UserDAO userDAO = new com.smecs.dao.UserDAO();
+            User user = userDAO.findByUsername(usernameOrEmail);
+            if (user == null) {
+                user = userDAO.findByEmail(usernameOrEmail);
+            }
+
+            if (user != null && user.getPasswordHash().equals(hashedPassword)) {
+                SessionManager.getInstance().setCurrentUser(user);
+                return true;
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Login Failed",
+                    "Invalid username/email or password.");
+                return false;
+            }
+        } catch (java.security.NoSuchAlgorithmException e) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Login error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void updateCartCount() {
+        if (cartCountLabel != null) {
+            int count = cartService.getCartItemCount();
+            if (count > 0) {
+                cartCountLabel.setText("Cart: " + count + " item" + (count > 1 ? "s" : ""));
+                cartCountLabel.setVisible(true);
+            } else {
+                cartCountLabel.setText("Cart: Empty");
+                cartCountLabel.setVisible(SessionManager.getInstance().isLoggedIn());
+            }
+        }
+    }
+
+    private void showAlert(Alert.AlertType type, String title, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void setupColumnSorting() {

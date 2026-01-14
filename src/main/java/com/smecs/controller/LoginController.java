@@ -2,6 +2,7 @@ package com.smecs.controller;
 
 import com.smecs.dao.UserDAO;
 import com.smecs.model.User;
+import com.smecs.util.SessionManager;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -61,6 +62,9 @@ public class LoginController {
 
             // Validate credentials
             if (user != null && user.getPasswordHash().equals(hashedPassword)) {
+                // Set the current user in session
+                SessionManager.getInstance().setCurrentUser(user);
+
                 showMessage("Login successful! Welcome " + user.getUsername(), "success");
 
                 // Navigate to appropriate view based on role

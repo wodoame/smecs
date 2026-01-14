@@ -5,6 +5,8 @@
 -- =====================================================
 
 -- Drop tables in dependency order to allow clean recreation
+DROP TABLE IF EXISTS CartItems CASCADE;
+DROP TABLE IF EXISTS Carts CASCADE;
 DROP TABLE IF EXISTS Reviews CASCADE;
 DROP TABLE IF EXISTS OrderItems CASCADE;
 DROP TABLE IF EXISTS Orders CASCADE;
@@ -83,6 +85,27 @@ CREATE TABLE Reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. Carts Table
+-- Requirements: Shopping cart for users
+CREATE TABLE Carts (
+    cart_id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE REFERENCES Users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. CartItems Table
+-- Requirements: Items in shopping carts
+CREATE TABLE CartItems (
+    cart_item_id SERIAL PRIMARY KEY,
+    cart_id INTEGER REFERENCES Carts(cart_id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES Products(product_id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    price_at_addition DECIMAL(10, 2) NOT NULL CHECK (price_at_addition >= 0),
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cart_id, product_id)
+);
+
 -- =====================================================
 -- EPIC 3: Indexes for Performance
 -- =====================================================
@@ -117,3 +140,11 @@ CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON Reviews(user_id);
 
 -- Inventory Indexes
 -- product_id is already UNIQUE, which creates an index implicitly.
+
+-- Carts Indexes
+CREATE INDEX IF NOT EXISTS idx_carts_user_id ON Carts(user_id);
+
+-- CartItems Indexes
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON CartItems(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON CartItems(product_id);
+
