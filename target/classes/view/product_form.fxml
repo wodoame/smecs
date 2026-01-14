@@ -30,6 +30,11 @@
         <TextField fx:id="priceField" promptText="0.00"/>
     </VBox>
 
+    <VBox spacing="5.0" fx:id="quantityBox">
+        <Label text="Stock Quantity:" styleClass="form-label"/>
+        <TextField fx:id="quantityField" promptText="0"/>
+    </VBox>
+
     <VBox spacing="5.0" VBox.vgrow="ALWAYS">
         <Label text="Description:" styleClass="form-label"/>
         <TextArea fx:id="descriptionArea" prefHeight="100.0" prefWidth="300.0" wrapText="true"/>

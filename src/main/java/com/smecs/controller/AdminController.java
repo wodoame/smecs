@@ -200,7 +200,7 @@ public class AdminController {
 
             ProductFormController controller = loader.getController();
             controller.setDialogStage(dialogStage);
-            controller.setServices(productService, categoryService);
+            controller.setServices(productService, categoryService, inventoryService);
             controller.setProduct(product);
 
             dialogStage.showAndWait();

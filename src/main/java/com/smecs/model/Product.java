@@ -83,4 +83,9 @@ public class Product {
     public void setCategoryName(String categoryName) {
         this.categoryName = categoryName;
     }
+
+    @Override
+    public String toString() {
+        return productName; // Useful for ComboBox display
+    }
 }

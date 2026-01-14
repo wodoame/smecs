@@ -58,6 +58,8 @@ public class UserController {
     private Label cacheStatsLabel;
     @FXML
     private Label cartCountLabel;
+    @FXML
+    private Button viewCartButton;
 
     private final ProductService productService;
     private final InventoryService inventoryService;
@@ -216,122 +218,132 @@ public class UserController {
         }
     }
 
-    private boolean showLoginDialog() {
+    @FXML
+    private void handleViewCart() {
+        SessionManager session = SessionManager.getInstance();
+
+        // Check if user is logged in
+        if (!session.isLoggedIn()) {
+            // Show login dialog
+            boolean loggedIn = showLoginDialog();
+            if (!loggedIn) {
+                return; // User cancelled or login failed
+            }
+        }
+
+        // Show the cart dialog
+        showCartDialog();
+    }
+
+    private void showCartDialog() {
         try {
-            // Create a dialog for login
-            Dialog<User> dialog = new Dialog<>();
-            dialog.setTitle("Login Required");
-            dialog.setHeaderText("Please log in to add items to your cart");
+            // Get cart items
+            java.util.List<CartItem> cartItems = cartService.getCartItems();
+
+            if (cartItems.isEmpty()) {
+                showAlert(Alert.AlertType.INFORMATION, "Cart Empty",
+                    "Your cart is empty. Add some products to get started!");
+                return;
+            }
+
+            // Create a dialog to show cart contents
+            Dialog<Void> dialog = new Dialog<>();
+            dialog.setTitle("Your Shopping Cart");
+            dialog.setHeaderText("Cart Items (" + cartItems.size() + " items)");
             dialog.initModality(Modality.APPLICATION_MODAL);
 
-            // Load the login view
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login_view.fxml"));
-            Parent loginContent = loader.load();
+            // Create a table for cart items
+            TableView<CartItem> cartTable = new TableView<>();
+            cartTable.setPrefWidth(500);
+            cartTable.setPrefHeight(300);
 
-            dialog.getDialogPane().setContent(loginContent);
-            dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+            TableColumn<CartItem, String> productCol = new TableColumn<>("Product");
+            productCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("productName"));
+            productCol.setPrefWidth(200);
 
-            // Get the LoginController and modify behavior
-            LoginController loginController = loader.getController();
+            TableColumn<CartItem, Integer> qtyCol = new TableColumn<>("Quantity");
+            qtyCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("quantity"));
+            qtyCol.setPrefWidth(80);
 
-            // We need a custom approach - let's create a simple login form instead
-            dialog.close();
+            TableColumn<CartItem, java.math.BigDecimal> priceCol = new TableColumn<>("Price");
+            priceCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("priceAtAddition"));
+            priceCol.setPrefWidth(100);
 
-            return showSimpleLoginDialog();
+            TableColumn<CartItem, java.math.BigDecimal> subtotalCol = new TableColumn<>("Subtotal");
+            subtotalCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("subtotal"));
+            subtotalCol.setPrefWidth(100);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            return showSimpleLoginDialog();
+            cartTable.getColumns().addAll(productCol, qtyCol, priceCol, subtotalCol);
+            cartTable.setItems(FXCollections.observableArrayList(cartItems));
+
+            // Calculate total
+            java.math.BigDecimal total = cartItems.stream()
+                .map(CartItem::getSubtotal)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+            Label totalLabel = new Label("Total: $" + total.toString());
+            totalLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+            javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(10);
+            content.getChildren().addAll(cartTable, totalLabel);
+            content.setPadding(new javafx.geometry.Insets(10));
+
+            dialog.getDialogPane().setContent(content);
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
+
+            dialog.showAndWait();
+
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Error",
+                "Error loading cart: " + e.getMessage());
         }
     }
 
-    private boolean showSimpleLoginDialog() {
-        // Create a simple login dialog
-        Dialog<Boolean> dialog = new Dialog<>();
-        dialog.setTitle("Login Required");
-        dialog.setHeaderText("Please log in to add items to your cart");
-        dialog.initModality(Modality.APPLICATION_MODAL);
+    private boolean showLoginDialog() {
+        // Use an array to capture the result from the callback
+        final boolean[] loginResult = {false};
 
-        // Create the form fields
-        TextField usernameField = new TextField();
-        usernameField.setPromptText("Username or Email");
-
-        PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
-
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red;");
-
-        javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(10);
-        content.getChildren().addAll(
-            new Label("Username or Email:"),
-            usernameField,
-            new Label("Password:"),
-            passwordField,
-            errorLabel
-        );
-        content.setPadding(new javafx.geometry.Insets(20));
-
-        dialog.getDialogPane().setContent(content);
-
-        // Add buttons
-        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
-
-        // Disable login button initially
-        Button loginButton = (Button) dialog.getDialogPane().lookupButton(loginButtonType);
-        loginButton.setDisable(true);
-
-        // Enable/disable login button based on input
-        usernameField.textProperty().addListener((obs, old, newVal) -> {
-            loginButton.setDisable(newVal.trim().isEmpty() || passwordField.getText().isEmpty());
-        });
-        passwordField.textProperty().addListener((obs, old, newVal) -> {
-            loginButton.setDisable(usernameField.getText().trim().isEmpty() || newVal.isEmpty());
-        });
-
-        // Handle login
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == loginButtonType) {
-                return attemptLogin(usernameField.getText().trim(), passwordField.getText());
-            }
-            return false;
-        });
-
-        Optional<Boolean> result = dialog.showAndWait();
-        return result.orElse(false);
-    }
-
-    private boolean attemptLogin(String usernameOrEmail, String password) {
         try {
-            // Hash the password (same as LoginController)
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            String hashedPassword = hexString.toString();
+            // Create a new Stage for the login dialog
+            javafx.stage.Stage loginStage = new javafx.stage.Stage();
+            loginStage.setTitle("Login Required - Smart E-Commerce System");
+            loginStage.initModality(Modality.APPLICATION_MODAL);
+            loginStage.initOwner(productTable.getScene().getWindow());
 
-            // Try to find and validate user
-            com.smecs.dao.UserDAO userDAO = new com.smecs.dao.UserDAO();
-            User user = userDAO.findByUsername(usernameOrEmail);
-            if (user == null) {
-                user = userDAO.findByEmail(usernameOrEmail);
+            // Load the actual login view
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login_view.fxml"));
+            Parent loginContent = loader.load();
+
+            // Get the LoginController and set dialog mode
+            LoginController loginController = loader.getController();
+            loginController.setDialogMode(loginStage, user -> {
+                // Login was successful
+                loginResult[0] = true;
+            });
+
+            // Create scene with the login view
+            javafx.scene.Scene scene = new javafx.scene.Scene(loginContent);
+
+            // Load the CSS stylesheet for consistent styling
+            String css = getClass().getResource("/css/styles.css").toExternalForm();
+            scene.getStylesheets().add(css);
+
+            loginStage.setScene(scene);
+            loginStage.setResizable(false);
+
+            // Show dialog and wait for it to close
+            loginStage.showAndWait();
+
+            // If login was successful, update the cart count
+            if (loginResult[0]) {
+                updateCartCount();
             }
 
-            if (user != null && user.getPasswordHash().equals(hashedPassword)) {
-                SessionManager.getInstance().setCurrentUser(user);
-                return true;
-            } else {
-                showAlert(Alert.AlertType.ERROR, "Login Failed",
-                    "Invalid username/email or password.");
-                return false;
-            }
-        } catch (java.security.NoSuchAlgorithmException e) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Login error: " + e.getMessage());
+            return loginResult[0];
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Error", "Could not load login form: " + e.getMessage());
             return false;
         }
     }
