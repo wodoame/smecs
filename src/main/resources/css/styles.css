@@ -149,3 +149,23 @@
     -fx-text-fill: #991b1b; /* Red-800 */
 }
 
+/* Icon-Only Button */
+.button-icon-only {
+    -fx-padding: 8px; /* Slightly larger padding for hit area */
+    -fx-min-width: 36px;
+    -fx-min-height: 36px;
+    -fx-alignment: center;
+}
+
+.button-icon-only SVGPath {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 2, 0, 0, 1);
+}
+
+/* Tooltip Styling */
+.tooltip {
+    -fx-background-color: rgba(0, 0, 0, 0.8);
+    -fx-text-fill: white;
+    -fx-padding: 8px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 12px;
+}
