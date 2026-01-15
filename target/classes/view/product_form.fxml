@@ -11,7 +11,7 @@
 
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.smecs.controller.ProductFormController" spacing="15.0" stylesheets="@../css/styles.css"
-      style="-fx-background-color: white; -fx-padding: 20;" prefWidth="600.0">
+      style="-fx-background-color: white; -fx-padding: 20;" prefWidth="600.0" prefHeight="500.0">
 
     <Label fx:id="titleLabel" text="Product Details" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
@@ -28,6 +28,11 @@
     <VBox spacing="5.0">
         <Label text="Price:" styleClass="form-label"/>
         <TextField fx:id="priceField" promptText="0.00"/>
+    </VBox>
+
+    <VBox spacing="5.0" fx:id="quantityBox">
+        <Label text="Stock Quantity:" styleClass="form-label"/>
+        <TextField fx:id="quantityField" promptText="0"/>
     </VBox>
 
     <VBox spacing="5.0" VBox.vgrow="ALWAYS">

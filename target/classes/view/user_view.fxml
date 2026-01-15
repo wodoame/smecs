@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox spacing="10.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
@@ -46,7 +47,8 @@
           <TableColumn fx:id="categoryColumn" prefWidth="120.0" text="Category"/>
           <TableColumn fx:id="priceColumn" text="Price"/>
           <TableColumn fx:id="stockColumn" prefWidth="100.0" text="Stock"/>
-          <TableColumn fx:id="descriptionColumn" prefWidth="250.0" text="Description"/>
+          <TableColumn fx:id="descriptionColumn" prefWidth="200.0" text="Description"/>
+          <TableColumn fx:id="actionColumn" prefWidth="80.0" text="Action"/>
       </columns>
     </TableView>
 
@@ -54,5 +56,15 @@
     <HBox spacing="20.0" alignment="CENTER_LEFT">
         <Label fx:id="statusLabel" text="Ready"/>
         <Label fx:id="cacheStatsLabel" text="Cache: --" style="-fx-text-fill: gray;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="cartCountLabel" text="Cart: Empty" style="-fx-text-fill: #10b981; -fx-font-weight: bold;"/>
+        <Button fx:id="viewCartButton" mnemonicParsing="false" onAction="#handleViewCart" styleClass="button-primary">
+            <graphic>
+                <javafx.scene.shape.SVGPath content="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" fill="WHITE"/>
+            </graphic>
+            <tooltip>
+                <javafx.scene.control.Tooltip text="View Cart"/>
+            </tooltip>
+        </Button>
     </HBox>
 </VBox>

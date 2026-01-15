@@ -195,12 +195,14 @@ public class AdminController {
             dialogStage.setTitle("Product Details");
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(productTable.getScene().getWindow());
-            Scene scene = new Scene(page);
+            Scene scene = new Scene(page, 600, 500);
             dialogStage.setScene(scene);
+            dialogStage.setMinWidth(600);
+            dialogStage.setMinHeight(600);
 
             ProductFormController controller = loader.getController();
             controller.setDialogStage(dialogStage);
-            controller.setServices(productService, categoryService);
+            controller.setServices(productService, categoryService, inventoryService);
             controller.setProduct(product);
 
             dialogStage.showAndWait();
@@ -259,8 +261,10 @@ public class AdminController {
             dialogStage.setTitle("Category Details");
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(categoryTable.getScene().getWindow());
-            Scene scene = new Scene(page);
+            Scene scene = new Scene(page, 450, 350);
             dialogStage.setScene(scene);
+            dialogStage.setMinWidth(600);
+            dialogStage.setMinHeight(400);
 
             CategoryFormController controller = loader.getController();
             controller.setDialogStage(dialogStage);
@@ -324,8 +328,10 @@ public class AdminController {
             dialogStage.setTitle("Inventory Details");
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(inventoryTable.getScene().getWindow());
-            Scene scene = new Scene(page);
+            Scene scene = new Scene(page, 500, 300);
             dialogStage.setScene(scene);
+            dialogStage.setMinWidth(600);
+            dialogStage.setMinHeight(300);
 
             InventoryFormController controller = loader.getController();
             controller.setDialogStage(dialogStage);

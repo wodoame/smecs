@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class RegistrationController {
@@ -41,6 +42,11 @@ public class RegistrationController {
 
     private UserDAO userDAO;
 
+    // Dialog mode support - when used inside a dialog instead of main window
+    private boolean dialogMode = false;
+    private Consumer<User> onLoginSuccess;
+    private Stage dialogStage;
+
     // Email validation pattern
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
         "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
@@ -48,6 +54,17 @@ public class RegistrationController {
 
     public RegistrationController() {
         this.userDAO = new UserDAO();
+    }
+
+    /**
+     * Enable dialog mode for use inside a popup dialog.
+     * @param dialogStage the dialog stage
+     * @param onLoginSuccess callback when login is successful (passed to LoginController)
+     */
+    public void setDialogMode(Stage dialogStage, Consumer<User> onLoginSuccess) {
+        this.dialogMode = true;
+        this.dialogStage = dialogStage;
+        this.onLoginSuccess = onLoginSuccess;
     }
 
     @FXML
@@ -140,9 +157,21 @@ public class RegistrationController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login_view.fxml"));
             Parent root = loader.load();
 
+            // Pass dialog mode to login controller if we're in dialog mode
+            if (dialogMode) {
+                LoginController loginController = loader.getController();
+                loginController.setDialogMode(dialogStage, onLoginSuccess);
+            }
+
             // Get stage and set new scene
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 400, 500));
+            Scene scene = new Scene(root, 400, 500);
+
+            // Load the CSS stylesheet for consistent styling
+            String css = getClass().getResource("/css/styles.css").toExternalForm();
+            scene.getStylesheets().add(css);
+
+            stage.setScene(scene);
             stage.setTitle("Login - Smart E-Commerce System");
             stage.show();
 

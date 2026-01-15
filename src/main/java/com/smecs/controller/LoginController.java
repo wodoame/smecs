@@ -2,6 +2,7 @@ package com.smecs.controller;
 
 import com.smecs.dao.UserDAO;
 import com.smecs.model.User;
+import com.smecs.util.SessionManager;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -14,6 +15,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.Consumer;
 
 public class LoginController {
 
@@ -34,8 +36,25 @@ public class LoginController {
 
     private UserDAO userDAO;
 
+    // Dialog mode support - when used inside a dialog instead of main window
+    private boolean dialogMode = false;
+    private Consumer<User> onLoginSuccess;
+    private Stage dialogStage;
+
     public LoginController() {
         this.userDAO = new UserDAO();
+    }
+
+    /**
+     * Enable dialog mode for use inside a popup dialog.
+     * @param dialogStage the dialog stage
+     * @param onLoginSuccess callback when login is successful
+     */
+    public void setDialogMode(Stage dialogStage, Consumer<User> onLoginSuccess) {
+        this.dialogMode = true;
+        this.dialogStage = dialogStage;
+        this.onLoginSuccess = onLoginSuccess;
+        // Register link will work - it navigates using the current stage
     }
 
     @FXML
@@ -61,10 +80,24 @@ public class LoginController {
 
             // Validate credentials
             if (user != null && user.getPasswordHash().equals(hashedPassword)) {
+                // Set the current user in session
+                SessionManager.getInstance().setCurrentUser(user);
+
                 showMessage("Login successful! Welcome " + user.getUsername(), "success");
 
-                // Navigate to appropriate view based on role
-                navigateToMainView(event, user);
+                // Handle based on mode
+                if (dialogMode) {
+                    // In dialog mode, call callback and close dialog
+                    if (onLoginSuccess != null) {
+                        onLoginSuccess.accept(user);
+                    }
+                    if (dialogStage != null) {
+                        dialogStage.close();
+                    }
+                } else {
+                    // Navigate to appropriate view based on role
+                    navigateToMainView(event, user);
+                }
             } else {
                 showMessage("Invalid username/email or password.", "error");
             }
@@ -82,9 +115,21 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/registration_view.fxml"));
             Parent root = loader.load();
 
+            // Pass dialog mode to registration controller if we're in dialog mode
+            if (dialogMode) {
+                RegistrationController regController = loader.getController();
+                regController.setDialogMode(dialogStage, onLoginSuccess);
+            }
+
             // Get stage and set new scene
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(root, 400, 600));
+            Scene scene = new Scene(root, 400, 600);
+
+            // Load the CSS stylesheet for consistent styling
+            String css = getClass().getResource("/css/styles.css").toExternalForm();
+            scene.getStylesheets().add(css);
+
+            stage.setScene(scene);
             stage.setTitle("Registration - Smart E-Commerce System");
             stage.show();
 
@@ -152,4 +197,3 @@ public class LoginController {
         }
     }
 }
-
