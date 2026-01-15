@@ -8,8 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Performance benchmarking utility for Epic 3.
+ * Performance benchmarking utility for Epic 3 & Epic 4.
  * Compares search and retrieval performance with and without caching/indexing.
+ * Provides comprehensive performance metrics for optimization analysis.
  */
 public class PerformanceBenchmark {
     
