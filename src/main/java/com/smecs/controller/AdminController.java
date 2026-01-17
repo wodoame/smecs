@@ -14,6 +14,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
 
@@ -34,6 +37,8 @@ public class AdminController {
     private TableColumn<Product, BigDecimal> priceColumn;
     @FXML
     private TableColumn<Product, Void> stockColumn;
+    @FXML
+    private TableColumn<Product, Void> actionsColumn;
 
     // References to the main application for context if needed, but not strictly required if we use Stages.
 
@@ -46,6 +51,8 @@ public class AdminController {
     private TableColumn<Category, String> catNameColumn;
     @FXML
     private TableColumn<Category, String> catDescColumn;
+    @FXML
+    private TableColumn<Category, Void> catActionsColumn;
 
     // Inventory management fields
     @FXML
@@ -57,7 +64,9 @@ public class AdminController {
     @FXML
     private TableColumn<Inventory, Integer> invQuantityColumn;
     @FXML
-    private TableColumn<Inventory, String> invStatusColumn;
+    private TableColumn<Inventory, Void> invStatusColumn;
+    @FXML
+    private TableColumn<Inventory, Void> invActionsColumn;
 
     private final ProductService productService;
     private final CategoryService categoryService;
@@ -88,6 +97,10 @@ public class AdminController {
             setupStockColumn();
         }
 
+        if (actionsColumn != null) {
+            setupActionsColumn();
+        }
+
         productTable.setItems(productList);
 
         // Setup category table if available
@@ -99,12 +112,22 @@ public class AdminController {
             categoryTable.setItems(categoryList);
         }
 
+        if (catActionsColumn != null) {
+            setupCategoryActionsColumn();
+        }
+
         // Setup inventory table if available
         if (invIdColumn != null) {
             invIdColumn.setCellValueFactory(new PropertyValueFactory<>("inventoryId"));
             invProductColumn.setCellValueFactory(new PropertyValueFactory<>("productName"));
             invQuantityColumn.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-            invStatusColumn.setCellValueFactory(new PropertyValueFactory<>("stockStatus"));
+
+            if (invStatusColumn != null) {
+                setupInventoryStatusColumn();
+            }
+            if (invActionsColumn != null) {
+                setupInventoryActionsColumn();
+            }
 
             inventoryTable.setItems(inventoryList);
         }
@@ -113,7 +136,7 @@ public class AdminController {
     }
 
     private void setupStockColumn() {
-        stockColumn.setCellFactory(column -> new TableCell<Product, Void>() {
+        stockColumn.setCellFactory(column -> new TableCell<>() {
             private final Label badge = new Label();
 
             @Override
@@ -147,6 +170,210 @@ public class AdminController {
         });
     }
 
+    private void setupActionsColumn() {
+        actionsColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button();
+            private final Button deleteButton = new Button();
+            private final HBox pane = new HBox(5, editButton, deleteButton);
+
+            {
+                // Setup Edit Button
+                SVGPath editIcon = new SVGPath();
+                editIcon.setContent("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z");
+                editIcon.setFill(Color.WHITE);
+                editButton.setGraphic(editIcon);
+                editButton.getStyleClass().add("button-primary");
+                editButton.setTooltip(new Tooltip("Update Product"));
+                editButton.setOnAction(event -> {
+                    Product product = getTableView().getItems().get(getIndex());
+                    updateProduct(product);
+                });
+
+                // Setup Delete Button
+                SVGPath deleteIcon = new SVGPath();
+                deleteIcon.setContent("M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z");
+                deleteIcon.setFill(Color.WHITE);
+                deleteButton.setGraphic(deleteIcon);
+                deleteButton.getStyleClass().add("button-danger");
+                deleteButton.setTooltip(new Tooltip("Delete Product"));
+                deleteButton.setOnAction(event -> {
+                    Product product = getTableView().getItems().get(getIndex());
+                    deleteProduct(product);
+                });
+
+                // Initially invisible
+                pane.setVisible(false);
+
+                // Bind visibility to row hover
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                     pane.visibleProperty().unbind();
+                     if (newRow != null) {
+                         pane.visibleProperty().bind(newRow.hoverProperty());
+                     } else {
+                         pane.setVisible(false);
+                     }
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(pane);
+                }
+            }
+        });
+    }
+
+    private void setupCategoryActionsColumn() {
+        catActionsColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button();
+            private final Button deleteButton = new Button();
+            private final HBox pane = new HBox(5, editButton, deleteButton);
+
+            {
+                // Setup Edit Button
+                SVGPath editIcon = new SVGPath();
+                editIcon.setContent("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z");
+                editIcon.setFill(Color.WHITE);
+                editButton.setGraphic(editIcon);
+                editButton.getStyleClass().add("button-primary");
+                editButton.setTooltip(new Tooltip("Update Category"));
+                editButton.setOnAction(event -> {
+                    Category category = getTableView().getItems().get(getIndex());
+                    updateCategory(category);
+                });
+
+                // Setup Delete Button
+                SVGPath deleteIcon = new SVGPath();
+                deleteIcon.setContent("M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z");
+                deleteIcon.setFill(Color.WHITE);
+                deleteButton.setGraphic(deleteIcon);
+                deleteButton.getStyleClass().add("button-danger");
+                deleteButton.setTooltip(new Tooltip("Delete Category"));
+                deleteButton.setOnAction(event -> {
+                    Category category = getTableView().getItems().get(getIndex());
+                    deleteCategory(category);
+                });
+
+                // Initially invisible
+                pane.setVisible(false);
+
+                // Bind visibility to row hover
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                     pane.visibleProperty().unbind();
+                     if (newRow != null) {
+                         pane.visibleProperty().bind(newRow.hoverProperty());
+                     } else {
+                         pane.setVisible(false);
+                     }
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(pane);
+                }
+            }
+        });
+    }
+
+    private void setupInventoryStatusColumn() {
+        invStatusColumn.setCellFactory(column -> new TableCell<>() {
+            private final Label badge = new Label();
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Inventory inventory = getTableView().getItems().get(getIndex());
+                    int quantity = inventory.getQuantity();
+
+                    badge.getStyleClass().removeAll("badge", "badge-success", "badge-warning", "badge-danger");
+                    badge.getStyleClass().add("badge");
+
+                    if (quantity <= 0) {
+                        badge.setText("Out of Stock");
+                        badge.getStyleClass().add("badge-danger");
+                    } else if (quantity <= 10) {
+                        badge.setText("Low Stock");
+                        badge.getStyleClass().add("badge-warning");
+                    } else {
+                        badge.setText("In Stock");
+                        badge.getStyleClass().add("badge-success");
+                    }
+
+                    setGraphic(badge);
+                }
+            }
+        });
+    }
+
+    private void setupInventoryActionsColumn() {
+        invActionsColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button();
+            private final Button deleteButton = new Button();
+            private final HBox pane = new HBox(5, editButton, deleteButton);
+
+            {
+                // Setup Edit Button
+                SVGPath editIcon = new SVGPath();
+                editIcon.setContent("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z");
+                editIcon.setFill(Color.WHITE);
+                editButton.setGraphic(editIcon);
+                editButton.getStyleClass().add("button-primary");
+                editButton.setTooltip(new Tooltip("Update Inventory Item"));
+                editButton.setOnAction(event -> {
+                    Inventory inventory = getTableView().getItems().get(getIndex());
+                    updateInventory(inventory);
+                });
+
+                // Setup Delete Button
+                SVGPath deleteIcon = new SVGPath();
+                deleteIcon.setContent("M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z");
+                deleteIcon.setFill(Color.WHITE);
+                deleteButton.setGraphic(deleteIcon);
+                deleteButton.getStyleClass().add("button-danger");
+                deleteButton.setTooltip(new Tooltip("Delete Inventory Item"));
+                deleteButton.setOnAction(event -> {
+                    Inventory inventory = getTableView().getItems().get(getIndex());
+                    deleteInventory(inventory);
+                });
+
+                // Initially invisible
+                pane.setVisible(false);
+
+                // Bind visibility to row hover
+                tableRowProperty().addListener((obs, oldRow, newRow) -> {
+                     pane.visibleProperty().unbind();
+                     if (newRow != null) {
+                         pane.visibleProperty().bind(newRow.hoverProperty());
+                     } else {
+                         pane.setVisible(false);
+                     }
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(pane);
+                }
+            }
+        });
+    }
+
     private Inventory getInventoryForProduct(int productId) {
         for (Inventory inv : inventoryList) {
             if (inv.getProductId() == productId) {
@@ -172,16 +399,10 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleUpdate() {
-        Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
-        if (selectedProduct != null) {
-            boolean okClicked = showProductDialog(selectedProduct);
-            if (okClicked) {
-                loadData();
-            }
-        } else {
-            showAlert("No Selection", "No Product Selected", "Please select a product in the table.");
+    private void updateProduct(Product product) {
+        boolean okClicked = showProductDialog(product);
+        if (okClicked) {
+            loadData();
         }
     }
 
@@ -215,16 +436,10 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleDelete() {
-        Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
-        if (selectedProduct != null) {
-            if (showConfirmation("Delete Product", "Are you sure you want to delete " + selectedProduct.getProductName() + "?")) {
-               productService.deleteProduct(selectedProduct.getProductId());
-               loadData();
-            }
-        } else {
-            showAlert("No Selection", "No Product Selected", "Please select a product in the table.");
+    private void deleteProduct(Product product) {
+        if (showConfirmation("Delete Product", "Are you sure you want to delete " + product.getProductName() + "?")) {
+           productService.deleteProduct(product.getProductId());
+           loadData();
         }
     }
 
@@ -238,16 +453,10 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleUpdateCategory() {
-        Category selectedCategory = categoryTable.getSelectionModel().getSelectedItem();
-        if (selectedCategory != null) {
-            boolean okClicked = showCategoryDialog(selectedCategory);
-            if (okClicked) {
-                loadData();
-            }
-        } else {
-            showAlert("No Selection", "No Category Selected", "Please select a category in the table.");
+    private void updateCategory(Category category) {
+        boolean okClicked = showCategoryDialog(category);
+        if (okClicked) {
+            loadData();
         }
     }
 
@@ -281,18 +490,11 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleDeleteCategory() {
-        Category selectedCategory = categoryTable.getSelectionModel().getSelectedItem();
-        if (selectedCategory != null) {
-            // Note: CategoryService usually returns boolean for delete
-             if (showConfirmation("Delete Category", "Are you sure you want to delete " + selectedCategory.getCategoryName() + "?")) {
-                categoryService.deleteCategory(selectedCategory.getCategoryId());
-                loadData();
-             }
-        } else {
-            showAlert("No Selection", "No Category Selected", "Please select a category in the table.");
-        }
+    private void deleteCategory(Category category) {
+         if (showConfirmation("Delete Category", "Are you sure you want to delete " + category.getCategoryName() + "?")) {
+            categoryService.deleteCategory(category.getCategoryId());
+            loadData();
+         }
     }
 
     // --- Inventory Handlers ---
@@ -305,16 +507,10 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleUpdateInventory() {
-        Inventory selectedInventory = inventoryTable.getSelectionModel().getSelectedItem();
-        if (selectedInventory != null) {
-            boolean okClicked = showInventoryDialog(selectedInventory);
-            if (okClicked) {
-                loadData();
-            }
-        } else {
-            showAlert("No Selection", "No Inventory Item Selected", "Please select an item in the table.");
+    private void updateInventory(Inventory inventory) {
+        boolean okClicked = showInventoryDialog(inventory);
+        if (okClicked) {
+            loadData();
         }
     }
 
@@ -348,16 +544,10 @@ public class AdminController {
         }
     }
 
-    @FXML
-    private void handleDeleteInventory() {
-        Inventory selectedInventory = inventoryTable.getSelectionModel().getSelectedItem();
-        if (selectedInventory != null) {
-            if (showConfirmation("Delete Inventory", "Are you sure you want to delete this inventory item?")) {
-                inventoryService.deleteInventory(selectedInventory.getInventoryId());
-                loadData();
-            }
-        } else {
-             showAlert("No Selection", "No Inventory Item Selected", "Please select an item in the table.");
+    private void deleteInventory(Inventory inventory) {
+        if (showConfirmation("Delete Inventory", "Are you sure you want to delete this inventory item?")) {
+            inventoryService.deleteInventory(inventory.getInventoryId());
+            loadData();
         }
     }
 

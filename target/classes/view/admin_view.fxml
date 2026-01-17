@@ -41,22 +41,6 @@
                                 <javafx.scene.control.Tooltip text="Add Product"/>
                              </tooltip>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#handleUpdate" styleClass="button-primary">
-                            <graphic>
-                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
-                            </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Update Product"/>
-                             </tooltip>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#handleDelete" styleClass="button-danger">
-                             <graphic>
-                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
-                             </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Delete Product"/>
-                             </tooltip>
-                        </Button>
                 </HBox>
 
                 <TableView fx:id="productTable" VBox.vgrow="ALWAYS">
@@ -66,6 +50,7 @@
                         <TableColumn fx:id="categoryColumn" prefWidth="100.0" text="Category"/>
                         <TableColumn fx:id="priceColumn" prefWidth="80.0" text="Price"/>
                         <TableColumn fx:id="stockColumn" prefWidth="100.0" text="Stock"/>
+                        <TableColumn fx:id="actionsColumn" prefWidth="120.0" text="Actions" sortable="false"/>
                     </columns>
                 </TableView>
             </VBox>
@@ -88,22 +73,6 @@
                                 <javafx.scene.control.Tooltip text="Add Category"/>
                              </tooltip>
                         </Button>
-                        <Button mnemonicParsing="false" onAction="#handleUpdateCategory" styleClass="button-primary">
-                             <graphic>
-                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
-                             </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Update Category"/>
-                             </tooltip>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#handleDeleteCategory" styleClass="button-danger">
-                             <graphic>
-                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
-                             </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Delete Category"/>
-                             </tooltip>
-                        </Button>
                 </HBox>
 
                 <TableView fx:id="categoryTable" VBox.vgrow="ALWAYS">
@@ -111,6 +80,7 @@
                         <TableColumn fx:id="catIdColumn" prefWidth="50.0" text="ID"/>
                         <TableColumn fx:id="catNameColumn" prefWidth="150.0" text="Name"/>
                         <TableColumn fx:id="catDescColumn" prefWidth="250.0" text="Description"/>
+                        <TableColumn fx:id="catActionsColumn" prefWidth="120.0" text="Actions" sortable="false"/>
                     </columns>
                 </TableView>
             </VBox>
@@ -131,22 +101,6 @@
                              </graphic>
                              <tooltip>
                                 <javafx.scene.control.Tooltip text="Add Inventory Item"/>
-                             </tooltip>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#handleUpdateInventory" styleClass="button-primary">
-                             <graphic>
-                                <javafx.scene.shape.SVGPath content="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="WHITE"/>
-                             </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Update Inventory Item"/>
-                             </tooltip>
-                        </Button>
-                        <Button mnemonicParsing="false" onAction="#handleDeleteInventory" styleClass="button-danger">
-                             <graphic>
-                                <javafx.scene.shape.SVGPath content="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="WHITE"/>
-                             </graphic>
-                             <tooltip>
-                                <javafx.scene.control.Tooltip text="Delete Inventory Item"/>
                              </tooltip>
                         </Button>
                         <Separator orientation="VERTICAL" />
@@ -174,6 +128,7 @@
                         <TableColumn fx:id="invProductColumn" prefWidth="200.0" text="Product"/>
                         <TableColumn fx:id="invQuantityColumn" prefWidth="100.0" text="Quantity"/>
                         <TableColumn fx:id="invStatusColumn" prefWidth="100.0" text="Status"/>
+                        <TableColumn fx:id="invActionsColumn" prefWidth="120.0" text="Actions" sortable="false"/>
                     </columns>
                 </TableView>
             </VBox>

@@ -8,3 +8,4 @@
 7. Database ERD (priority 1)
 8. Use environment variables to store credentials (priority 1)
 9. Seed data into the database for quick testing (priority 2)
+10. Store reviews in MONGODB (priority 1)
