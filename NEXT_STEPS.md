@@ -9,3 +9,4 @@
 8. Use environment variables to store credentials (priority 1)
 9. Seed data into the database for quick testing (priority 2)
 10. Store reviews in MONGODB (priority 1)
+11.  Search bars for admin section (priority 2) 
