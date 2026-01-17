@@ -1,2 +1,11 @@
 reports/
 config/
+
+# Environment variables and secrets (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+*.properties.local
+
+# Keep the example file for documentation
+!.env.example

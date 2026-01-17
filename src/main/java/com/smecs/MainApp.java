@@ -1,5 +1,6 @@
 package com.smecs;
 
+import com.smecs.util.EnvironmentConfig;
 import com.smecs.util.ReportConfig;
 import com.smecs.util.ReportScheduler;
 import com.smecs.util.ReportMonitor;
@@ -15,6 +16,15 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        // Initialize environment configuration (loads credentials from env vars)
+        try {
+            EnvironmentConfig.logConfiguration();
+        } catch (IllegalArgumentException e) {
+            System.err.println("Configuration Error: " + e.getMessage());
+            System.err.println("\nPlease configure environment variables and restart the application.");
+            System.exit(1);
+        }
+
         // Initialize smart report generation system
         initializeReportingSystem();
 

@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class DatabaseConnection {
 
-    private static final String URL = "jdbc:postgresql://localhost:5432/smecs";
-    private static final String USER = "postgres"; // Placeholder: Modify as per environment
-    private static final String PASSWORD = "Bernardxx2003"; // TODO: use environment variables
+    private static final String URL = EnvironmentConfig.getPostgresJdbcUrl();
+    private static final String USER = EnvironmentConfig.DB_USER;
+    private static final String PASSWORD = EnvironmentConfig.DB_PASSWORD;
 
     // Epic 4: Performance monitoring
     private static final AtomicInteger connectionCount = new AtomicInteger(0);

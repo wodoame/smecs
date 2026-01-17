@@ -11,12 +11,13 @@ import com.mongodb.client.MongoDatabase;
 /**
  * MongoDB Connection utility for Epic 4.
  * Manages connection to MongoDB for unstructured data storage.
+ * Connection configured via MONGODB_URI environment variable.
  */
 public class MongoDBConnection {
     
-    private static final String CONNECTION_STRING = "mongodb+srv://bmwodoame:Bernardxx2003@cluster0.gduc6le.mongodb.net/?appName=Cluster0";
-    private static final String DATABASE_NAME = "smecs";
-    
+    private static final String CONNECTION_STRING = EnvironmentConfig.MONGODB_URI;
+    private static final String DATABASE_NAME = EnvironmentConfig.MONGODB_DATABASE;
+
     private static MongoClient mongoClient = null;
     private static MongoDatabase database = null;
     
@@ -52,6 +53,12 @@ public class MongoDBConnection {
      * Initialize MongoDB connection
      */
     private static void initializeConnection() {
+        // Check if MongoDB is configured
+        if (!EnvironmentConfig.isMongoDBConfigured()) {
+            System.out.println("MongoDB is not configured. Set MONGODB_URI environment variable to enable MongoDB support.");
+            return;
+        }
+
         try {
             // Configure MongoDB client settings
             ServerApi serverApi = ServerApi.builder()

@@ -7,4 +7,4 @@
 6. Authentication required for admins (priority 2)
 7. Database ERD (priority 1)
 8. Use environment variables to store credentials (priority 1)
-9. 
+9. Seed data into the database for quick testing (priority 2)
