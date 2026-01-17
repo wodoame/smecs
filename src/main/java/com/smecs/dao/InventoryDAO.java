@@ -77,9 +77,10 @@ public class InventoryDAO {
 
     public List<Inventory> findAll() {
         List<Inventory> inventoryList = new ArrayList<>();
-        String sql = "SELECT i.*, p.product_name FROM Inventory i " +
-                     "LEFT JOIN Products p ON i.product_id = p.product_id " +
-                     "ORDER BY i.inventory_id";
+        String sql = "SELECT p.product_id, p.product_name, i.inventory_id, COALESCE(i.quantity, 0) as quantity " +
+                     "FROM Products p " +
+                     "LEFT JOIN Inventory i ON p.product_id = i.product_id " +
+                     "ORDER BY p.product_name";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -138,9 +139,11 @@ public class InventoryDAO {
 
     public List<Inventory> findLowStock(int threshold) {
         List<Inventory> inventoryList = new ArrayList<>();
-        String sql = "SELECT i.*, p.product_name FROM Inventory i " +
-                     "LEFT JOIN Products p ON i.product_id = p.product_id " +
-                     "WHERE i.quantity <= ? ORDER BY i.quantity ASC";
+        String sql = "SELECT p.product_id, p.product_name, i.inventory_id, COALESCE(i.quantity, 0) as quantity " +
+                     "FROM Products p " +
+                     "LEFT JOIN Inventory i ON p.product_id = i.product_id " +
+                     "WHERE COALESCE(i.quantity, 0) <= ? " +
+                     "ORDER BY quantity ASC";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
