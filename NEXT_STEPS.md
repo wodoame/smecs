@@ -11,3 +11,4 @@
 10. Store reviews in MONGODB (priority 1)
 11.  Search bars for admin section (priority 2) 
 12. Create a dedicated validation utils (priority 2)
+13. Manual report logging (priority 2)
