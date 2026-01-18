@@ -12,27 +12,19 @@
 <BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.smecs.controller.MainLayoutController">
     <top>
         <ToolBar>
-            <items>
-                <Pane HBox.hgrow="ALWAYS" />
-                <Label fx:id="userLabel" style="-fx-padding: 0 10 0 0;"/>
-                <Button fx:id="authButton" text="Login" onAction="#handleAuthAction"/>
-            </items>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <Label fx:id="userLabel" style="-fx-padding: 0 10 0 0;"/>
+            <Button fx:id="authButton" text="Login" onAction="#handleAuthAction"/>
         </ToolBar>
     </top>
    <center>
-      <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
-        <tabs>
-          <Tab text="User View">
-            <content>
-                <fx:include source="user_view.fxml"/>
-            </content>
-          </Tab>
-          <Tab fx:id="adminTab" text="Admin View">
-            <content>
-                <fx:include source="admin_view.fxml"/>
-            </content>
-          </Tab>
-        </tabs>
-      </TabPane>
+       <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
+           <Tab text="User View">
+               <fx:include source="user_view.fxml"/>
+           </Tab>
+           <Tab fx:id="adminTab" text="Admin View">
+               <fx:include source="admin_view.fxml"/>
+           </Tab>
+       </TabPane>
    </center>
 </BorderPane>
