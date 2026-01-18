@@ -206,13 +206,14 @@ public class ReviewFeedbackDAO {
     }
     
     /**
-     * Get all reviews (for testing)
+     * Find all reviews with limit
      */
     public List<ReviewFeedback> findAll(int limit) {
         List<ReviewFeedback> reviews = new ArrayList<>();
         try {
             getCollection()
                 .find()
+                .sort(Sorts.descending("created_at"))
                 .limit(limit)
                 .forEach(doc -> reviews.add(documentToReview(doc)));
         } catch (Exception e) {
@@ -299,4 +300,3 @@ public class ReviewFeedbackDAO {
         return review;
     }
 }
-

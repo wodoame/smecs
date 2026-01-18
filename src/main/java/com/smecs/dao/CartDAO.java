@@ -214,18 +214,26 @@ public class CartDAO {
      * Clear all items from a cart.
      */
     public boolean clearCart(int cartId) {
-        String sql = "DELETE FROM CartItems WHERE cart_id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, cartId);
-            pstmt.executeUpdate();
-            return true;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return clearCart(cartId, conn);
         } catch (SQLException e) {
             System.err.println("Error clearing cart: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
-        return false;
+    }
+
+    /**
+     * Clear all items from a cart using an existing connection.
+     * Useful for transactions.
+     */
+    public boolean clearCart(int cartId, Connection conn) throws SQLException {
+        String sql = "DELETE FROM CartItems WHERE cart_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, cartId);
+            pstmt.executeUpdate();
+            return true;
+        }
     }
 
     /**

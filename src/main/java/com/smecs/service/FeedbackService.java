@@ -1,5 +1,6 @@
 package com.smecs.service;
 
+import com.smecs.cache.ReviewCache;
 import com.smecs.model.ReviewFeedback;
 import com.smecs.nosql.ReviewFeedbackDAO;
 import com.smecs.util.MongoDBConnection;
@@ -13,9 +14,11 @@ import java.util.UUID;
 public class FeedbackService {
     
     private final ReviewFeedbackDAO reviewDAO;
-    
+    private final ReviewCache cache;
+
     public FeedbackService() {
         this.reviewDAO = new ReviewFeedbackDAO();
+        this.cache = ReviewCache.getInstance();
     }
     
     /**
@@ -36,14 +39,26 @@ public class FeedbackService {
         analyzeSentiment(review);
         
         // Insert review
-        return reviewDAO.insertReview(review);
+        String id = reviewDAO.insertReview(review);
+        if (id != null) {
+            // Invalidate cache for this product
+            cache.invalidateProductReviews(review.getProductId());
+            // Invalidate all reviews cache
+            cache.invalidateAll(); // Or handle all reviews cache more gracefully if possible
+        }
+        return id;
     }
     
     /**
      * Get reviews for a product
      */
     public List<ReviewFeedback> getProductReviews(int productId) {
-        return reviewDAO.findByProductId(productId);
+        // Check cache
+        return cache.getReviewsByProductId(productId).orElseGet(() -> {
+            List<ReviewFeedback> reviews = reviewDAO.findByProductId(productId);
+            cache.putProductReviews(productId, reviews);
+            return reviews;
+        });
     }
     
     /**
@@ -78,7 +93,13 @@ public class FeedbackService {
      * Mark review as helpful
      */
     public boolean markReviewHelpful(String reviewId, boolean isHelpful) {
-        return reviewDAO.updateHelpfulCount(reviewId, isHelpful);
+        boolean result = reviewDAO.updateHelpfulCount(reviewId, isHelpful);
+        if (result) {
+             // Invalidate all caches as it's hard to know which product this belongs to without lookup
+             // Ideally we find the review first to know the productId, but acceptable for now
+             cache.invalidateAll();
+        }
+        return result;
     }
     
     /**
@@ -88,14 +109,22 @@ public class FeedbackService {
         if (!status.equals("approved") && !status.equals("rejected")) {
             throw new IllegalArgumentException("Invalid moderation status");
         }
-        return reviewDAO.updateModerationStatus(reviewId, status);
+        boolean result = reviewDAO.updateModerationStatus(reviewId, status);
+        if (result) {
+            cache.invalidateAll();
+        }
+        return result;
     }
     
     /**
      * Delete review
      */
     public boolean deleteReview(String reviewId) {
-        return reviewDAO.deleteReview(reviewId);
+        boolean result = reviewDAO.deleteReview(reviewId);
+        if (result) {
+            cache.invalidateAll();
+        }
+        return result;
     }
     
     /**
@@ -175,5 +204,15 @@ public class FeedbackService {
             return String.format("Avg Rating: %.1f, Total Reviews: %d", averageRating, totalReviews);
         }
     }
-}
 
+    /**
+     * Get all reviews
+     */
+    public List<ReviewFeedback> getAllReviews() {
+        return cache.getAllReviews().orElseGet(() -> {
+            List<ReviewFeedback> reviews = reviewDAO.findAll(100);
+            cache.putAllReviews(reviews);
+            return reviews;
+        });
+    }
+}

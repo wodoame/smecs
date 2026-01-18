@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.HBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.smecs.controller.MainLayoutController">
+    <top>
+        <ToolBar>
+            <Pane HBox.hgrow="ALWAYS"/>
+            <Label fx:id="userLabel" style="-fx-padding: 0 10 0 0;"/>
+            <Button fx:id="authButton" text="Login" onAction="#handleAuthAction"/>
+        </ToolBar>
+    </top>
    <center>
-      <TabPane tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
-        <tabs>
-          <Tab text="User View">
-            <content>
-                <fx:include source="user_view.fxml"/>
-            </content>
-          </Tab>
-          <Tab text="Admin View">
-            <content>
-                <fx:include source="admin_view.fxml"/>
-            </content>
-          </Tab>
-        </tabs>
-      </TabPane>
+       <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
+           <Tab text="User View">
+               <fx:include source="user_view.fxml"/>
+           </Tab>
+           <Tab fx:id="adminTab" text="Admin View">
+               <fx:include source="admin_view.fxml"/>
+           </Tab>
+       </TabPane>
    </center>
 </BorderPane>

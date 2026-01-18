@@ -3,10 +3,11 @@ package com.smecs.controller;
 import com.smecs.cache.ProductCache;
 import com.smecs.model.CartItem;
 import com.smecs.model.Inventory;
+import com.smecs.model.Order;
 import com.smecs.model.Product;
-import com.smecs.model.User;
 import com.smecs.service.CartService;
 import com.smecs.service.InventoryService;
+import com.smecs.service.OrderService;
 import com.smecs.service.ProductService;
 import com.smecs.util.ProductSorter.SortCriteria;
 import com.smecs.util.SessionManager;
@@ -20,13 +21,14 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.shape.SVGPath;
+import javafx.scene.Scene;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Controller for the user view with search, sort, and cache support.
@@ -64,6 +66,7 @@ public class UserController {
     private final ProductService productService;
     private final InventoryService inventoryService;
     private final CartService cartService;
+    private final OrderService orderService;
     private final ObservableList<Product> productList;
     private Map<Integer, Inventory> inventoryMap;
     private SortCriteria currentSortCriteria = SortCriteria.NAME_ASC;
@@ -72,6 +75,7 @@ public class UserController {
         this.productService = new ProductService();
         this.inventoryService = new InventoryService();
         this.cartService = new CartService();
+        this.orderService = new OrderService();
         this.productList = FXCollections.observableArrayList();
         this.inventoryMap = new HashMap<>();
     }
@@ -147,6 +151,7 @@ public class UserController {
 
         actionColumn.setCellFactory(column -> new TableCell<Product, Void>() {
             private final Button addToCartBtn = new Button();
+            private final Button viewReviewsBtn = new Button();
             private final HBox container = new HBox();
 
             {
@@ -162,12 +167,29 @@ public class UserController {
                 addToCartBtn.getStyleClass().addAll("button", "button-success", "button-icon-only");
                 addToCartBtn.setTooltip(new Tooltip("Add to Cart"));
 
+                // Setup view reviews icon using SVG path (List/Eye/Comment icon)
+                SVGPath reviewIcon = new SVGPath();
+                reviewIcon.setContent("M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z");
+                reviewIcon.setFill(javafx.scene.paint.Color.WHITE);
+                reviewIcon.setScaleX(0.8);
+                reviewIcon.setScaleY(0.8);
+
+                viewReviewsBtn.setGraphic(reviewIcon);
+                viewReviewsBtn.getStyleClass().addAll("button", "button-secondary", "button-icon-only");
+                viewReviewsBtn.setTooltip(new Tooltip("View Reviews"));
+
                 container.setAlignment(Pos.CENTER);
-                container.getChildren().add(addToCartBtn);
+                container.setSpacing(5);
+                container.getChildren().addAll(addToCartBtn, viewReviewsBtn);
 
                 addToCartBtn.setOnAction(event -> {
                     Product product = getTableView().getItems().get(getIndex());
                     handleAddToCart(product);
+                });
+
+                viewReviewsBtn.setOnAction(event -> {
+                    Product product = getTableView().getItems().get(getIndex());
+                    handleViewReviews(product);
                 });
             }
 
@@ -188,6 +210,8 @@ public class UserController {
             }
         });
     }
+
+
 
     private void handleAddToCart(Product product) {
         SessionManager session = SessionManager.getInstance();
@@ -254,8 +278,8 @@ public class UserController {
 
             // Create a table for cart items
             TableView<CartItem> cartTable = new TableView<>();
-            cartTable.setPrefWidth(500);
-            cartTable.setPrefHeight(300);
+            cartTable.setPrefWidth(700);
+            cartTable.setPrefHeight(400);
 
             TableColumn<CartItem, String> productCol = new TableColumn<>("Product");
             productCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("productName"));
@@ -273,19 +297,92 @@ public class UserController {
             subtotalCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("subtotal"));
             subtotalCol.setPrefWidth(100);
 
-            cartTable.getColumns().addAll(productCol, qtyCol, priceCol, subtotalCol);
+            // Action Column (Edit/Delete)
+            TableColumn<CartItem, Void> actionCol = new TableColumn<>("Actions");
+            actionCol.setPrefWidth(200);
+            actionCol.setCellFactory(param -> new TableCell<>() {
+                private final Button deleteBtn = new Button("Delete");
+                private final Button updateBtn = new Button("Update");
+                private final Spinner<Integer> qtySpinner = new Spinner<>(1, 100, 1);
+                private final HBox pane = new HBox(5, qtySpinner, updateBtn, deleteBtn);
+
+                {
+                    deleteBtn.getStyleClass().add("button-danger");
+                    deleteBtn.setOnAction(event -> {
+                        CartItem item = getTableView().getItems().get(getIndex());
+                        boolean removed = cartService.removeFromCart(item.getCartItemId());
+                        if (removed) {
+                            getTableView().getItems().remove(item);
+                            updateCartCount(); // Update the main UI count
+                            // Recalculate total
+                            updateTotalLabel(getTableView().getItems(), (Label)dialog.getDialogPane().lookup("#totalLabel"));
+                            if (getTableView().getItems().isEmpty()) {
+                                dialog.close();
+                            }
+                        }
+                    });
+
+                    updateBtn.setOnAction(event -> {
+                        CartItem item = getTableView().getItems().get(getIndex());
+                        int newQty = qtySpinner.getValue();
+                        boolean updated = cartService.updateItemQuantity(item.getCartItemId(), newQty);
+                        if (updated) {
+                            item.setQuantity(newQty);
+                            getTableView().refresh();
+                            updateTotalLabel(getTableView().getItems(), (Label)dialog.getDialogPane().lookup("#totalLabel"));
+                        }
+                    });
+
+                    qtySpinner.setPrefWidth(70);
+                    qtySpinner.setEditable(true);
+                }
+
+                @Override
+                protected void updateItem(Void item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        CartItem cartItem = getTableView().getItems().get(getIndex());
+                        qtySpinner.getValueFactory().setValue(cartItem.getQuantity());
+                        setGraphic(pane);
+                    }
+                }
+            });
+
+            cartTable.getColumns().addAll(productCol, qtyCol, priceCol, subtotalCol, actionCol);
             cartTable.setItems(FXCollections.observableArrayList(cartItems));
 
-            // Calculate total
-            java.math.BigDecimal total = cartItems.stream()
-                .map(CartItem::getSubtotal)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-
-            Label totalLabel = new Label("Total: $" + total.toString());
+            Label totalLabel = new Label();
+            totalLabel.setId("totalLabel");
             totalLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+            updateTotalLabel(cartTable.getItems(), totalLabel);
+
+            Button checkoutBtn = new Button("Place Order");
+            checkoutBtn.getStyleClass().add("button-success");
+            checkoutBtn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 20;");
+            checkoutBtn.setOnAction(e -> {
+                try {
+                    SessionManager session = SessionManager.getInstance();
+                    Order order = orderService.placeOrder(session.getCurrentUserId());
+
+                    dialog.close();
+                    updateCartCount();
+
+                    showAlert(Alert.AlertType.INFORMATION, "Order Placed",
+                            "Your order #" + order.getOrderId() + " has been placed successfully!\n" +
+                                    "Total Amount: $" + order.getTotalAmount());
+
+                } catch (Exception ex) {
+                    showAlert(Alert.AlertType.ERROR, "Checkout Error", "Failed to place order: " + ex.getMessage());
+                }
+            });
+
+            HBox footer = new HBox(20, totalLabel, checkoutBtn);
+            footer.setAlignment(Pos.CENTER_RIGHT);
 
             javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(10);
-            content.getChildren().addAll(cartTable, totalLabel);
+            content.getChildren().addAll(cartTable, footer);
             content.setPadding(new javafx.geometry.Insets(10));
 
             dialog.getDialogPane().setContent(content);
@@ -295,8 +392,16 @@ public class UserController {
 
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error",
-                "Error loading cart: " + e.getMessage());
+                    "Error loading cart: " + e.getMessage());
         }
+    }
+
+    private void updateTotalLabel(List<CartItem> items, Label label) {
+        if (label == null) return;
+        java.math.BigDecimal total = items.stream()
+                .map(CartItem::getSubtotal)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        label.setText("Total: $" + total.toString());
     }
 
     private boolean showLoginDialog() {
@@ -479,6 +584,35 @@ public class UserController {
             ProductCache.CacheStats stats = productService.getCacheStats();
             cacheStatsLabel.setText(String.format("Cache: %.1f%% hit rate (%d hits, %d misses)",
                     stats.getHitRate(), stats.hits, stats.misses));
+        }
+    }
+
+    private void handleViewReviews(Product product) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/all_reviews.fxml"));
+            Parent root = loader.load();
+
+            AllReviewsController controller = loader.getController();
+            controller.setProduct(product);
+
+            Stage stage = new Stage();
+            stage.setTitle("Reviews for " + product.getProductName());
+
+            Scene scene = new Scene(root);
+            try {
+                java.net.URL cssUrl = getClass().getResource("/css/styles.css");
+                if (cssUrl != null) {
+                    scene.getStylesheets().add(cssUrl.toExternalForm());
+                }
+            } catch (Exception e) {
+                // Ignore CSS error
+            }
+            stage.setScene(scene);
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Error", "Could not open reviews.");
         }
     }
 }

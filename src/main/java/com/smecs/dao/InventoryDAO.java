@@ -183,6 +183,20 @@ public class InventoryDAO {
         return false;
     }
 
+    public void reduceStock(int productId, int quantity, Connection conn) throws SQLException {
+        String sql = "UPDATE Inventory SET quantity = quantity - ? WHERE product_id = ? AND quantity >= ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, quantity);
+            pstmt.setInt(2, productId);
+            pstmt.setInt(3, quantity);
+
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new SQLException("Insufficient stock or product not found in inventory for product ID: " + productId);
+            }
+        }
+    }
+
     private Inventory mapResultSetToInventory(ResultSet rs) throws SQLException {
         Inventory inventory = new Inventory();
         inventory.setInventoryId(rs.getInt("inventory_id"));
