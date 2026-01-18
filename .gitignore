@@ -9,3 +9,4 @@ config/
 
 # Keep the example file for documentation
 !.env.example
+.idea/
