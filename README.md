@@ -11,42 +11,22 @@ A comprehensive e-commerce system built with JavaFX and Java, featuring:
 
 ---
 
-## Project Setup
-
-This is a JavaFX application with Maven dependencies supporting both PostgreSQL and MongoDB.
-
-## Dependencies
-
-### JavaFX (version 21.0.2)
-- javafx-controls
-- javafx-fxml
-- javafx-graphics
-- javafx-base
-
-### Databases
-- PostgreSQL JDBC Driver (version 42.7.7)
-- MongoDB Java Driver (version 4.11.0) - **Epic 4**
-
-### Utilities
-- JSON Processing Library (version 20231013) - **Epic 4**
+## Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Project Setup](#project-setup)
+3. [Database Configuration](#database-configuration)
+4. [How to Run](#how-to-run)
+5. [Dependencies](#dependencies)
+6. [Epic 4: Performance Features](#epic-4-performance-features)
+7. [Project Structure](#project-structure)
+8. [Features](#features)
+9. [Performance Highlights](#performance-highlights)
+10. [Troubleshooting](#troubleshooting)
+11. [Testing](#testing)
 
 ---
 
-## How to Run
-
-### Method 1: Using Maven (Recommended)
-```bash
-mvn clean javafx:run
-```
-
-### Method 2: Using IntelliJ IDEA
-1. Make sure Maven is reloaded (right-click pom.xml → Maven → Reload Project)
-2. Use the "MainApp" run configuration
-3. Or right-click on MainApp.java → Run 'MainApp.main()'
-
----
-
-## Requirements
+## Prerequisites
 
 ### Essential
 - **Java 11 or higher**
@@ -55,6 +35,12 @@ mvn clean javafx:run
 
 ### Optional (for Epic 4 NoSQL features)
 - **MongoDB 4.4+** running on localhost:27017
+
+---
+
+## Project Setup
+
+This is a JavaFX application with Maven dependencies supporting both PostgreSQL and MongoDB.
 
 ---
 
@@ -132,6 +118,37 @@ mvn clean javafx:run
 
 ---
 
+## How to Run
+
+### Method 1: Using Maven (Recommended)
+```bash
+mvn clean javafx:run
+```
+
+### Method 2: Using IntelliJ IDEA
+1. Make sure Maven is reloaded (right-click pom.xml → Maven → Reload Project)
+2. Use the "MainApp" run configuration
+3. Or right-click on MainApp.java → Run 'MainApp.main()'
+
+---
+
+## Dependencies
+
+### JavaFX (version 21.0.2)
+- javafx-controls
+- javafx-fxml
+- javafx-graphics
+- javafx-base
+
+### Databases
+- PostgreSQL JDBC Driver (version 42.7.7)
+- MongoDB Java Driver (version 4.11.0) - **Epic 4**
+
+### Utilities
+- JSON Processing Library (version 20231013) - **Epic 4**
+
+---
+
 ## Epic 4: Performance Features
 
 ### Running Performance Benchmarks
@@ -191,7 +208,6 @@ smecs/
 ├── ARCHITECTURE.md              # System architecture
 ├── DESIGN_SYSTEM.md            # UI design system
 ├── instructions.md              # Project requirements
-├── NEXT_STEPS.md               # Development roadmap
 ├── pom.xml                      # Maven configuration
 └── README.md                    # This file
 ```
@@ -310,7 +326,6 @@ mvn compile exec:java -Dexec.mainClass="com.smecs.test.VerificationTest"
 - **`DESIGN_SYSTEM.md`** - UI/UX design guidelines
 - **`docs/NOSQL_DESIGN.md`** - NoSQL schema and MongoDB integration
 - **`docs/PERFORMANCE_REPORT.md`** - Comprehensive performance analysis
-- **`NEXT_STEPS.md`** - Future development roadmap
 - **`instructions.md`** - Original project requirements
 
 ---
