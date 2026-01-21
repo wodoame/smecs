@@ -32,6 +32,9 @@ public class RegistrationController {
     private PasswordField confirmPasswordField;
 
     @FXML
+    private CheckBox adminCheckBox;
+
+    @FXML
     private Label messageLabel;
 
     @FXML
@@ -125,7 +128,7 @@ public class RegistrationController {
             newUser.setUsername(username);
             newUser.setEmail(email);
             newUser.setPasswordHash(hashedPassword);
-            newUser.setRole("customer");
+            newUser.setRole(adminCheckBox.isSelected() ? "admin" : "customer");
 
             // Save user to database
             if (userDAO.createUser(newUser)) {
@@ -200,4 +203,3 @@ public class RegistrationController {
         return sb.toString();
     }
 }
-

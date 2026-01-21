@@ -516,7 +516,7 @@ public class UserController {
         long endTime = System.currentTimeMillis();
 
         productList.setAll(products);
-        updateStatus(String.format("Loaded %d products in %d ms", products.size(), endTime - startTime));
+//        updateStatus(String.format("Loaded %d products in %d ms", products.size(), endTime - startTime));
         updateCacheStats();
     }
 
@@ -582,8 +582,8 @@ public class UserController {
     private void updateCacheStats() {
         if (cacheStatsLabel != null) {
             ProductCache.CacheStats stats = productService.getCacheStats();
-            cacheStatsLabel.setText(String.format("Cache: %.1f%% hit rate (%d hits, %d misses)",
-                    stats.getHitRate(), stats.hits, stats.misses));
+//            cacheStatsLabel.setText(String.format("Cache: %.1f%% hit rate (%d hits, %d misses)",
+//                    stats.getHitRate(), stats.hits, stats.misses));
         }
     }
 

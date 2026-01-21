@@ -188,10 +188,6 @@ DECLARE
 BEGIN
     -- 1. Users
     INSERT INTO Users (username, email, password_hash, role)
-    VALUES ('admin', 'admin@smecs.com', 'hashed_admin_pass', 'admin')
-    RETURNING user_id INTO v_user_admin_id;
-
-    INSERT INTO Users (username, email, password_hash, role)
     VALUES ('john_doe', 'john@example.com', 'hashed_john_pass', 'customer')
     RETURNING user_id INTO v_user_john_id;
 

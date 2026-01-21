@@ -54,8 +54,8 @@
 
     <!-- Status Bar -->
     <HBox spacing="20.0" alignment="CENTER_LEFT">
-        <Label fx:id="statusLabel" text="Ready"/>
-        <Label fx:id="cacheStatsLabel" text="Cache: --" style="-fx-text-fill: gray;"/>
+<!--        <Label fx:id="statusLabel" text="Ready"/>-->
+<!--        <Label fx:id="cacheStatsLabel" text="Cache: &#45;&#45;" style="-fx-text-fill: gray;"/>-->
         <Region HBox.hgrow="ALWAYS"/>
         <Label fx:id="cartCountLabel" text="Cart: Empty" style="-fx-text-fill: #10b981; -fx-font-weight: bold;"/>
         <Button fx:id="viewCartButton" mnemonicParsing="false" onAction="#handleViewCart" styleClass="button-primary">
