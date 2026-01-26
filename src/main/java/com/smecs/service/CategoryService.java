@@ -14,7 +14,7 @@ import java.util.Optional;
 public class CategoryService {
     private final CategoryDAO categoryDAO;
     private final CategoryCache cache;
-    private boolean cachingEnabled = true;
+    private final boolean cachingEnabled = true;
 
     public CategoryService() {
         this.categoryDAO = new CategoryDAO();
@@ -79,33 +79,4 @@ public class CategoryService {
         return result;
     }
 
-    /**
-     * Check if category name exists (uses cache if available).
-     */
-    public boolean categoryNameExists(String categoryName) {
-        if (cachingEnabled) {
-            Optional<Category> cached = cache.getCategoryByName(categoryName);
-            if (cached.isPresent()) {
-                return true;
-            }
-        }
-        return categoryDAO.categoryNameExists(categoryName);
-    }
-
-    /**
-     * Enable or disable caching.
-     */
-    public void setCachingEnabled(boolean enabled) {
-        this.cachingEnabled = enabled;
-        if (!enabled) {
-            cache.invalidateAll();
-        }
-    }
-
-    /**
-     * Get cache statistics.
-     */
-    public CategoryCache.CacheStats getCacheStats() {
-        return cache.getStats();
-    }
 }
