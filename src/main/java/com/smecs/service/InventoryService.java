@@ -28,28 +28,12 @@ public class InventoryService {
         inventoryDAO.deleteInventory(inventoryId);
     }
 
-    public void deleteByProductId(int productId) {
-        inventoryDAO.deleteByProductId(productId);
-    }
-
     public List<Inventory> getAllInventory() {
         return inventoryDAO.findAll();
     }
 
     public Inventory getInventoryByProductId(int productId) {
         return inventoryDAO.findByProductId(productId);
-    }
-
-    public Inventory getInventoryById(int inventoryId) {
-        return inventoryDAO.findById(inventoryId);
-    }
-
-    public List<Inventory> getLowStockItems(int threshold) {
-        return inventoryDAO.findLowStock(threshold);
-    }
-
-    public List<Inventory> getOutOfStockItems() {
-        return inventoryDAO.findOutOfStock();
     }
 
     public boolean inventoryExistsForProduct(int productId) {
@@ -70,23 +54,6 @@ public class InventoryService {
             inventory.setQuantity(quantity);
             createInventory(inventory);
         }
-    }
-
-    /**
-     * Adjusts stock quantity by a delta amount (positive for adding, negative for removing).
-     */
-    public boolean adjustStock(int productId, int delta) {
-        Inventory inventory = getInventoryByProductId(productId);
-        if (inventory != null) {
-            int newQuantity = inventory.getQuantity() + delta;
-            if (newQuantity < 0) {
-                return false; // Cannot have negative stock
-            }
-            inventory.setQuantity(newQuantity);
-            updateInventory(inventory);
-            return true;
-        }
-        return false;
     }
 }
 

@@ -63,18 +63,6 @@ public class InventoryDAO {
         }
     }
 
-    public void deleteByProductId(int productId) {
-        String sql = "DELETE FROM Inventory WHERE product_id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, productId);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println("Error deleting inventory by product ID: " + e.getMessage());
-        }
-    }
-
     public List<Inventory> findAll() {
         List<Inventory> inventoryList = new ArrayList<>();
         String sql = "SELECT p.product_id, p.product_name, i.inventory_id, COALESCE(i.quantity, 0) as quantity " +
@@ -112,27 +100,6 @@ public class InventoryDAO {
             }
         } catch (SQLException e) {
             System.out.println("Error finding inventory by product ID: " + e.getMessage());
-        }
-        return null;
-    }
-
-    public Inventory findById(int inventoryId) {
-        String sql = "SELECT i.*, p.product_name FROM Inventory i " +
-                     "LEFT JOIN Products p ON i.product_id = p.product_id " +
-                     "WHERE i.inventory_id = ?";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, inventoryId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToInventory(rs);
-                }
-            }
-        } catch (SQLException e) {
-            System.out.println("Error finding inventory by ID: " + e.getMessage());
         }
         return null;
     }
