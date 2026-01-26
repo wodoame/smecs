@@ -4,7 +4,6 @@ import com.smecs.model.Product;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * In-memory cache for products with TTL-based invalidation.
@@ -16,31 +15,23 @@ public class ProductCache {
     // Main product cache: productId -> Product
     private final Map<Integer, Product> productById;
     
-    // Index for category-based lookups: categoryId -> List<productId>
-    private final Map<Integer, Set<Integer>> productsByCategory;
-    
     // Search result cache: searchQuery -> List<Product>
     private final Map<String, CachedSearchResult> searchCache;
     
-    // Cache for all products
-    private List<Product> allProductsCache;
-    private long allProductsCacheTimestamp;
-    
     // Cache configuration
-    private static final long CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
     private static final long SEARCH_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
     private static final int MAX_SEARCH_CACHE_SIZE = 100;
     
+    // Indicates whether productById currently contains the complete product set
+    private volatile boolean allProductsLoaded = false;
+
     // Statistics for performance monitoring
     private long cacheHits = 0;
     private long cacheMisses = 0;
     
     private ProductCache() {
         this.productById = new ConcurrentHashMap<>();
-        this.productsByCategory = new ConcurrentHashMap<>();
         this.searchCache = new ConcurrentHashMap<>();
-        this.allProductsCache = null;
-        this.allProductsCacheTimestamp = 0;
     }
     
     public static synchronized ProductCache getInstance() {
@@ -49,27 +40,15 @@ public class ProductCache {
         }
         return instance;
     }
-    
+
     /**
-     * Get a product by ID from cache.
-     */
-    public Optional<Product> getProduct(int productId) {
-        Product product = productById.get(productId);
-        if (product != null) {
-            cacheHits++;
-            return Optional.of(product);
-        }
-        cacheMisses++;
-        return Optional.empty();
-    }
-    
-    /**
-     * Get all cached products if cache is valid.
+     * Get all cached products (built from productById) only if we know the map contains the full set.
      */
     public Optional<List<Product>> getAllProducts() {
-        if (allProductsCache != null && !isCacheExpired(allProductsCacheTimestamp, CACHE_TTL_MS)) {
+        if (allProductsLoaded && !productById.isEmpty()) {
             cacheHits++;
-            return Optional.of(new ArrayList<>(allProductsCache));
+            // Return a defensive copy so callers can't mutate internal map values
+            return Optional.of(new ArrayList<>(productById.values()));
         }
         cacheMisses++;
         return Optional.empty();
@@ -91,52 +70,24 @@ public class ProductCache {
     }
     
     /**
-     * Get products by category from cache.
-     */
-    public Optional<List<Product>> getProductsByCategory(int categoryId) {
-        Set<Integer> productIds = productsByCategory.get(categoryId);
-        if (productIds != null && !productIds.isEmpty()) {
-            List<Product> products = productIds.stream()
-                    .map(productById::get)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            
-            if (!products.isEmpty()) {
-                cacheHits++;
-                return Optional.of(products);
-            }
-        }
-        cacheMisses++;
-        return Optional.empty();
-    }
-    
-    /**
      * Cache a single product.
      */
     public void putProduct(Product product) {
         productById.put(product.getProductId(), product);
-        
-        // Update category index
-        productsByCategory
-                .computeIfAbsent(product.getCategoryId(), k -> ConcurrentHashMap.newKeySet())
-                .add(product.getProductId());
     }
     
     /**
-     * Cache all products.
+     * Cache all products (populate productById from provided list).
      */
     public void putAllProducts(List<Product> products) {
-        // Clear existing cache
+        // Clear existing product storage (but keep search cache as-is)
         productById.clear();
-        productsByCategory.clear();
-        
+
         // Populate caches
-        for (Product product : products) {
-            putProduct(product);
-        }
-        
-        allProductsCache = new ArrayList<>(products);
-        allProductsCacheTimestamp = System.currentTimeMillis();
+        products.forEach(this::putProduct);
+
+        // Mark that productById now contains the full product set
+        allProductsLoaded = true;
     }
     
     /**
@@ -152,27 +103,20 @@ public class ProductCache {
         searchCache.put(normalizedQuery, new CachedSearchResult(results, System.currentTimeMillis()));
         
         // Also cache individual products from search results
-        for (Product product : results) {
-            putProduct(product);
-        }
+        results.forEach(this::putProduct);
     }
     
     /**
      * Invalidate cache for a specific product.
      */
     public void invalidateProduct(int productId) {
-        Product removed = productById.remove(productId);
-        if (removed != null) {
-            Set<Integer> categoryProducts = productsByCategory.get(removed.getCategoryId());
-            if (categoryProducts != null) {
-                categoryProducts.remove(productId);
-            }
-        }
-        
-        // Invalidate all products cache and search cache since data changed
-        allProductsCache = null;
-        allProductsCacheTimestamp = 0;
-        searchCache.clear();
+        productById.remove(productId);
+
+        // Any removal invalidates the "full set" flag
+        allProductsLoaded = false;
+
+        // Previously we cleared an all-products snapshot and search cache; keep search cache as-is
+        // (search cache may still reference stale results, handle separately if needed)
     }
     
     /**
@@ -180,10 +124,8 @@ public class ProductCache {
      */
     public void invalidateAll() {
         productById.clear();
-        productsByCategory.clear();
         searchCache.clear();
-        allProductsCache = null;
-        allProductsCacheTimestamp = 0;
+        allProductsLoaded = false;
         System.out.println("[Cache] All product cache invalidated");
     }
     
@@ -196,7 +138,7 @@ public class ProductCache {
                 cacheMisses,
                 productById.size(),
                 searchCache.size(),
-                allProductsCache != null
+                allProductsLoaded
         );
     }
     
@@ -204,7 +146,6 @@ public class ProductCache {
      * Reset cache statistics.
      */
     public void resetStats() {
-        long t = 1;
         cacheHits = 0;
         cacheMisses = 0;
     }
@@ -224,7 +165,6 @@ public class ProductCache {
                 .sorted(Comparator.comparingLong(e -> e.getValue().timestamp))
                 .limit(toRemove)
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList())
                 .forEach(searchCache::remove);
     }
     
@@ -272,4 +212,3 @@ public class ProductCache {
         }
     }
 }
-
