@@ -26,7 +26,7 @@ public class MainApp extends Application {
         }
 
         // Initialize smart report generation system
-        initializeReportingSystem();
+//        initializeReportingSystem();
 
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/main_layout.fxml")));
         primaryStage.setTitle("Login - Smart E-Commerce System");

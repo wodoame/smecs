@@ -68,7 +68,7 @@ public class UserController {
     private final CartService cartService;
     private final OrderService orderService;
     private final ObservableList<Product> productList;
-    private Map<Integer, Inventory> inventoryMap;
+    private final Map<Integer, Inventory> inventoryMap;
     private SortCriteria currentSortCriteria = SortCriteria.NAME_ASC;
 
     public UserController() {

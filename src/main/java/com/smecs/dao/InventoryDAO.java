@@ -104,34 +104,6 @@ public class InventoryDAO {
         return null;
     }
 
-    public List<Inventory> findLowStock(int threshold) {
-        List<Inventory> inventoryList = new ArrayList<>();
-        String sql = "SELECT p.product_id, p.product_name, i.inventory_id, COALESCE(i.quantity, 0) as quantity " +
-                     "FROM Products p " +
-                     "LEFT JOIN Inventory i ON p.product_id = i.product_id " +
-                     "WHERE COALESCE(i.quantity, 0) <= ? " +
-                     "ORDER BY quantity ASC";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, threshold);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    inventoryList.add(mapResultSetToInventory(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.out.println("Error finding low stock inventory: " + e.getMessage());
-        }
-        return inventoryList;
-    }
-
-    public List<Inventory> findOutOfStock() {
-        return findLowStock(0);
-    }
-
     public boolean inventoryExistsForProduct(int productId) {
         String sql = "SELECT COUNT(*) FROM Inventory WHERE product_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
