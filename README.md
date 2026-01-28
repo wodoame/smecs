@@ -122,23 +122,17 @@ This is a JavaFX application with Maven dependencies supporting both PostgreSQL 
 
 ### Method 1: Using Maven (Recommended)
 ```bash
-mvn clean javafx:run
+mvn spring-boot:run
 ```
 
 ### Method 2: Using IntelliJ IDEA
 1. Make sure Maven is reloaded (right-click pom.xml → Maven → Reload Project)
-2. Use the "MainApp" run configuration
-3. Or right-click on MainApp.java → Run 'MainApp.main()'
+2. Use the "SmeCSApplication" run configuration
+3. Or right-click on SmeCSApplication.java → Run 'SmeCSApplication.main()'
 
 ---
 
 ## Dependencies
-
-### JavaFX (version 21.0.2)
-- javafx-controls
-- javafx-fxml
-- javafx-graphics
-- javafx-base
 
 ### Databases
 - PostgreSQL JDBC Driver (version 42.7.7)
@@ -356,4 +350,3 @@ For questions or issues:
 
 **Last Updated:** January 15, 2026  
 **Version:** 1.0 (Epic 4 Complete)
-
