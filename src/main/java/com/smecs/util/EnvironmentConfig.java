@@ -30,7 +30,7 @@ public class EnvironmentConfig {
     public static final String LOG_LEVEL = getEnv("LOG_LEVEL", "INFO");
     public static final boolean REPORT_MONITORING_ENABLED = Boolean.parseBoolean(getEnv("REPORT_MONITORING_ENABLED", "true"));
 
-    /**
+    /*module-*
      * Get environment variable with default value
      * @param key Environment variable name
      * @param defaultValue Default value if not found
