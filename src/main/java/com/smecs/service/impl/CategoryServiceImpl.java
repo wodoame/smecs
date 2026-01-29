@@ -21,11 +21,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         Category category = new Category();
-        category.setName(categoryDTO.getName());
+        category.setName(categoryDTO.getCategoryName());
+        // No description field in entity, skip if not present
         category = categoryRepository.save(category);
         CategoryDTO result = new CategoryDTO();
-        result.setId(category.getId());
-        result.setName(category.getName());
+        result.setCategoryId(category.getId().intValue());
+        result.setCategoryName(category.getName());
+        // No description field in entity, skip if not present
         return result;
     }
 
@@ -33,8 +35,9 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDTO getCategoryById(Long id) {
         Category category = categoryRepository.findById(id).orElseThrow();
         CategoryDTO dto = new CategoryDTO();
-        dto.setId(category.getId());
-        dto.setName(category.getName());
+        dto.setCategoryId(category.getId().intValue());
+        dto.setCategoryName(category.getName());
+        // No description field in entity, skip if not present
         return dto;
     }
 
@@ -42,8 +45,9 @@ public class CategoryServiceImpl implements CategoryService {
     public List<CategoryDTO> getAllCategories() {
         return categoryRepository.findAll().stream().map(category -> {
             CategoryDTO dto = new CategoryDTO();
-            dto.setId(category.getId());
-            dto.setName(category.getName());
+            dto.setCategoryId(category.getId().intValue());
+            dto.setCategoryName(category.getName());
+            // No description field in entity, skip if not present
             return dto;
         }).collect(Collectors.toList());
     }
@@ -51,11 +55,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = categoryRepository.findById(id).orElseThrow();
-        category.setName(categoryDTO.getName());
+        category.setName(categoryDTO.getCategoryName());
+        // No description field in entity, skip if not present
         category = categoryRepository.save(category);
         CategoryDTO result = new CategoryDTO();
-        result.setId(category.getId());
-        result.setName(category.getName());
+        result.setCategoryId(category.getId().intValue());
+        result.setCategoryName(category.getName());
+        // No description field in entity, skip if not present
         return result;
     }
 

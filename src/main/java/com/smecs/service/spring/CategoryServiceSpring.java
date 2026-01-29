@@ -1,7 +1,7 @@
 package com.smecs.service.spring;
 
 import com.smecs.dto.CategoryDTO;
-import com.smecs.model.Category;
+import com.smecs.entity.Category;
 import com.smecs.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,33 +20,33 @@ public class CategoryServiceSpring {
 
     public CategoryDTO create(CategoryDTO dto) {
         Category entity = new Category();
-        entity.setCategoryName(dto.getCategoryName());
-        entity.setDescription(dto.getDescription());
+        entity.setName(dto.getCategoryName());
+        // No description field in entity, skip if not present
         Category saved = repository.save(entity);
-        return new CategoryDTO(saved.getCategoryId(), saved.getCategoryName(), saved.getDescription());
+        return new CategoryDTO(saved.getId().intValue(), saved.getName(), null);
     }
 
     public Optional<CategoryDTO> findById(Integer id) {
-        return repository.findById(id)
-                .map(c -> new CategoryDTO(c.getCategoryId(), c.getCategoryName(), c.getDescription()));
+        return repository.findById(id.longValue())
+                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), null));
     }
 
     public List<CategoryDTO> findAll() {
         return repository.findAll().stream()
-                .map(c -> new CategoryDTO(c.getCategoryId(), c.getCategoryName(), c.getDescription()))
+                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), null))
                 .collect(Collectors.toList());
     }
 
     public void delete(Integer id) {
-        repository.deleteById(id);
+        repository.deleteById(id.longValue());
     }
 
     public Optional<CategoryDTO> update(Integer id, CategoryDTO dto) {
-        return repository.findById(id).map(existing -> {
-            existing.setCategoryName(dto.getCategoryName());
-            existing.setDescription(dto.getDescription());
+        return repository.findById(id.longValue()).map(existing -> {
+            existing.setName(dto.getCategoryName());
+            // No description field in entity, skip if not present
             Category saved = repository.save(existing);
-            return new CategoryDTO(saved.getCategoryId(), saved.getCategoryName(), saved.getDescription());
+            return new CategoryDTO(saved.getId().intValue(), saved.getName(), null);
         });
     }
 }

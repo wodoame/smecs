@@ -1,7 +1,7 @@
 package com.smecs.repository;
 
-import com.smecs.model.Category;
+import com.smecs.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CategoryRepository extends JpaRepository<Category, Integer> {
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 }
