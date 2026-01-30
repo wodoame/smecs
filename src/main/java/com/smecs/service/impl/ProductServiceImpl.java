@@ -28,6 +28,7 @@ public class ProductServiceImpl implements ProductService {
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
+        product.setImageUrl(productDTO.getImageUrl());
         Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
         product.setCategory(category);
         product = productRepository.save(product);
@@ -43,6 +44,7 @@ public class ProductServiceImpl implements ProductService {
         dto.setName(product.getName());
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
+        dto.setImageUrl(product.getImageUrl());
         dto.setCategoryId(product.getCategory().getId());
         return dto;
     }
@@ -55,6 +57,7 @@ public class ProductServiceImpl implements ProductService {
             dto.setName(product.getName());
             dto.setDescription(product.getDescription());
             dto.setPrice(product.getPrice());
+            dto.setImageUrl(product.getImageUrl());
             dto.setCategoryId(product.getCategory().getId());
             return dto;
         }).collect(Collectors.toList());
@@ -66,6 +69,7 @@ public class ProductServiceImpl implements ProductService {
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
+        product.setImageUrl(productDTO.getImageUrl());
         Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
         product.setCategory(category);
         product = productRepository.save(product);

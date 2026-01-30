@@ -42,7 +42,8 @@ CREATE TABLE Products (
     product_name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image_url VARCHAR(512)
 );
 
 -- 4. Inventory Table
@@ -186,21 +187,7 @@ DECLARE
     v_order3_id INTEGER;
     v_cart_id INTEGER;
 BEGIN
-    -- 1. Users
-    INSERT INTO Users (username, email, password_hash, role)
-    VALUES ('john_doe', 'john@example.com', 'hashed_john_pass', 'customer')
-    RETURNING user_id INTO v_user_john_id;
-
-    INSERT INTO Users (username, email, password_hash, role)
-    VALUES ('jane_smith', 'jane@example.com', 'hashed_jane_pass', 'customer')
-    RETURNING user_id INTO v_user_jane_id;
-
-    INSERT INTO Users (username, email, password_hash, role)
-    VALUES ('bob_builder', 'bob@example.com', 'hashed_bob_pass', 'customer');
-
-    INSERT INTO Users (username, email, password_hash, role)
-    VALUES ('alice_wonder', 'alice@example.com', 'hashed_alice_pass', 'customer');
-
+    -- 1. Users // No users
     -- 2. Categories
     INSERT INTO Categories (category_name, description)
     VALUES ('Electronics', 'Devices and gadgets')
@@ -224,63 +211,63 @@ BEGIN
 
     -- 3. Products
     -- Electronics
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('UltraBook Pro', v_cat_electronics_id, 'High-end laptop with 16GB RAM', 1299.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('UltraBook Pro', v_cat_electronics_id, 'High-end laptop with 16GB RAM', 1299.99, 'https://example.com/images/ultrabook_pro.jpg')
     RETURNING product_id INTO v_prod_laptop_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('SmartPhone X', v_cat_electronics_id, 'Latest 5G smartphone', 899.50)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('SmartPhone X', v_cat_electronics_id, 'Latest 5G smartphone', 899.50, 'https://example.com/images/smartphone_x.jpg')
     RETURNING product_id INTO v_prod_phone_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Wireless Earbuds', v_cat_electronics_id, 'Noise cancelling earbuds', 149.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Wireless Earbuds', v_cat_electronics_id, 'Noise cancelling earbuds', 149.99, 'https://example.com/images/wireless_earbuds.jpg')
     RETURNING product_id INTO v_prod_earbuds_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('4K Gaming Monitor', v_cat_electronics_id, '27-inch 144Hz display', 399.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('4K Gaming Monitor', v_cat_electronics_id, '27-inch 144Hz display', 399.99, 'https://example.com/images/4k_gaming_monitor.jpg')
     RETURNING product_id INTO v_prod_monitor_id;
 
     -- Clothing
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Cotton T-Shirt', v_cat_clothing_id, 'Comfortable 100% cotton', 19.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Cotton T-Shirt', v_cat_clothing_id, 'Comfortable 100% cotton', 19.99, 'https://example.com/images/cotton_tshirt.jpg')
     RETURNING product_id INTO v_prod_tshirt_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Denim Jacket', v_cat_clothing_id, 'Classic blue denim jacket', 79.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Denim Jacket', v_cat_clothing_id, 'Classic blue denim jacket', 79.99, 'https://example.com/images/denim_jacket.jpg')
     RETURNING product_id INTO v_prod_jacket_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Slim Fit Jeans', v_cat_clothing_id, 'Dark wash denim jeans', 59.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Slim Fit Jeans', v_cat_clothing_id, 'Dark wash denim jeans', 59.99, 'https://example.com/images/slim_fit_jeans.jpg')
     RETURNING product_id INTO v_prod_jeans_id;
 
     -- Books
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Sci-Fi Novel', v_cat_books_id, 'Bestselling galactic adventure', 14.99);
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Sci-Fi Novel', v_cat_books_id, 'Bestselling galactic adventure', 14.99, 'https://example.com/images/scifi_novel.jpg');
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Gourmet Cookbook', v_cat_books_id, '100 recipes for home cooks', 29.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Gourmet Cookbook', v_cat_books_id, '100 recipes for home cooks', 29.99, 'https://example.com/images/gourmet_cookbook.jpg')
     RETURNING product_id INTO v_prod_cookbook_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('World History', v_cat_books_id, 'Comprehensive history guide', 24.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('World History', v_cat_books_id, 'Comprehensive history guide', 24.99, 'https://example.com/images/world_history.jpg')
     RETURNING product_id INTO v_prod_history_id;
 
     -- Home & Kitchen
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Espresso Maker', v_cat_home_id, 'Automatic coffee machine', 199.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Espresso Maker', v_cat_home_id, 'Automatic coffee machine', 199.99, 'https://example.com/images/espresso_maker.jpg')
     RETURNING product_id INTO v_prod_coffee_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('High-Speed Blender', v_cat_home_id, 'Perfect for smoothies', 89.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('High-Speed Blender', v_cat_home_id, 'Perfect for smoothies', 89.99, 'https://example.com/images/high_speed_blender.jpg')
     RETURNING product_id INTO v_prod_blender_id;
 
     -- Sports
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Yoga Mat', v_cat_sports_id, 'Non-slip exercise mat', 25.00)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Yoga Mat', v_cat_sports_id, 'Non-slip exercise mat', 25.00, 'https://example.com/images/yoga_mat.jpg')
     RETURNING product_id INTO v_prod_yoga_id;
 
-    INSERT INTO Products (product_name, category_id, description, price)
-    VALUES ('Dumbbell Set', v_cat_sports_id, 'Adjustable weights 5-25lbs', 59.99)
+    INSERT INTO Products (product_name, category_id, description, price, image_url)
+    VALUES ('Dumbbell Set', v_cat_sports_id, 'Adjustable weights 5-25lbs', 59.99, 'https://example.com/images/dumbbell_set.jpg')
     RETURNING product_id INTO v_prod_dumbbell_id;
 
     -- 4. Inventory
