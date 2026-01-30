@@ -11,18 +11,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.io.IOException;
 
 @Controller
-@RequestMapping("")
-public class FrontendController {
+@RequestMapping("/contact")
+public class ContactFrontendController {
     private final ResourceLoader resourceLoader;
 
-    public FrontendController(ResourceLoader resourceLoader) {
+    public ContactFrontendController(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
-    @GetMapping(value = {"/", "/products", "/categories", "/about", "/contact", "/**/{path:[^\\.]*}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource index() throws IOException {
-        // Always serve index.html for frontend routes
+        // Serve index.html for /contact
         return resourceLoader.getResource("classpath:/static/index.html");
     }
 }
