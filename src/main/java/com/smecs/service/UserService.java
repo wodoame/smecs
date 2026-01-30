@@ -1,6 +1,6 @@
 package com.smecs.service;
 
-import com.smecs.model.User;
+import com.smecs.entity.User;
 import java.util.List;
 
 public interface UserService {

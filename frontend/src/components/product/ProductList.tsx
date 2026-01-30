@@ -24,20 +24,36 @@ export function ProductList() {
         if (!res.ok) throw new Error("Failed to fetch products");
         return res.json();
       })
-      .then((data: Product[]) => {
-        setProducts(data);
+      .then((payload) => {
+        // payload: { status, message, data: [...] }
+        const products = (payload.data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name ?? "Unnamed Product",
+          description: item.description,
+          price: item.price,
+          categoryId: item.categoryId,
+          image: item.imageUrl,
+        }));
+        setProducts(products);
         setError(null);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
+  console.log(products);
+
   const matches = search
-    ? products.filter(
-        (product) =>
-          product.name?.toLowerCase().includes(search.toLowerCase()) ||
-          product.description?.toLowerCase().includes(search.toLowerCase()),
-      )
+    ? products
+        .filter(
+          (product) =>
+            product.name?.toLowerCase().includes(search.toLowerCase()) ||
+            product.description?.toLowerCase().includes(search.toLowerCase()),
+        )
+        .map((product) => ({
+          title: product.name,
+          description: product.description,
+        }))
     : [];
 
   return (
