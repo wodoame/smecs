@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
-import { Navbar } from "../layout/Navbar";
+import { Input } from "@/components/ui/input";
 
 export interface Product {
   id: number;
@@ -16,6 +16,12 @@ export function ProductList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  function handleBlur() {
+    // Timeout to allow click on dropdown item
+    setTimeout(() => setShowDropdown(false), 200);
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -41,47 +47,75 @@ export function ProductList() {
       .finally(() => setLoading(false));
   }, []);
 
-  console.log(products);
-
   const matches = search
-    ? products
-        .filter(
-          (product) =>
-            product.name?.toLowerCase().includes(search.toLowerCase()) ||
-            product.description?.toLowerCase().includes(search.toLowerCase()),
-        )
-        .map((product) => ({
-          title: product.name,
-          description: product.description,
-        }))
+    ? products.filter(
+        (product) =>
+          product.name?.toLowerCase().includes(search.toLowerCase()) ||
+          product.description?.toLowerCase().includes(search.toLowerCase()),
+      )
     : [];
 
   return (
-    <>
-      <Navbar search={search} onSearchChange={setSearch} matches={matches} />
-      <div className="container mx-auto py-8 px-4 pt-40">
-        <h1 className="text-3xl font-bold mb-8 text-center">Products</h1>
-        {loading ? (
-          <div className="text-center">Loading...</div>
-        ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
-        ) : (
-          <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                image={product.image}
-                title={product.name}
-                description={product.description}
-                price={`$${product.price}`}
-                onView={() => {
-                  alert(`Viewing: ${product.name}`);
-                }}
-              />
-            ))}
-          </div>
-        )}
+    <div className="space-y-6">
+      <div className="flex flex-col items-center gap-6">
+        <h1 className="text-3xl font-bold">Products</h1>
+        <div className="relative w-full max-w-2xl">
+          <Input
+            type="search"
+            placeholder="Search products..."
+            className="w-full p-2"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            onBlur={handleBlur}
+          />
+          {showDropdown && matches.length > 0 && (
+            <div className="absolute left-0 right-0 z-50 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg mt-2 max-h-[60vh] overflow-y-auto">
+              <ul>
+                {matches.map((product) => (
+                  <li
+                    key={product.id}
+                    className="px-4 py-2 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 border-b last:border-b-0 border-zinc-100 dark:border-zinc-800"
+                    onMouseDown={() => {
+                      setSearch(product.name);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <div className="font-semibold text-sm">{product.name}</div>
+                    <div className="text-xs text-zinc-500 truncate">
+                      {product.description}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
-    </>
+
+      {loading ? (
+        <div className="text-center">Loading...</div>
+      ) : error ? (
+        <div className="text-center text-red-500">{error}</div>
+      ) : (
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              image={product.image}
+              title={product.name}
+              description={product.description}
+              price={`$${product.price}`}
+              onView={() => {
+                alert(`Viewing: ${product.name}`);
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
