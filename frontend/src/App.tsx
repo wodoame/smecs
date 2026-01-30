@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { Outlet } from "react-router-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,7 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ProductList } from "./components/product/ProductList";
+
 
 export default function App() {
   return (
@@ -41,7 +42,7 @@ export default function App() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <ProductList />
+          <Outlet />
         </div>
       </SidebarInset>
     </SidebarProvider>

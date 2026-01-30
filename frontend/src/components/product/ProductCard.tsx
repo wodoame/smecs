@@ -27,7 +27,7 @@ export function ProductCard({
   onView,
 }: ProductCardProps) {
   return (
-    <Card className="relative mx-auto w-full max-w-sm pt-0 flex flex-col h-full">
+    <Card className="relative mx-auto w-full max-w-sm pt-0 flex flex-col h-full shadow-none border-zinc-200 dark:border-zinc-800">
       <img
         src={image}
         alt={title}

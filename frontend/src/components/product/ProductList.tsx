@@ -49,10 +49,10 @@ export function ProductList() {
 
   const matches = search
     ? products.filter(
-        (product) =>
-          product.name?.toLowerCase().includes(search.toLowerCase()) ||
-          product.description?.toLowerCase().includes(search.toLowerCase()),
-      )
+      (product) =>
+        product.name?.toLowerCase().includes(search.toLowerCase()) ||
+        product.description?.toLowerCase().includes(search.toLowerCase()),
+    )
     : [];
 
   return (
@@ -101,7 +101,7 @@ export function ProductList() {
       ) : error ? (
         <div className="text-center text-red-500">{error}</div>
       ) : (
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7">
           {products.map((product) => (
             <ProductCard
               key={product.id}
