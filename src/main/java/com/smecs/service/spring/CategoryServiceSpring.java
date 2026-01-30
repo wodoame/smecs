@@ -21,19 +21,19 @@ public class CategoryServiceSpring {
     public CategoryDTO create(CategoryDTO dto) {
         Category entity = new Category();
         entity.setName(dto.getCategoryName());
-        // No description field in entity, skip if not present
+        entity.setDescription(dto.getDescription());
         Category saved = repository.save(entity);
-        return new CategoryDTO(saved.getId().intValue(), saved.getName(), null);
+        return new CategoryDTO(saved.getId().intValue(), saved.getName(), saved.getDescription());
     }
 
     public Optional<CategoryDTO> findById(Integer id) {
         return repository.findById(id.longValue())
-                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), null));
+                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), c.getDescription()));
     }
 
     public List<CategoryDTO> findAll() {
         return repository.findAll().stream()
-                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), null))
+                .map(c -> new CategoryDTO(c.getId().intValue(), c.getName(), c.getDescription()))
                 .collect(Collectors.toList());
     }
 
@@ -44,9 +44,9 @@ public class CategoryServiceSpring {
     public Optional<CategoryDTO> update(Integer id, CategoryDTO dto) {
         return repository.findById(id.longValue()).map(existing -> {
             existing.setName(dto.getCategoryName());
-            // No description field in entity, skip if not present
+            existing.setDescription(dto.getDescription());
             Category saved = repository.save(existing);
-            return new CategoryDTO(saved.getId().intValue(), saved.getName(), null);
+            return new CategoryDTO(saved.getId().intValue(), saved.getName(), saved.getDescription());
         });
     }
 }
