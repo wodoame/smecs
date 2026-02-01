@@ -10,7 +10,9 @@ public class PageMetadataDTO {
     private int size;
     private long totalElements;
     private int totalPages;
-    private String sort;
+    private boolean first;
+    private boolean last;
+    private boolean empty;
     private boolean hasNext;
     private boolean hasPrevious;
 }

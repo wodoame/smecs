@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Product;
@@ -67,15 +68,18 @@ public class ProductServiceImpl implements ProductService {
                 .collect(Collectors.toList());
 
         PagedResponseDTO<ProductDTO> pagedResponse = new PagedResponseDTO<>();
+        PageMetadataDTO pageMetadata = new PageMetadataDTO();
         pagedResponse.setContent(content);
-        pagedResponse.setPage(productPage.getNumber());
-        pagedResponse.setSize(productPage.getSize());
-        pagedResponse.setTotalElements(productPage.getTotalElements());
-        pagedResponse.setTotalPages(productPage.getTotalPages());
-        pagedResponse.setFirst(productPage.isFirst());
-        pagedResponse.setLast(productPage.isLast());
-        pagedResponse.setEmpty(productPage.isEmpty());
-
+        pageMetadata.setPage(productPage.getNumber());
+        pageMetadata.setSize(productPage.getSize());
+        pageMetadata.setTotalElements(productPage.getTotalElements());
+        pageMetadata.setTotalPages(productPage.getTotalPages());
+        pageMetadata.setFirst(productPage.isFirst());
+        pageMetadata.setLast(productPage.isLast());
+        pageMetadata.setEmpty(productPage.isEmpty());
+        pageMetadata.setHasNext(productPage.hasNext());
+        pageMetadata.setHasPrevious(productPage.hasPrevious());
+        pagedResponse.setPage(pageMetadata);
         return pagedResponse;
     }
 
