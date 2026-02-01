@@ -1,0 +1,45 @@
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export interface Category {
+    categoryId: number;
+    categoryName: string;
+    description: string;
+    imageUrl: string;
+    relatedImageUrls: string[];
+}
+
+interface CategoryCardProps {
+    category: Category;
+}
+
+export function CategoryCard({ category }: CategoryCardProps) {
+    const allImages = [category.imageUrl, ...category.relatedImageUrls];
+
+    return (
+        <Card className="w-full shadow-none">
+            <CardHeader>
+                <CardTitle>{category.categoryName}</CardTitle>
+                <p className="text-sm text-muted-foreground">{category.description}</p>
+            </CardHeader>
+            <CardContent>
+                <div className="w-full overflow-x-auto whitespace-nowrap rounded-md border p-4">
+                    <div className="flex w-max space-x-4">
+                        {allImages.map((image, index) => (
+                            <figure key={index} className="shrink-0">
+                                <div className="overflow-hidden rounded-md">
+                                    <img
+                                        src={image}
+                                        alt={`${category.categoryName} image ${index + 1}`}
+                                        className="aspect-[3/4] h-fit w-fit object-cover model-card-image"
+                                        style={{ maxHeight: '200px' }}
+                                    />
+                                </div>
+                            </figure>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
