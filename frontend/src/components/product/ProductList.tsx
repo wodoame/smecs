@@ -31,8 +31,8 @@ export function ProductList() {
         return res.json();
       })
       .then((payload) => {
-        // payload: { status, message, data: [...] }
-        const products = (payload.data || []).map((item: any) => ({
+        // payload: { status, message, data: { content: [...] } }
+        const products = (payload.data.content || []).map((item: any) => ({
           id: item.id,
           name: item.name ?? "Unnamed Product",
           description: item.description,

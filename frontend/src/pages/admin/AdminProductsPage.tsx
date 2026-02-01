@@ -168,7 +168,7 @@ export default function AdminProductsPage() {
                 return res.json();
             })
             .then((payload) => {
-                const products = (payload.data || []).map((item: any) => ({
+                const products = (payload.data.content || []).map((item: any) => ({
                     id: item.id,
                     name: item.name ?? "Unnamed Product",
                     description: item.description,
