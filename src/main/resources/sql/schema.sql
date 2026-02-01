@@ -31,7 +31,8 @@ CREATE TABLE Users (
 CREATE TABLE Categories (
     category_id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
-    description TEXT
+    description TEXT,
+    image_url VARCHAR(512)
 );
 
 -- 3. Products Table
@@ -189,24 +190,24 @@ DECLARE
 BEGIN
     -- 1. Users // No users
     -- 2. Categories
-    INSERT INTO Categories (name, description)
-    VALUES ('Electronics', 'Devices and gadgets')
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Electronics', 'Devices and gadgets', 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING category_id INTO v_cat_electronics_id;
 
-    INSERT INTO Categories (name, description)
-    VALUES ('Books', 'Paperback and Hardcover books')
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Books', 'Paperback and Hardcover books', 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING category_id INTO v_cat_books_id;
 
-    INSERT INTO Categories (name, description)
-    VALUES ('Clothing', 'Apparel for men and women')
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Clothing', 'Apparel for men and women', 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING category_id INTO v_cat_clothing_id;
 
-    INSERT INTO Categories (name, description)
-    VALUES ('Home & Kitchen', 'Appliances and decor')
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Home & Kitchen', 'Appliances and decor', 'https://images.unsplash.com/photo-1501045661006-fcebe0257c3f?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING category_id INTO v_cat_home_id;
 
-    INSERT INTO Categories (name, description)
-    VALUES ('Sports & Outdoors', 'Exercise equipment and gear')
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Sports & Outdoors', 'Exercise equipment and gear', 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING category_id INTO v_cat_sports_id;
 
     -- 3. Products

@@ -3,17 +3,14 @@ package com.smecs.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Setter
 @Getter
 public class CategoryDTO {
     private Integer categoryId;
     private String categoryName;
     private String description;
-
-    public CategoryDTO() {}
-    public CategoryDTO(Integer categoryId, String categoryName, String description) {
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.description = description;
-    }
+    private String imageUrl;
+    private List<String> relatedImageUrls;
 }
