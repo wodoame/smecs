@@ -12,8 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * In-memory cache for product requests with a simple TTL policy.
+ * Note: Paginated/filtered queries are not cached due to high variability.
+ * Only individual product lookups and full list (getAllProducts) are cached.
  */
-// TODO: check if cache uses page-based storage
 @Service
 public class ProductCacheService implements CacheService<ProductDTO, Long> {
     private static final long DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes

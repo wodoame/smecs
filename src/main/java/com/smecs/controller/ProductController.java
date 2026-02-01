@@ -2,11 +2,17 @@ package com.smecs.controller;
 
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
+import com.smecs.dto.PagedResponseDTO;
 import com.smecs.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
+@Validated
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -28,8 +34,28 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseDTO<List<ProductDTO>> getAllProducts() {
-        return new ResponseDTO<>("success", "Products retrieved", productService.getAllProducts());
+    public ResponseDTO<PagedResponseDTO<ProductDTO>> getAllProducts(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "name,asc") String sort
+    ) {
+        Sort sortSpec = parseSort(sort);
+        PageRequest pageRequest = PageRequest.of(page, size, sortSpec);
+        PagedResponseDTO<ProductDTO> data = productService.getProducts(name, description, categoryId, pageRequest);
+        return new ResponseDTO<>("success", "Products retrieved", data);
+    }
+
+    private Sort parseSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, "name");
+        }
+        String[] parts = sort.split(",");
+        String property = parts[0].trim();
+        Sort.Direction direction = parts.length > 1 ? Sort.Direction.fromString(parts[1].trim()) : Sort.Direction.ASC;
+        return Sort.by(direction, property);
     }
 
     @PutMapping("/{id}")

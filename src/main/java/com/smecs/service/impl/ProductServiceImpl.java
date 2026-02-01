@@ -1,13 +1,18 @@
 package com.smecs.service.impl;
 
 import com.smecs.dto.ProductDTO;
+import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Product;
 import com.smecs.entity.Category;
 import com.smecs.repository.ProductRepository;
+import com.smecs.repository.ProductSpecification;
 import com.smecs.repository.CategoryRepository;
 import com.smecs.service.ProductService;
 import com.smecs.service.CacheService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,14 +57,26 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductDTO> getAllProducts() {
-        return productCacheService.getAll().orElseGet(() -> {
-            List<ProductDTO> products = productRepository.findAll().stream()
-                    .map(this::mapToDto)
-                    .collect(Collectors.toList());
-            productCacheService.putAll(products);
-            return products;
-        });
+    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Long categoryId, Pageable pageable) {
+        // Don't use cache for paginated/filtered queries - they're too varied to cache effectively
+        Specification<Product> spec = ProductSpecification.filterByCriteria(name, description, categoryId);
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
+
+        List<ProductDTO> content = productPage.getContent().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+
+        PagedResponseDTO<ProductDTO> pagedResponse = new PagedResponseDTO<>();
+        pagedResponse.setContent(content);
+        pagedResponse.setPage(productPage.getNumber());
+        pagedResponse.setSize(productPage.getSize());
+        pagedResponse.setTotalElements(productPage.getTotalElements());
+        pagedResponse.setTotalPages(productPage.getTotalPages());
+        pagedResponse.setFirst(productPage.isFirst());
+        pagedResponse.setLast(productPage.isLast());
+        pagedResponse.setEmpty(productPage.isEmpty());
+
+        return pagedResponse;
     }
 
     @Override
