@@ -4,6 +4,7 @@ import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.service.ProductService;
+import com.smecs.service.impl.ProductCacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,15 +14,19 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import java.util.Optional;
+
 @Validated
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private final ProductCacheService productCacheService;
 
     @Autowired
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, ProductCacheService productCacheService) {
         this.productService = productService;
+        this.productCacheService = productCacheService;
     }
 
     @PostMapping
@@ -41,6 +46,18 @@ public class ProductController {
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
+        if (query != null && !query.isBlank()) {
+            Optional<PagedResponseDTO<ProductDTO>> cached = productCacheService.getSearchResults(query, page, size, sort);
+            if (cached.isPresent()) {
+                return new ResponseDTO<>("success", "Products retrieved", cached.get());
+            }
+
+            Pageable pageable = PageRequest.of(page, size, parseSort(sort));
+            PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, pageable);
+            productCacheService.putSearchResults(query, page, size, sort, results);
+            return new ResponseDTO<>("success", "Products retrieved", results);
+        }
+
         Pageable pageable = PageRequest.of(page, size, parseSort(sort));
         return new ResponseDTO<>("success", "Products retrieved", productService.getProducts(query, query, pageable));
     }

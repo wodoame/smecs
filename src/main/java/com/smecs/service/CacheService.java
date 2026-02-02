@@ -8,8 +8,6 @@ public interface CacheService<V, K> {
 
     void put(V value);
 
-    Optional<List<V>> getAll();
-
     void putAll(List<V> values);
 
     void invalidateById(K id);
