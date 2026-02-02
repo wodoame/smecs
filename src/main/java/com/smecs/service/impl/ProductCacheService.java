@@ -2,6 +2,7 @@ package com.smecs.service.impl;
 
 import com.smecs.dto.ProductDTO;
 import com.smecs.service.CacheService;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -77,17 +78,14 @@ public class ProductCacheService implements CacheService<ProductDTO, Long> {
         allProductsEntry = null;
     }
 
-    private static final class CacheEntry<T> {
-        private final T value;
-        private final long expiresAtMs;
+    private record CacheEntry<T>(T value, long expiresAtMs) {
+            private CacheEntry(T value, long expiresAtMs) {
+                this.value = value;
+                this.expiresAtMs = System.currentTimeMillis() + expiresAtMs;
+            }
 
-        private CacheEntry(T value, long ttlMs) {
-            this.value = value;
-            this.expiresAtMs = System.currentTimeMillis() + ttlMs;
+            private boolean isExpired() {
+                return System.currentTimeMillis() > expiresAtMs;
+            }
         }
-
-        private boolean isExpired() {
-            return System.currentTimeMillis() > expiresAtMs;
-        }
-    }
 }
