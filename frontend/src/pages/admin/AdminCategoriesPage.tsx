@@ -9,7 +9,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -82,6 +81,14 @@ export default function AdminCategoriesPage() {
         imageUrl: "",
     });
 
+    // Edit Category State
+    const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [editingCategory, setEditingCategory] = React.useState<Category | null>(null);
+
+    // View Category State
+    const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+    const [viewingCategory, setViewingCategory] = React.useState<Category | null>(null);
+
     const fetchCategories = () => {
         setLoading(true);
         fetch("/api/categories")
@@ -137,6 +144,43 @@ export default function AdminCategoriesPage() {
                 fetchCategories();
             })
             .catch((err) => toast.error(err.message));
+    };
+
+    const handleEditCategory = (category: Category) => {
+        setEditingCategory(category);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleUpdateCategory = () => {
+        if (!editingCategory) return;
+
+        fetch(`/api/categories/${editingCategory.categoryId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                categoryName: editingCategory.categoryName,
+                description: editingCategory.description,
+                imageUrl: editingCategory.imageUrl,
+            }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to update category");
+                return res.json();
+            })
+            .then(() => {
+                setIsEditDialogOpen(false);
+                setEditingCategory(null);
+                fetchCategories();
+                toast.success("Category updated successfully", {
+                    icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+                });
+            })
+            .catch((err) => toast.error(err.message));
+    };
+
+    const handleViewCategory = (category: Category) => {
+        setViewingCategory(category);
+        setIsViewDialogOpen(true);
     };
 
     const columns: ColumnDef<Category>[] = React.useMemo(
@@ -212,16 +256,14 @@ export default function AdminCategoriesPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuGroup>
-                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem
-                                            onClick={() => navigator.clipboard.writeText(String(category.categoryId))}
-                                        >
-                                            Copy Category ID
+                                        <DropdownMenuItem onClick={() => handleViewCategory(category)}>
+                                            View details
                                         </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem>View details</DropdownMenuItem>
-                                        <DropdownMenuItem>Edit category</DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => handleEditCategory(category)}
+                                        >
+                                            Edit category
+                                        </DropdownMenuItem>
                                         <AlertDialogTrigger asChild>
                                             <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
                                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -336,6 +378,94 @@ export default function AdminCategoriesPage() {
                         <DialogFooter>
                             <Button type="submit" className="w-full" onClick={handleCreateCategory}>Add Category</Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Edit Category</DialogTitle>
+                            <DialogDescription>
+                                Update category information.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editCategoryName" className="text-sm font-medium">
+                                    Name
+                                </label>
+                                <Input
+                                    id="editCategoryName"
+                                    value={editingCategory?.categoryName || ""}
+                                    onChange={(e) =>
+                                        setEditingCategory((prev) =>
+                                            prev ? { ...prev, categoryName: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editDescription" className="text-sm font-medium">
+                                    Description
+                                </label>
+                                <Input
+                                    id="editDescription"
+                                    value={editingCategory?.description || ""}
+                                    onChange={(e) =>
+                                        setEditingCategory((prev) =>
+                                            prev ? { ...prev, description: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editImageUrl" className="text-sm font-medium">
+                                    Image URL
+                                </label>
+                                <Input
+                                    id="editImageUrl"
+                                    value={editingCategory?.imageUrl || ""}
+                                    onChange={(e) =>
+                                        setEditingCategory((prev) =>
+                                            prev ? { ...prev, imageUrl: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full" onClick={handleUpdateCategory}>
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Category Details</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Name</label>
+                                <div className="text-sm text-muted-foreground">{viewingCategory?.categoryName}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Description</label>
+                                <div className="text-sm text-muted-foreground">{viewingCategory?.description}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Image</label>
+                                {viewingCategory?.imageUrl && (
+                                    <img
+                                        src={viewingCategory.imageUrl}
+                                        alt={viewingCategory.categoryName}
+                                        className="h-40 w-full object-cover rounded-md"
+                                    />
+                                )}
+                            </div>
+                        </div>
                     </DialogContent>
                 </Dialog>
 
