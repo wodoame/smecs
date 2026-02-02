@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -38,13 +39,13 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
         product.setImageUrl(productDTO.getImageUrl());
-        Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
+        Category category = categoryRepository.findById(productDTO.getCategory().getCategoryId().longValue()).orElseThrow();
         product.setCategory(category);
         product = productRepository.save(product);
-        productDTO.setId(product.getId());
-        productCacheService.put(productDTO);
+        ProductDTO result = mapToDto(product);
+        productCacheService.put(result);
         productCacheService.invalidateAllList();
-        return productDTO;
+        return result;
     }
 
     @Override
@@ -90,13 +91,13 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
         product.setImageUrl(productDTO.getImageUrl());
-        Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
+        Category category = categoryRepository.findById(productDTO.getCategory().getCategoryId().longValue()).orElseThrow();
         product.setCategory(category);
         product = productRepository.save(product);
-        productDTO.setId(product.getId());
-        productCacheService.put(productDTO);
+        ProductDTO result = mapToDto(product);
+        productCacheService.put(result);
         productCacheService.invalidateAllList();
-        return productDTO;
+        return result;
     }
 
     @Override
@@ -113,7 +114,16 @@ public class ProductServiceImpl implements ProductService {
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setImageUrl(product.getImageUrl());
-        dto.setCategoryId(product.getCategory().getId());
+
+        // Map category to CategoryDTO
+        Category category = product.getCategory();
+        CategoryDTO categoryDTO = new CategoryDTO();
+        categoryDTO.setCategoryId(category.getId().intValue());
+        categoryDTO.setCategoryName(category.getName());
+        categoryDTO.setDescription(category.getDescription());
+        categoryDTO.setImageUrl(category.getImageUrl());
+        dto.setCategory(categoryDTO);
+
         return dto;
     }
 }

@@ -33,16 +33,23 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 
-export interface Product {
+export interface InventoryItem {
     id: number;
+    productId: number;
     name: string;
     description: string;
     price: number;
-    categoryId: number;
+    category: {
+        categoryId: number;
+        categoryName: string;
+        description?: string;
+        imageUrl?: string;
+    };
     image: string;
+    quantity: number;
 }
 
-export const columns: ColumnDef<Product>[] = [
+export const columns: ColumnDef<InventoryItem>[] = [
     {
         id: "select",
         header: ({ table }) => (
@@ -83,6 +90,7 @@ export const columns: ColumnDef<Product>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="justify-start pl-0"
                 >
                     Name
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -97,13 +105,32 @@ export const columns: ColumnDef<Product>[] = [
         cell: ({ row }) => <div className="truncate max-w-[200px]">{row.getValue("description")}</div>,
     },
     {
-        accessorKey: "categoryId",
-        header: "Category ID",
-        cell: ({ row }) => <div className="text-center">{row.getValue("categoryId")}</div>,
+        accessorKey: "category",
+        header: "Category",
+        cell: ({ row }) => {
+            const category = row.getValue("category") as InventoryItem["category"];
+            return <div className="text-left">{category?.categoryName || "N/A"}</div>;
+        },
+    },
+    {
+        accessorKey: "quantity",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="justify-start pl-0"
+                >
+                    Quantity
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
+        cell: ({ row }) => <div className="text-left font-medium">{row.getValue("quantity")}</div>,
     },
     {
         accessorKey: "price",
-        header: () => <div className="text-right">Price</div>,
+        header: () => <div className="text-left">Price</div>,
         cell: ({ row }) => {
             const amount = parseFloat(row.getValue("price"))
 
@@ -112,7 +139,7 @@ export const columns: ColumnDef<Product>[] = [
                 currency: "USD",
             }).format(amount)
 
-            return <div className="text-right font-medium">{formatted}</div>
+            return <div className="text-left font-medium">{formatted}</div>
         },
     },
     {
@@ -150,7 +177,7 @@ export const columns: ColumnDef<Product>[] = [
 ]
 
 export default function AdminProductsPage() {
-    const [data, setData] = React.useState<Product[]>([])
+    const [data, setData] = React.useState<InventoryItem[]>([])
     const [loading, setLoading] = React.useState(true)
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -162,23 +189,25 @@ export default function AdminProductsPage() {
 
     React.useEffect(() => {
         setLoading(true);
-        fetch("/api/products")
+        fetch("/api/inventories")
             .then((res) => {
-                if (!res.ok) throw new Error("Failed to fetch products");
+                if (!res.ok) throw new Error("Failed to fetch inventory");
                 return res.json();
             })
             .then((payload) => {
-                const products = (payload.data.content || []).map((item: any) => ({
+                const inventory = (payload.data.content || []).map((item: any) => ({
                     id: item.id,
-                    name: item.name ?? "Unnamed Product",
-                    description: item.description,
-                    price: item.price,
-                    categoryId: item.categoryId,
-                    image: item.imageUrl,
+                    productId: item.product.id,
+                    name: item.product.name ?? "Unnamed Product",
+                    description: item.product.description,
+                    price: item.product.price,
+                    category: item.product.category,
+                    image: item.product.imageUrl,
+                    quantity: item.quantity,
                 }));
-                setData(products);
+                setData(inventory);
             })
-            .catch((err) => console.error("Error fetching products:", err))
+            .catch((err) => console.error("Error fetching inventory:", err))
             .finally(() => setLoading(false));
     }, []);
 

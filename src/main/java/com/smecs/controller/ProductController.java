@@ -39,7 +39,7 @@ public class ProductController {
             @RequestParam(required = false) String description,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
         Sort sortSpec = parseSort(sort);

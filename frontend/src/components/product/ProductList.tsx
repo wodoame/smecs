@@ -48,7 +48,7 @@ export function ProductList() {
           name: item.name ?? "Unnamed Product",
           description: item.description,
           price: item.price,
-          categoryId: item.categoryId,
+          category: item.category,
           image: item.imageUrl,
         }));
         setProducts(products);

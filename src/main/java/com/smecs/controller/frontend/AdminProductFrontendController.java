@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.io.IOException;
 
 @Controller
-@RequestMapping("/admin/products")
+@RequestMapping("/admin/inventories")
 public class AdminProductFrontendController  {
     private final ResourceLoader resourceLoader;
 
