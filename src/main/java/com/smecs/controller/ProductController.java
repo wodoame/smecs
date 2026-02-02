@@ -41,25 +41,20 @@ public class ProductController {
 
     @GetMapping
     public ResponseDTO<PagedResponseDTO<ProductDTO>> searchProducts(
-            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
-        if (query != null && !query.isBlank()) {
-            Optional<PagedResponseDTO<ProductDTO>> cached = productCacheService.getSearchResults(query, page, size, sort);
-            if (cached.isPresent()) {
-                return new ResponseDTO<>("success", "Products retrieved", cached.get());
-            }
-
-            Pageable pageable = PageRequest.of(page, size, parseSort(sort));
-            PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, pageable);
-            productCacheService.putSearchResults(query, page, size, sort, results);
-            return new ResponseDTO<>("success", "Products retrieved", results);
+        Optional<PagedResponseDTO<ProductDTO>> cached = productCacheService.getSearchResults(query, page, size, sort);
+        if (cached.isPresent()) {
+            return new ResponseDTO<>("success", "Products retrieved", cached.get());
         }
 
         Pageable pageable = PageRequest.of(page, size, parseSort(sort));
-        return new ResponseDTO<>("success", "Products retrieved", productService.getProducts(query, query, pageable));
+        PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, pageable);
+        productCacheService.putSearchResults(query, page, size, sort, results);
+        return new ResponseDTO<>("success", "Products retrieved", results);
     }
 
     private Sort parseSort(String sort) {
