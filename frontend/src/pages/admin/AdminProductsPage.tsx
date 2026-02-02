@@ -31,7 +31,25 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export interface InventoryItem {
     id: number;
@@ -90,7 +108,7 @@ export const columns: ColumnDef<InventoryItem>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="justify-start pl-0"
+                    className="justify-start !px-0 text-left"
                 >
                     Name
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -119,7 +137,7 @@ export const columns: ColumnDef<InventoryItem>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="justify-start pl-0"
+                    className="justify-start !px-0 text-left"
                 >
                     Quantity
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -187,7 +205,19 @@ export default function AdminProductsPage() {
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    React.useEffect(() => {
+    // Add Inventory State
+    const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+    const [categories, setCategories] = React.useState<{ categoryId: number; categoryName: string }[]>([]);
+    const [newInventory, setNewInventory] = React.useState({
+        name: "",
+        description: "",
+        price: "",
+        categoryId: "",
+        imageUrl: "",
+        quantity: "",
+    });
+
+    const fetchInventory = () => {
         setLoading(true);
         fetch("/api/inventories")
             .then((res) => {
@@ -209,7 +239,57 @@ export default function AdminProductsPage() {
             })
             .catch((err) => console.error("Error fetching inventory:", err))
             .finally(() => setLoading(false));
+    };
+
+    const fetchCategories = () => {
+        fetch("/api/categories")
+            .then((res) => res.json())
+            .then((payload) => {
+                setCategories(payload.data.content || []);
+            })
+            .catch((err) => console.error("Error fetching categories:", err));
+    };
+
+    React.useEffect(() => {
+        fetchInventory();
+        fetchCategories();
     }, []);
+
+    const handleCreateInventory = () => {
+        const payload = {
+            quantity: parseInt(newInventory.quantity),
+            product: {
+                name: newInventory.name,
+                description: newInventory.description,
+                price: parseFloat(newInventory.price),
+                categoryId: parseInt(newInventory.categoryId),
+                imageUrl: newInventory.imageUrl,
+            }
+        };
+
+        fetch("/api/inventories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to create inventory");
+                return res.json();
+            })
+            .then(() => {
+                setIsAddDialogOpen(false);
+                setNewInventory({
+                    name: "",
+                    description: "",
+                    price: "",
+                    categoryId: "",
+                    imageUrl: "",
+                    quantity: "",
+                });
+                fetchInventory();
+            })
+            .catch((err) => alert(err.message));
+    };
 
     const table = useReactTable({
         data,
@@ -241,6 +321,103 @@ export default function AdminProductsPage() {
                     }
                     className="max-w-sm"
                 />
+
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="ml-2">
+                            <Plus className="mr-2 h-4 w-4" /> Add Inventory
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                        <DialogHeader>
+                            <DialogTitle>Add New Inventory</DialogTitle>
+                            <DialogDescription>
+                                Create a new product and add it to inventory.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="name" className="text-sm font-medium">
+                                    Name
+                                </label>
+                                <Input
+                                    id="name"
+                                    value={newInventory.name}
+                                    onChange={(e) => setNewInventory({ ...newInventory, name: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="description" className="text-sm font-medium">
+                                    Description
+                                </label>
+                                <Input
+                                    id="description"
+                                    value={newInventory.description}
+                                    onChange={(e) => setNewInventory({ ...newInventory, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="price" className="text-sm font-medium">
+                                    Price
+                                </label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    value={newInventory.price}
+                                    onChange={(e) => setNewInventory({ ...newInventory, price: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="quantity" className="text-sm font-medium">
+                                    Quantity
+                                </label>
+                                <Input
+                                    id="quantity"
+                                    type="number"
+                                    value={newInventory.quantity}
+                                    onChange={(e) => setNewInventory({ ...newInventory, quantity: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="category" className="text-sm font-medium">
+                                    Category
+                                </label>
+                                <Select
+                                    value={newInventory.categoryId ? String(newInventory.categoryId) : undefined}
+                                    onValueChange={(value) => setNewInventory({ ...newInventory, categoryId: value })}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Categories</SelectLabel>
+                                            {categories.map((cat) => (
+                                                <SelectItem key={cat.categoryId} value={String(cat.categoryId)}>
+                                                    {cat.categoryName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="image" className="text-sm font-medium">
+                                    Image URL
+                                </label>
+                                <Input
+                                    id="image"
+                                    value={newInventory.imageUrl}
+                                    onChange={(e) => setNewInventory({ ...newInventory, imageUrl: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full" onClick={handleCreateInventory}>Add Inventory</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">

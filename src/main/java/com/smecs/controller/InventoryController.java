@@ -1,9 +1,11 @@
 package com.smecs.controller;
 
+import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.InventoryService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,11 @@ public class InventoryController {
     @Autowired
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
+    }
+
+    @PostMapping
+    public ResponseDTO<InventoryDTO> createInventoryWithProduct(@Valid @RequestBody CreateInventoryRequestDTO request) {
+        return new ResponseDTO<>("success", "Inventory and product created", inventoryService.createInventoryWithProduct(request));
     }
 
     @GetMapping
