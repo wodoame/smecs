@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import App from "./App.tsx";
 import { ProductList } from "./components/product/ProductList";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
+import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import CategoriesPage from "./pages/CategoriesPage";
 
 const router = createBrowserRouter([
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
       {
         path: "admin/inventories",
         element: <AdminProductsPage />,
+      },
+      {
+        path: "admin/categories",
+        element: <AdminCategoriesPage />,
       },
       {
         path: "categories",

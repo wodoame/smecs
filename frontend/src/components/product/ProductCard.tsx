@@ -38,9 +38,9 @@ export function ProductCard({
           <CardAction>
             {featured && <Badge variant="secondary">Featured</Badge>}
           </CardAction>
-          <div className="space-y-1">
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+          <div className="space-y-1 min-w-0">
+            <CardTitle className="truncate">{title}</CardTitle>
+            <CardDescription className="truncate">{description}</CardDescription>
             <div className="text-lg font-semibold text-left">{price}</div>
           </div>
         </CardHeader>
