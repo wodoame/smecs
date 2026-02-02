@@ -6,6 +6,7 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,18 +35,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseDTO<PagedResponseDTO<ProductDTO>> getAllProducts(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) Long categoryId,
+    public ResponseDTO<PagedResponseDTO<ProductDTO>> searchProducts(
+            @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
-        Sort sortSpec = parseSort(sort);
-        PageRequest pageRequest = PageRequest.of(page, size, sortSpec);
-        PagedResponseDTO<ProductDTO> data = productService.getProducts(name, description, categoryId, pageRequest);
-        return new ResponseDTO<>("success", "Products retrieved", data);
+        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
+        return new ResponseDTO<>("success", "Products retrieved", productService.getProducts(query, query, pageable));
     }
 
     private Sort parseSort(String sort) {

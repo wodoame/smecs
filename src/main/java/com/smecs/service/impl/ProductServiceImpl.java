@@ -59,9 +59,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Long categoryId, Pageable pageable) {
+    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Pageable pageable) {
         // Don't use cache for paginated/filtered queries - they're too varied to cache effectively
-        Specification<Product> spec = ProductSpecification.filterByCriteria(name, description, categoryId);
+        Specification<Product> spec = ProductSpecification.filterByCriteria(name, description);
         Page<Product> productPage = productRepository.findAll(spec, pageable);
 
         List<ProductDTO> content = productPage.getContent().stream()

@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ProductSpecification {
 
-    public static Specification<Product> filterByCriteria(String name, String description, Long categoryId) {
+    public static Specification<Product> filterByCriteria(String name, String description) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -27,11 +27,11 @@ public class ProductSpecification {
                 ));
             }
 
-            if (categoryId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
+            if (predicates.isEmpty()) {
+                return criteriaBuilder.conjunction();
             }
 
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            return criteriaBuilder.or(predicates.toArray(new Predicate[0]));
         };
     }
 }
