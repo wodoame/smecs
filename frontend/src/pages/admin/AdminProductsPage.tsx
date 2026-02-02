@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -7,7 +8,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -31,7 +31,7 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -67,132 +67,7 @@ export interface InventoryItem {
     quantity: number;
 }
 
-export const columns: ColumnDef<InventoryItem>[] = [
-    {
-        id: "select",
-        header: ({ table }) => (
-            <Checkbox
-                checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
-                }
-                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
-            />
-        ),
-        cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-            />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: "image",
-        header: "Image",
-        cell: ({ row }) => (
-            <img
-                src={row.getValue("image")}
-                alt={row.getValue("name")}
-                className="h-10 w-10 object-cover rounded-md"
-            />
-        ),
-    },
-    {
-        accessorKey: "name",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="justify-start !px-0 text-left"
-                >
-                    Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div className="lowercase">{row.getValue("name")}</div>,
-    },
-    {
-        accessorKey: "description",
-        header: "Description",
-        cell: ({ row }) => <div className="truncate max-w-[200px]">{row.getValue("description")}</div>,
-    },
-    {
-        accessorKey: "category",
-        header: "Category",
-        cell: ({ row }) => {
-            const category = row.getValue("category") as InventoryItem["category"];
-            return <div className="text-left">{category?.categoryName || "N/A"}</div>;
-        },
-    },
-    {
-        accessorKey: "quantity",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="justify-start !px-0 text-left"
-                >
-                    Quantity
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div className="text-left font-medium">{row.getValue("quantity")}</div>,
-    },
-    {
-        accessorKey: "price",
-        header: () => <div className="text-left">Price</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("price"))
 
-            const formatted = new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-            }).format(amount)
-
-            return <div className="text-left font-medium">{formatted}</div>
-        },
-    },
-    {
-        id: "actions",
-        enableHiding: false,
-        cell: ({ row }) => {
-            const product = row.original
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuGroup>
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                                onClick={() => navigator.clipboard.writeText(String(product.id))}
-                            >
-                                Copy Product ID
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem>View details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit product</DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        },
-    },
-]
 
 export default function AdminProductsPage() {
     const [data, setData] = React.useState<InventoryItem[]>([])
@@ -216,6 +91,14 @@ export default function AdminProductsPage() {
         imageUrl: "",
         quantity: "",
     });
+
+    // Edit Inventory State
+    const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [editingItem, setEditingItem] = React.useState<InventoryItem | null>(null);
+
+    // View Inventory State
+    const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+    const [viewingItem, setViewingItem] = React.useState<InventoryItem | null>(null);
 
     const fetchInventory = () => {
         setLoading(true);
@@ -290,6 +173,176 @@ export default function AdminProductsPage() {
             })
             .catch((err) => alert(err.message));
     };
+
+    const handleEditItem = (item: InventoryItem) => {
+        setEditingItem(item);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleUpdateItem = () => {
+        if (!editingItem) return;
+
+        const payload = {
+            quantity: editingItem.quantity,
+            product: {
+                name: editingItem.name,
+                description: editingItem.description,
+                price: editingItem.price,
+                categoryId: editingItem.category.categoryId,
+                imageUrl: editingItem.image,
+            }
+        };
+
+        fetch(`/api/inventories/${editingItem.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to update inventory");
+                return res.json();
+            })
+            .then(() => {
+                setIsEditDialogOpen(false);
+                setEditingItem(null);
+                fetchInventory();
+                toast.success("Inventory updated successfully", {
+                    icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+                });
+            })
+            .catch((err) => toast.error(err.message));
+    };
+
+    const handleViewItem = (item: InventoryItem) => {
+        setViewingItem(item);
+        setIsViewDialogOpen(true);
+    };
+
+    const columns: ColumnDef<InventoryItem>[] = React.useMemo(
+        () => [
+            {
+                id: "select",
+                header: ({ table }) => (
+                    <Checkbox
+                        checked={
+                            table.getIsAllPageRowsSelected() ||
+                            (table.getIsSomePageRowsSelected() && "indeterminate")
+                        }
+                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                        aria-label="Select all"
+                    />
+                ),
+                cell: ({ row }) => (
+                    <Checkbox
+                        checked={row.getIsSelected()}
+                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        aria-label="Select row"
+                    />
+                ),
+                enableSorting: false,
+                enableHiding: false,
+            },
+            {
+                accessorKey: "image",
+                header: "Image",
+                cell: ({ row }) => (
+                    <img
+                        src={row.getValue("image")}
+                        alt={row.getValue("name")}
+                        className="h-10 w-10 object-cover rounded-md"
+                    />
+                ),
+            },
+            {
+                accessorKey: "name",
+                header: ({ column }) => {
+                    return (
+                        <Button
+                            variant="ghost"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                            className="justify-start !px-0 text-left"
+                        >
+                            Name
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    )
+                },
+                cell: ({ row }) => <div className="lowercase">{row.getValue("name")}</div>,
+            },
+            {
+                accessorKey: "description",
+                header: "Description",
+                cell: ({ row }) => <div className="truncate max-w-[200px]">{row.getValue("description")}</div>,
+            },
+            {
+                accessorKey: "category",
+                header: "Category",
+                cell: ({ row }) => {
+                    const category = row.getValue("category") as InventoryItem["category"];
+                    return <div className="text-left">{category?.categoryName || "N/A"}</div>;
+                },
+            },
+            {
+                accessorKey: "quantity",
+                header: ({ column }) => {
+                    return (
+                        <Button
+                            variant="ghost"
+                            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                            className="justify-start !px-0 text-left"
+                        >
+                            Quantity
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    )
+                },
+                cell: ({ row }) => <div className="text-left font-medium">{row.getValue("quantity")}</div>,
+            },
+            {
+                accessorKey: "price",
+                header: () => <div className="text-left">Price</div>,
+                cell: ({ row }) => {
+                    const amount = parseFloat(row.getValue("price"))
+
+                    const formatted = new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                    }).format(amount)
+
+                    return <div className="text-left font-medium">{formatted}</div>
+                },
+            },
+            {
+                id: "actions",
+                enableHiding: false,
+                cell: ({ row }) => {
+                    const item = row.original
+
+                    return (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => handleViewItem(item)}>
+                                        View details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEditItem(item)}>
+                                        Edit product
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )
+                },
+            },
+        ],
+        []
+    );
 
     const table = useReactTable({
         data,
@@ -415,6 +468,168 @@ export default function AdminProductsPage() {
                         <DialogFooter>
                             <Button type="submit" className="w-full" onClick={handleCreateInventory}>Add Inventory</Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                        <DialogHeader>
+                            <DialogTitle>Edit Inventory</DialogTitle>
+                            <DialogDescription>
+                                Update product and inventory details.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editName" className="text-sm font-medium">
+                                    Name
+                                </label>
+                                <Input
+                                    id="editName"
+                                    value={editingItem?.name || ""}
+                                    onChange={(e) =>
+                                        setEditingItem((prev) =>
+                                            prev ? { ...prev, name: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editDescription" className="text-sm font-medium">
+                                    Description
+                                </label>
+                                <Input
+                                    id="editDescription"
+                                    value={editingItem?.description || ""}
+                                    onChange={(e) =>
+                                        setEditingItem((prev) =>
+                                            prev ? { ...prev, description: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editPrice" className="text-sm font-medium">
+                                    Price
+                                </label>
+                                <Input
+                                    id="editPrice"
+                                    type="number"
+                                    value={editingItem?.price || ""}
+                                    onChange={(e) =>
+                                        setEditingItem((prev) =>
+                                            prev ? { ...prev, price: parseFloat(e.target.value) } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editQuantity" className="text-sm font-medium">
+                                    Quantity
+                                </label>
+                                <Input
+                                    id="editQuantity"
+                                    type="number"
+                                    value={editingItem?.quantity || ""}
+                                    onChange={(e) =>
+                                        setEditingItem((prev) =>
+                                            prev ? { ...prev, quantity: parseInt(e.target.value) } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editCategory" className="text-sm font-medium">
+                                    Category
+                                </label>
+                                <Select
+                                    value={editingItem?.category?.categoryId ? String(editingItem.category.categoryId) : undefined}
+                                    onValueChange={(value) => {
+                                        const selectedCategory = categories.find(c => String(c.categoryId) === value);
+                                        if (selectedCategory) {
+                                            setEditingItem((prev) =>
+                                                prev ? { ...prev, category: { ...prev.category, categoryId: selectedCategory.categoryId, categoryName: selectedCategory.categoryName } } : null
+                                            )
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Categories</SelectLabel>
+                                            {categories.map((cat) => (
+                                                <SelectItem key={cat.categoryId} value={String(cat.categoryId)}>
+                                                    {cat.categoryName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editImage" className="text-sm font-medium">
+                                    Image URL
+                                </label>
+                                <Input
+                                    id="editImage"
+                                    value={editingItem?.image || ""}
+                                    onChange={(e) =>
+                                        setEditingItem((prev) =>
+                                            prev ? { ...prev, image: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full" onClick={handleUpdateItem}>
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Product Details</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Name</label>
+                                <div className="text-sm text-muted-foreground">{viewingItem?.name}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Description</label>
+                                <div className="text-sm text-muted-foreground">{viewingItem?.description}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Price</label>
+                                <div className="text-sm text-muted-foreground">
+                                    {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(viewingItem?.price || 0)}
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Quantity</label>
+                                <div className="text-sm text-muted-foreground">{viewingItem?.quantity}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Category</label>
+                                <div className="text-sm text-muted-foreground">{viewingItem?.category?.categoryName}</div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">Image</label>
+                                {viewingItem?.image && (
+                                    <img
+                                        src={viewingItem.image}
+                                        alt={viewingItem.name}
+                                        className="h-40 w-full object-cover rounded-md"
+                                    />
+                                )}
+                            </div>
+                        </div>
                     </DialogContent>
                 </Dialog>
 
