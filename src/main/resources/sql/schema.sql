@@ -165,6 +165,13 @@ DECLARE
     v_cat_clothing_id INTEGER;
     v_cat_home_id INTEGER;
     v_cat_sports_id INTEGER;
+    v_cat_fishing_id INTEGER;
+    v_cat_gaming_id INTEGER;
+    v_cat_watches_id INTEGER;
+    v_cat_food_id INTEGER;
+    v_cat_travel_id INTEGER;
+    v_cat_software_id INTEGER;
+    v_cat_industrial_id INTEGER;
 
     v_prod_laptop_id INTEGER;
     v_prod_phone_id INTEGER;
@@ -192,23 +199,63 @@ BEGIN
     -- 2. Categories
     INSERT INTO Categories (name, description, image_url)
     VALUES ('Electronics', 'Devices and gadgets', 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
-    RETURNING category_id INTO v_cat_electronics_id;
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_electronics_id FROM Categories WHERE name = 'Electronics';
 
     INSERT INTO Categories (name, description, image_url)
     VALUES ('Books', 'Paperback and Hardcover books', 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
-    RETURNING category_id INTO v_cat_books_id;
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_books_id FROM Categories WHERE name = 'Books';
 
     INSERT INTO Categories (name, description, image_url)
     VALUES ('Clothing', 'Apparel for men and women', 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
-    RETURNING category_id INTO v_cat_clothing_id;
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_clothing_id FROM Categories WHERE name = 'Clothing';
 
     INSERT INTO Categories (name, description, image_url)
     VALUES ('Home & Kitchen', 'Appliances and decor', 'https://images.unsplash.com/photo-1501045661006-fcebe0257c3f?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
-    RETURNING category_id INTO v_cat_home_id;
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_home_id FROM Categories WHERE name = 'Home & Kitchen';
 
     INSERT INTO Categories (name, description, image_url)
     VALUES ('Sports & Outdoors', 'Exercise equipment and gear', 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
-    RETURNING category_id INTO v_cat_sports_id;
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_sports_id FROM Categories WHERE name = 'Sports & Outdoors';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Fishing Gear', 'Fishing gear for both beginners and veterans', 'https://images.unsplash.com/photo-1551131618-3f0a5cf594b4?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_fishing_id FROM Categories WHERE name = 'Fishing Gear';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Gaming', 'Gaming accessories', 'https://m.media-amazon.com/images/I/71RE88AnbGL._AC_SX466_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_gaming_id FROM Categories WHERE name = 'Gaming';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Watches', 'Watches', 'https://m.media-amazon.com/images/I/61hBxkEW5ZL._AC_UL320_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_watches_id FROM Categories WHERE name = 'Watches';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Food', 'Food items', 'https://m.media-amazon.com/images/I/91OTxrgN1NL._AC_UY218_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_food_id FROM Categories WHERE name = 'Food';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Travel', 'Travel', 'https://m.media-amazon.com/images/I/611+Lz6hKvL._AC_UL320_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_travel_id FROM Categories WHERE name = 'Travel';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Software', 'Applications for everyday use', 'https://m.media-amazon.com/images/I/61hSSVPvT3L._AC_UY218_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_software_id FROM Categories WHERE name = 'Software';
+
+    INSERT INTO Categories (name, description, image_url)
+    VALUES ('Industrial & Scientific', 'Industrial & Scientific', 'https://m.media-amazon.com/images/I/71CiFveiCnL._AC_UL320_.jpg')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT category_id INTO v_cat_industrial_id FROM Categories WHERE name = 'Industrial & Scientific';
 
     -- 3. Products
     -- Electronics
