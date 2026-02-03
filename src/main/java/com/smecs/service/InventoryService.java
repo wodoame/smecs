@@ -3,11 +3,12 @@ package com.smecs.service;
 import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.PagedResponseDTO;
+import com.smecs.dto.UpdateInventoryRequestDTO;
 import org.springframework.data.domain.Pageable;
 
 public interface InventoryService {
     InventoryDTO getInventoryByProductId(Long productId);
-    InventoryDTO updateStock(Long productId, Integer quantity);
     PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable);
-    InventoryDTO createInventoryWithProduct(CreateInventoryRequestDTO request);
+    InventoryDTO createInventory(CreateInventoryRequestDTO request);
+    InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request);
 }

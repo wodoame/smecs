@@ -15,9 +15,11 @@ public class CreateInventoryRequestDTO {
     @PositiveOrZero(message = "Quantity must be zero or positive")
     private Integer quantity;
 
-    @NotNull(message = "Product details are required")
     @Valid
     private ProductRequest product;
+
+    // Either productId (for existing product) or product (for new product) should be provided
+    private Long productId;
 
     @Getter
     @Setter

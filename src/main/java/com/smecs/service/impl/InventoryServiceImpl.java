@@ -57,22 +57,6 @@ public class InventoryServiceImpl implements InventoryService {
         return inventory;
     }
 
-    @Override
-    @Transactional
-    public InventoryDTO updateStock(Long productId, Integer quantity) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElse(new Inventory());
-
-        if (inventory.getProduct() == null) {
-             Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
-             inventory.setProduct(product);
-        }
-
-        inventory.setQuantity(quantity);
-        Inventory savedInventory = inventoryRepository.save(inventory);
-        return mapToDTO(savedInventory);
-    }
 
     @Override
     public PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable) {
@@ -110,14 +94,50 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
-    public InventoryDTO createInventoryWithProduct(CreateInventoryRequestDTO request) {
-        // Validate that category exists
-        Long categoryId = request.getProduct().getCategoryId();
-        if (!categoryRepository.existsById(categoryId)) {
-            throw new RuntimeException("Category not found with id: " + categoryId);
+    public InventoryDTO createInventory(CreateInventoryRequestDTO request) {
+        Inventory inventory = new Inventory();
+
+        // Check if creating inventory for existing product or new product
+        if (request.getProductId() != null) {
+            // Create inventory for existing product
+            Product product = productRepository.findById(request.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getProductId()));
+
+            // Check if inventory already exists for this product
+            if (inventoryRepository.findByProductId(request.getProductId()).isPresent()) {
+                throw new RuntimeException("Inventory already exists for product id: " + request.getProductId());
+            }
+
+            inventory.setProduct(product);
+        } else if (request.getProduct() != null) {
+            // Create new product and inventory together
+            Long categoryId = request.getProduct().getCategoryId();
+            if (!categoryRepository.existsById(categoryId)) {
+                throw new RuntimeException("Category not found with id: " + categoryId);
+            }
+
+            // Build ProductDTO from request
+            ProductDTO productDTO = buildProductDTO(request, categoryId);
+
+            // Create product using ProductService
+            ProductDTO createdProduct = productService.createProduct(productDTO);
+
+            // Get the created product entity
+            Product product = productRepository.findById(createdProduct.getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + createdProduct.getId()));
+            inventory.setProduct(product);
+        } else {
+            throw new RuntimeException("Either productId or product details must be provided");
         }
 
-        // Build ProductDTO from request
+        // Set quantity and save inventory
+        inventory.setQuantity(request.getQuantity());
+        Inventory savedInventory = inventoryRepository.save(inventory);
+
+        return mapToDTO(savedInventory);
+    }
+
+    private static ProductDTO buildProductDTO(CreateInventoryRequestDTO request, Long categoryId) {
         ProductDTO productDTO = new ProductDTO();
         productDTO.setName(request.getProduct().getName());
         productDTO.setDescription(request.getProduct().getDescription());
@@ -128,18 +148,52 @@ public class InventoryServiceImpl implements InventoryService {
         CategoryDTO categoryDTO = new CategoryDTO();
         categoryDTO.setCategoryId(categoryId.intValue());
         productDTO.setCategory(categoryDTO);
+        return productDTO;
+    }
 
-        // Create product using ProductService
-        ProductDTO createdProduct = productService.createProduct(productDTO);
+    @Override
+    @Transactional
+    public InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request) {
+        // Find the inventory
+        Inventory inventory = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + inventoryId));
 
-        // Create inventory for the new product
-        Inventory inventory = new Inventory();
-        Product product = productRepository.findById(createdProduct.getId())
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + createdProduct.getId()));
-        inventory.setProduct(product);
+        // Update product details if product data is provided
+        if (request.getProduct() != null) {
+            Product product = inventory.getProduct();
+            if (product == null) {
+                throw new RuntimeException("Cannot update product: inventory has no associated product");
+            }
+
+            UpdateInventoryRequestDTO.ProductUpdate productUpdate = request.getProduct();
+
+            // Validate that category exists if categoryId is provided
+            if (productUpdate.getCategoryId() != null) {
+                Category category = categoryRepository.findById(productUpdate.getCategoryId())
+                        .orElseThrow(() -> new RuntimeException("Category not found with id: " + productUpdate.getCategoryId()));
+                product.setCategory(category);
+            }
+
+            // Update product fields
+            if (productUpdate.getName() != null) {
+                product.setName(productUpdate.getName());
+            }
+            if (productUpdate.getDescription() != null) {
+                product.setDescription(productUpdate.getDescription());
+            }
+            if (productUpdate.getPrice() != null) {
+                product.setPrice(productUpdate.getPrice());
+            }
+            if (productUpdate.getImageUrl() != null) {
+                product.setImageUrl(productUpdate.getImageUrl());
+            }
+
+            // Save updated product
+            productRepository.save(product);
+        }
+
+        // Update inventory quantity
         inventory.setQuantity(request.getQuantity());
-
-        // Save inventory
         Inventory savedInventory = inventoryRepository.save(inventory);
 
         return mapToDTO(savedInventory);

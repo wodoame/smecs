@@ -8,6 +8,7 @@ import com.smecs.repository.CategoryRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.repository.CategorySpecification;
 import com.smecs.service.CategoryService;
+import com.smecs.service.CacheService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,11 +22,13 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final CacheService<CategoryDTO, Long> categoryCacheService;
 
     @Autowired
-    public CategoryServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository) {
+    public CategoryServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository, CacheService<CategoryDTO, Long> categoryCacheService) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
+        this.categoryCacheService = categoryCacheService;
     }
 
     @Override
@@ -40,6 +43,8 @@ public class CategoryServiceImpl implements CategoryService {
         result.setCategoryName(category.getName());
         result.setDescription(category.getDescription());
         result.setImageUrl(category.getImageUrl());
+        categoryCacheService.put(result);
+        categoryCacheService.invalidateAllList();
         return result;
     }
 
@@ -55,21 +60,6 @@ public class CategoryServiceImpl implements CategoryService {
             dto.setRelatedImageUrls(productRepository.findTop5ImagesByCategoryId(id));
         }
         return dto;
-    }
-
-    @Override
-    public List<CategoryDTO> getAllCategories(boolean includeRelatedImages) {
-        return categoryRepository.findAll().stream().map(category -> {
-            CategoryDTO dto = new CategoryDTO();
-            dto.setCategoryId(category.getId().intValue());
-            dto.setCategoryName(category.getName());
-            dto.setDescription(category.getDescription());
-            dto.setImageUrl(category.getImageUrl());
-            if (includeRelatedImages) {
-                dto.setRelatedImageUrls(productRepository.findTop5ImagesByCategoryId(category.getId()));
-            }
-            return dto;
-        }).collect(Collectors.toList());
     }
 
     @Override
@@ -117,11 +107,15 @@ public class CategoryServiceImpl implements CategoryService {
         result.setCategoryName(category.getName());
         result.setDescription(category.getDescription());
         result.setImageUrl(category.getImageUrl());
+        categoryCacheService.put(result);
+        categoryCacheService.invalidateAllList();
         return result;
     }
 
     @Override
     public void deleteCategory(Long id) {
         categoryRepository.deleteById(id);
+        categoryCacheService.invalidateById(id);
+        categoryCacheService.invalidateAllList();
     }
 }

@@ -210,8 +210,11 @@ export default function AdminProductsPage() {
                     quantity: "",
                 });
                 fetchInventory(searchTerm, page);
+                toast.success("Inventory created successfully", {
+                    icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+                });
             })
-            .catch((err) => alert(err.message));
+            .catch((err) => toast.error(err.message));
     };
 
     const handleEditItem = (item: InventoryItem) => {

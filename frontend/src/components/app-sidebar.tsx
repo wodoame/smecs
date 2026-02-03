@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useLocation } from "react-router-dom"
 import {
   AudioWaveform,
   BookOpen,
@@ -182,6 +183,18 @@ interface Category {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { pathname } = useLocation()
+  const dataWithActiveState = {
+    ...data,
+    navMain: data.navMain.map((item) => ({
+      ...item,
+      isActive:
+        item.title === "Admin"
+          ? pathname.startsWith("/admin")
+          : item.isActive,
+    })),
+  }
+
   const [categories, setCategories] = React.useState<Category[]>([])
 
   React.useEffect(() => {
@@ -224,7 +237,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={dataWithActiveState.navMain} />
         <NavMain items={navCatalog} label="Catalog" />
         <NavProjects projects={data.projects} />
       </SidebarContent>

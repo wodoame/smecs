@@ -219,7 +219,7 @@ export function ProductList() {
           </div>
 
           {totalPages > 1 && (
-            <Pagination className="mt-8">
+            <Pagination className="mt-8 justify-end">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious

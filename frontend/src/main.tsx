@@ -7,6 +7,8 @@ import { ProductList } from "./components/product/ProductList";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import ComboboxTestPage from "./pages/ComboboxTestPage";
+
 
 const router = createBrowserRouter([
   {
@@ -32,6 +34,10 @@ const router = createBrowserRouter([
       {
         path: "categories",
         element: <CategoriesPage />,
+      },
+      {
+        path: "test-combobox",
+        element: <ComboboxTestPage />,
       },
     ],
   },

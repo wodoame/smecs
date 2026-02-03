@@ -4,6 +4,7 @@ import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
+import com.smecs.dto.UpdateInventoryRequestDTO;
 import com.smecs.service.InventoryService;
 import com.smecs.service.impl.InventoryCacheService;
 import jakarta.validation.Valid;
@@ -33,8 +34,8 @@ public class InventoryController {
     }
 
     @PostMapping
-    public ResponseDTO<InventoryDTO> createInventoryWithProduct(@Valid @RequestBody CreateInventoryRequestDTO request) {
-        return new ResponseDTO<>("success", "Inventory and product created", inventoryService.createInventoryWithProduct(request));
+    public ResponseDTO<InventoryDTO> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
+        return new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request));
     }
 
     @GetMapping
@@ -63,9 +64,13 @@ public class InventoryController {
         return new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId));
     }
 
-    @PutMapping("/product/{productId}")
-    public ResponseDTO<InventoryDTO> updateStock(@PathVariable Long productId, @RequestBody Integer quantity) {
-        return new ResponseDTO<>("success", "Stock updated", inventoryService.updateStock(productId, quantity));
+
+    @PutMapping("/{inventoryId}")
+    public ResponseDTO<InventoryDTO> updateInventory(
+            @PathVariable Long inventoryId,
+            @Valid @RequestBody UpdateInventoryRequestDTO request) {
+        return new ResponseDTO<>("success", "Inventory updated",
+                inventoryService.updateInventory(inventoryId, request));
     }
 
     private Sort parseSort(String sort) {

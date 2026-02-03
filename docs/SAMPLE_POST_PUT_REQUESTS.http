@@ -73,7 +73,7 @@ DELETE http://localhost:8080/api/products/5
 Accept: application/json
 
 ###
-### Inventory - Create (Inventory + Product)
+### Inventory - Create (with new Product)
 POST http://localhost:8080/api/inventories
 Content-Type: application/json
 Accept: application/json
@@ -90,9 +90,41 @@ Accept: application/json
 }
 
 ###
-### Inventory - Update Quantity For Product
-PUT http://localhost:8080/api/inventories/product/5
+### Inventory - Create (for existing Product)
+POST http://localhost:8080/api/inventories
 Content-Type: application/json
 Accept: application/json
 
-150
+{
+  "quantity": 100,
+  "productId": 5
+}
+
+###
+###
+### Inventory - Update Full (with optional Product data)
+PUT http://localhost:8080/api/inventories/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 300,
+  "product": {
+    "name": "Solar Camping Lantern Pro",
+    "description": "Enhanced rechargeable lantern with USB-C power bank and emergency SOS mode",
+    "price": 79.99,
+    "categoryId": 1,
+    "imageUrl": "https://cdn.example.com/images/products/solar-camping-lantern-pro.png"
+  }
+}
+
+###
+### Inventory - Update Quantity Only (without Product data)
+PUT http://localhost:8080/api/inventories/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 450
+}
+
