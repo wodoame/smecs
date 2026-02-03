@@ -8,9 +8,11 @@ import {
   Command,
   Frame,
   GalleryVerticalEnd,
+  LayoutList,
   Map,
   PieChart,
   Settings2,
+  Shield,
   SquareTerminal,
 } from "lucide-react"
 
@@ -114,6 +116,21 @@ const data = {
       ],
     },
     {
+      title: "Admin",
+      url: "#",
+      icon: Shield,
+      items: [
+        {
+          title: "Inventories",
+          url: "/admin/inventories",
+        },
+        {
+          title: "Categories",
+          url: "/admin/categories",
+        },
+      ],
+    },
+    {
       title: "Settings",
       url: "#",
       icon: Settings2,
@@ -156,7 +173,51 @@ const data = {
   ],
 }
 
+interface Category {
+  categoryId: number
+  categoryName: string
+  description: string
+  imageUrl: string
+  relatedImageUrls: string[] | null
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [categories, setCategories] = React.useState<Category[]>([])
+
+  React.useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        // Handle paginated response if necessary, assuming data.content is the array
+        // based on AdminCategoriesPage logic: payload.data.content
+        if (data.data?.content) {
+          setCategories(data.data.content)
+        } else if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch((err) => console.error("Failed to fetch categories", err))
+  }, [])
+
+  const navCatalog = [
+    {
+      title: "Categories",
+      url: "#",
+      icon: LayoutList,
+      isActive: true,
+      items: [
+        ...categories.map((cat) => ({
+          title: cat.categoryName,
+          url: `/categories/${cat.categoryId}`, // Assuming a route exists or just a placeholder
+        })),
+        {
+          title: "See more",
+          url: "/categories",
+        },
+      ],
+    },
+  ]
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -164,6 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavMain items={navCatalog} label="Catalog" />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>

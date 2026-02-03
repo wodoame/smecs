@@ -30,10 +30,12 @@ export function ProductList() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   const handleSearch = () => {
     setQuery(searchTerm);
     setPage(1); // Reset to first page on new search
+    setSearchTrigger((prev) => prev + 1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -70,7 +72,7 @@ export function ProductList() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, query]);
+  }, [page, query, searchTrigger]);
 
   const renderPaginationItems = () => {
     const items = [];

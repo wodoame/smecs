@@ -42,21 +42,20 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {
     Pagination,
     PaginationContent,
     PaginationItem,
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination"
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from "@/components/ui/combobox"
 import type { ApiResponse } from "@/types/api"
 
 export interface InventoryItem {
@@ -90,7 +89,7 @@ export default function AdminProductsPage() {
 
     // Add Inventory State
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-    const [categories, setCategories] = React.useState<{ categoryId: number; categoryName: string }[]>([]);
+    // Removed unused categories state in favor of categoryList
     const [newInventory, setNewInventory] = React.useState({
         name: "",
         description: "",
@@ -151,18 +150,32 @@ export default function AdminProductsPage() {
         }
     };
 
-    const fetchCategories = () => {
-        fetch("/api/categories")
+
+    // Category Search State
+    const [categorySearchTerm, setCategorySearchTerm] = React.useState("")
+    const [categoryList, setCategoryList] = React.useState<{ categoryId: number; categoryName: string }[]>([])
+
+    // Debounce search term
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchCategoryList(categorySearchTerm)
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [categorySearchTerm])
+
+    const fetchCategoryList = (query = "") => {
+        fetch(`/api/categories?query=${encodeURIComponent(query)}`)
             .then((res) => res.json())
             .then((payload) => {
-                setCategories(payload.data.content || []);
+                setCategoryList(payload.data.content || []);
             })
             .catch((err) => console.error("Error fetching categories:", err));
     };
 
     React.useEffect(() => {
         fetchInventory();
-        fetchCategories();
+        fetchCategoryList();
     }, []);
 
     const handleCreateInventory = () => {
@@ -203,6 +216,7 @@ export default function AdminProductsPage() {
 
     const handleEditItem = (item: InventoryItem) => {
         setEditingItem(item);
+        setCategorySearchTerm(item.category?.categoryName || "");
         setIsEditDialogOpen(true);
     };
 
@@ -412,7 +426,10 @@ export default function AdminProductsPage() {
                     </Button>
                 </div>
 
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+                    setIsAddDialogOpen(open);
+                    if (open) setCategorySearchTerm("");
+                }}>
                     <DialogTrigger asChild>
                         <Button className="ml-2">
                             <Plus className="mr-2 h-4 w-4" /> Add Inventory
@@ -472,24 +489,32 @@ export default function AdminProductsPage() {
                                 <label htmlFor="category" className="text-sm font-medium">
                                     Category
                                 </label>
-                                <Select
-                                    value={newInventory.categoryId ? String(newInventory.categoryId) : undefined}
-                                    onValueChange={(value) => setNewInventory({ ...newInventory, categoryId: value })}
+                                <Combobox
+                                    items={categoryList.map(c => c.categoryName)}
+                                    onValueChange={(val) => {
+                                        if (val) {
+                                            const selectedCat = categoryList.find(c => c.categoryName === val);
+                                            if (selectedCat) {
+                                                setNewInventory({ ...newInventory, categoryId: String(selectedCat.categoryId) });
+                                            }
+                                        }
+                                    }}
                                 >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select a category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectLabel>Categories</SelectLabel>
-                                            {categories.map((cat) => (
-                                                <SelectItem key={cat.categoryId} value={String(cat.categoryId)}>
-                                                    {cat.categoryName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
+                                    <ComboboxInput
+                                        placeholder="Search categories..."
+                                        onChange={(e) => setCategorySearchTerm(e.target.value)}
+                                    />
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>No categories found.</ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem key={item} value={item}>
+                                                    {item}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="image" className="text-sm font-medium">
@@ -579,10 +604,11 @@ export default function AdminProductsPage() {
                                 <label htmlFor="editCategory" className="text-sm font-medium">
                                     Category
                                 </label>
-                                <Select
-                                    value={editingItem?.category?.categoryId ? String(editingItem.category.categoryId) : undefined}
-                                    onValueChange={(value) => {
-                                        const selectedCategory = categories.find(c => String(c.categoryId) === value);
+                                <Combobox
+                                    items={categoryList.map(c => c.categoryName)}
+                                    defaultValue={editingItem?.category?.categoryName}
+                                    onValueChange={(val) => {
+                                        const selectedCategory = categoryList.find(c => c.categoryName === val);
                                         if (selectedCategory) {
                                             setEditingItem((prev) =>
                                                 prev ? { ...prev, category: { ...prev.category, categoryId: selectedCategory.categoryId, categoryName: selectedCategory.categoryName } } : null
@@ -590,20 +616,21 @@ export default function AdminProductsPage() {
                                         }
                                     }}
                                 >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select a category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectLabel>Categories</SelectLabel>
-                                            {categories.map((cat) => (
-                                                <SelectItem key={cat.categoryId} value={String(cat.categoryId)}>
-                                                    {cat.categoryName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
+                                    <ComboboxInput
+                                        placeholder="Search categories..."
+                                        onChange={(e) => setCategorySearchTerm(e.target.value)}
+                                    />
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>No categories found.</ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem key={item} value={item}>
+                                                    {item}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="editImage" className="text-sm font-medium">
