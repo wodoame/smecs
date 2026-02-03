@@ -31,15 +31,15 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search } from "lucide-react"
 import {
+    DialogTrigger,
     Dialog,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import {
     Select,
@@ -50,6 +50,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination"
+import type { ApiResponse } from "@/types/api"
 
 export interface InventoryItem {
     id: number;
@@ -100,14 +108,19 @@ export default function AdminProductsPage() {
     const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
     const [viewingItem, setViewingItem] = React.useState<InventoryItem | null>(null);
 
-    const fetchInventory = () => {
+    // Search and Pagination State
+    const [searchTerm, setSearchTerm] = React.useState("")
+    const [page, setPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(0)
+
+    const fetchInventory = (query = "", pageIndex = 1) => {
         setLoading(true);
-        fetch("/api/inventories")
+        fetch(`/api/inventories?query=${encodeURIComponent(query)}&page=${pageIndex}`)
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to fetch inventory");
                 return res.json();
             })
-            .then((payload) => {
+            .then((payload: ApiResponse<any>) => {
                 const inventory = (payload.data.content || []).map((item: any) => ({
                     id: item.id,
                     productId: item.product.id,
@@ -119,9 +132,23 @@ export default function AdminProductsPage() {
                     quantity: item.quantity,
                 }));
                 setData(inventory);
+                // Access totalPages from the nested page object
+                setTotalPages(payload.data.page?.totalPages || 0);
             })
             .catch((err) => console.error("Error fetching inventory:", err))
             .finally(() => setLoading(false));
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        fetchInventory(searchTerm, 1);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+            fetchInventory(searchTerm, newPage);
+        }
     };
 
     const fetchCategories = () => {
@@ -169,7 +196,7 @@ export default function AdminProductsPage() {
                     imageUrl: "",
                     quantity: "",
                 });
-                fetchInventory();
+                fetchInventory(searchTerm, page);
             })
             .catch((err) => alert(err.message));
     };
@@ -366,14 +393,24 @@ export default function AdminProductsPage() {
     return (
         <div className="w-full p-6">
             <div className="flex items-center py-4">
-                <Input
-                    placeholder="Filter products..."
-                    value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        table.getColumn("name")?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                />
+                <div className="flex w-full max-w-sm items-center space-x-2">
+                    <Input
+                        placeholder="Filter products..."
+                        value={searchTerm}
+                        onChange={(event) => {
+                            setSearchTerm(event.target.value);
+                            table.getColumn("name")?.setFilterValue(event.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSearch();
+                            }
+                        }}
+                    />
+                    <Button type="submit" size="icon" onClick={handleSearch}>
+                        <Search className="h-4 w-4" />
+                    </Button>
+                </div>
 
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
@@ -723,24 +760,23 @@ export default function AdminProductsPage() {
                     {table.getFilteredSelectedRowModel().rows.length} of{" "}
                     {table.getFilteredRowModel().rows.length} row(s) selected.
                 </div>
-                <div className="space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        Next
-                    </Button>
-                </div>
+                <Pagination className="w-auto h-auto shrink-0 space-x-2 justify-end">
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => handlePageChange(page - 1)}
+                                className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                        {/* Optionally add page numbers here if needed, keeping it simple for now as requested */}
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => handlePageChange(page + 1)}
+                                className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </div>
         </div>
     )

@@ -4,6 +4,7 @@ import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.CategoryService;
+import com.smecs.service.impl.CategoryCacheService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -20,23 +22,36 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final CategoryCacheService categoryCacheService;
 
-    public CategoryController(CategoryService service) {
+    public CategoryController(CategoryService service, CategoryCacheService cacheService) {
         this.categoryService = service;
+        this.categoryCacheService = cacheService;
     }
 
     @GetMapping
     public ResponseDTO<PagedResponseDTO<CategoryDTO>> list(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
+            @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(required = false, defaultValue = "false") boolean includeRelatedImages,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
+        // Construct a cache key that includes all search parameters
+        String cacheQueryKey = query + "|" + includeRelatedImages;
+
+        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(cacheQueryKey, page, size, sort);
+        if (cached.isPresent()) {
+             return new ResponseDTO<>("success", "Categories retrieved", cached.get());
+        }
+
         Sort sortSpec = parseSort(sort);
-        PageRequest pageRequest = PageRequest.of(page, size, sortSpec);
-        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(name, description, includeRelatedImages, pageRequest);
+        // Use 0-based page index for Spring Data
+        PageRequest pageRequest = PageRequest.of(page - 1, size, sortSpec);
+        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, includeRelatedImages, pageRequest);
+
+        categoryCacheService.putSearchResults(cacheQueryKey, page, size, sort, data);
+
         return new ResponseDTO<>("success", "Categories retrieved", data);
     }
 

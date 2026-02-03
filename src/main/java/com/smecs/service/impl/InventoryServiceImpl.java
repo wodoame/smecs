@@ -75,8 +75,17 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public PagedResponseDTO<InventoryDTO> getAllInventory(Pageable pageable) {
-        Page<Inventory> inventoryPage = inventoryRepository.findAll(pageable);
+    public PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable) {
+        Page<Inventory> inventoryPage;
+        if (query == null || query.isBlank()) {
+            inventoryPage = inventoryRepository.findAll(pageable);
+        } else {
+            inventoryPage = inventoryRepository.findByProduct_NameContainingIgnoreCase(query, pageable);
+        }
+        return getInventoryDTOPagedResponseDTO(inventoryPage);
+    }
+
+    private PagedResponseDTO<InventoryDTO> getInventoryDTOPagedResponseDTO(Page<Inventory> inventoryPage) {
         List<InventoryDTO> content = inventoryPage.getContent().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -96,7 +105,6 @@ public class InventoryServiceImpl implements InventoryService {
 
         pagedResponse.setContent(content);
         pagedResponse.setPage(pageMetadata);
-
         return pagedResponse;
     }
 

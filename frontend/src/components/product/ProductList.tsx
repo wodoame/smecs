@@ -28,12 +28,12 @@ export function ProductList() {
   // searchTerm is the input value, query is what we send to the API
   const [searchTerm, setSearchTerm] = useState("");
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
 
   const handleSearch = () => {
     setQuery(searchTerm);
-    setPage(0); // Reset to first page on new search
+    setPage(1); // Reset to first page on new search
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -77,7 +77,7 @@ export function ProductList() {
     const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
-      for (let i = 0; i < totalPages; i++) {
+      for (let i = 1; i <= totalPages; i++) {
         items.push(
           <PaginationItem key={i}>
             <PaginationLink
@@ -88,7 +88,7 @@ export function ProductList() {
                 setPage(i);
               }}
             >
-              {i + 1}
+              {i}
             </PaginationLink>
           </PaginationItem>
         );
@@ -96,13 +96,13 @@ export function ProductList() {
     } else {
       // Always show first page
       items.push(
-        <PaginationItem key={0}>
+        <PaginationItem key={1}>
           <PaginationLink
             href="#"
-            isActive={page === 0}
+            isActive={page === 1}
             onClick={(e) => {
               e.preventDefault();
-              setPage(0);
+              setPage(1);
             }}
           >
             1
@@ -111,18 +111,18 @@ export function ProductList() {
       );
 
       // Determine range around current page
-      let start = Math.max(1, page - 1);
-      let end = Math.min(totalPages - 2, page + 1);
+      let start = Math.max(2, page - 1);
+      let end = Math.min(totalPages - 1, page + 1);
 
-      if (page < 3) {
-        start = 1;
-        end = Math.min(totalPages - 2, 3);
-      } else if (page > totalPages - 4) {
-        start = Math.max(1, totalPages - 4);
-        end = totalPages - 2;
+      if (page < 4) {
+        start = 2;
+        end = Math.min(totalPages - 1, 4);
+      } else if (page > totalPages - 3) {
+        start = Math.max(2, totalPages - 3);
+        end = totalPages - 1;
       }
 
-      if (start > 1) {
+      if (start > 2) {
         items.push(
           <PaginationItem key="ellipsis-start">
             <PaginationEllipsis />
@@ -141,13 +141,13 @@ export function ProductList() {
                 setPage(i);
               }}
             >
-              {i + 1}
+              {i}
             </PaginationLink>
           </PaginationItem>
         );
       }
 
-      if (end < totalPages - 2) {
+      if (end < totalPages - 1) {
         items.push(
           <PaginationItem key="ellipsis-end">
             <PaginationEllipsis />
@@ -157,13 +157,13 @@ export function ProductList() {
 
       // Always show last page
       items.push(
-        <PaginationItem key={totalPages - 1}>
+        <PaginationItem key={totalPages}>
           <PaginationLink
             href="#"
-            isActive={page === totalPages - 1}
+            isActive={page === totalPages}
             onClick={(e) => {
               e.preventDefault();
-              setPage(totalPages - 1);
+              setPage(totalPages);
             }}
           >
             {totalPages}
@@ -224,9 +224,9 @@ export function ProductList() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (page > 0) setPage(page - 1);
+                      if (page > 1) setPage(page - 1);
                     }}
-                    className={page === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                   />
                 </PaginationItem>
 
@@ -237,9 +237,9 @@ export function ProductList() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (page < totalPages - 1) setPage(page + 1);
+                      if (page < totalPages) setPage(page + 1);
                     }}
-                    className={page >= totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                   />
                 </PaginationItem>
               </PaginationContent>

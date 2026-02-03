@@ -32,7 +32,7 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Trash2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -53,6 +53,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination"
+import type { ApiResponse } from "@/types/api"
 
 export interface Category {
     categoryId: number;
@@ -89,18 +97,37 @@ export default function AdminCategoriesPage() {
     const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
     const [viewingCategory, setViewingCategory] = React.useState<Category | null>(null);
 
-    const fetchCategories = () => {
+    // Search and Pagination State
+    const [searchTerm, setSearchTerm] = React.useState("")
+    const [page, setPage] = React.useState(1)
+    const [totalPages, setTotalPages] = React.useState(0)
+
+
+    const fetchCategories = (query = "", pageIndex = 1) => {
         setLoading(true);
-        fetch("/api/categories")
+        fetch(`/api/categories?query=${encodeURIComponent(query)}&page=${pageIndex}`)
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to fetch categories");
                 return res.json();
             })
-            .then((payload) => {
+            .then((payload: ApiResponse<Category>) => {
                 setData(payload.data.content || []);
+                setTotalPages(payload.data.page?.totalPages || 0);
             })
             .catch((err) => console.error("Error fetching categories:", err))
             .finally(() => setLoading(false));
+    };
+
+    const handleSearch = () => {
+        setPage(1);
+        fetchCategories(searchTerm, 1);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+            fetchCategories(searchTerm, newPage);
+        }
     };
 
     React.useEffect(() => {
@@ -124,7 +151,7 @@ export default function AdminCategoriesPage() {
                     description: "",
                     imageUrl: "",
                 });
-                fetchCategories();
+                fetchCategories(searchTerm, page);
                 toast.success("Category created successfully", {
                     icon: <CircleCheck className="h-5 w-5 text-green-500" />,
                 })
@@ -141,7 +168,7 @@ export default function AdminCategoriesPage() {
                 toast.success("Category deleted successfully", {
                     icon: <CircleCheck className="h-5 w-5 text-green-500" />,
                 });
-                fetchCategories();
+                fetchCategories(searchTerm, page);
             })
             .catch((err) => toast.error(err.message));
     };
@@ -321,14 +348,24 @@ export default function AdminCategoriesPage() {
     return (
         <div className="w-full p-6">
             <div className="flex items-center py-4">
-                <Input
-                    placeholder="Filter categories..."
-                    value={(table.getColumn("categoryName")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        table.getColumn("categoryName")?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                />
+                <div className="flex w-full max-w-sm items-center space-x-2">
+                    <Input
+                        placeholder="Filter products..."
+                        value={searchTerm}
+                        onChange={(event) => {
+                            setSearchTerm(event.target.value);
+                            table.getColumn("categoryName")?.setFilterValue(event.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSearch();
+                            }
+                        }}
+                    />
+                    <Button type="submit" size="icon" onClick={handleSearch}>
+                        <Search className="h-4 w-4" />
+                    </Button>
+                </div>
 
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
@@ -559,24 +596,22 @@ export default function AdminCategoriesPage() {
                     {table.getFilteredSelectedRowModel().rows.length} of{" "}
                     {table.getFilteredRowModel().rows.length} row(s) selected.
                 </div>
-                <div className="space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        Next
-                    </Button>
-                </div>
+                <Pagination className="w-auto h-auto shrink-0 space-x-2 justify-end">
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                onClick={() => handlePageChange(page - 1)}
+                                className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext
+                                onClick={() => handlePageChange(page + 1)}
+                                className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
             </div>
         </div>
     )

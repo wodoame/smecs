@@ -8,6 +8,6 @@ import org.springframework.data.domain.Pageable;
 public interface InventoryService {
     InventoryDTO getInventoryByProductId(Long productId);
     InventoryDTO updateStock(Long productId, Integer quantity);
-    PagedResponseDTO<InventoryDTO> getAllInventory(Pageable pageable);
+    PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable);
     InventoryDTO createInventoryWithProduct(CreateInventoryRequestDTO request);
 }

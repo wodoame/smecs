@@ -1,7 +1,7 @@
 package com.smecs.service.impl;
 
+import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PagedResponseDTO;
-import com.smecs.dto.ProductDTO;
 import com.smecs.service.CacheService;
 import com.smecs.service.SearchCacheService;
 import com.smecs.util.CacheEntry;
@@ -13,48 +13,46 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-memory cache for product requests with a simple TTL policy.
- * Only individual product lookups and search result pages are cached.
+ * In-memory cache for category requests with a simple TTL policy.
+ * Only individual category lookups and search result pages are cached.
  */
 @Service
-public class ProductCacheService implements CacheService<ProductDTO, Long>, SearchCacheService<ProductDTO> {
+public class CategoryCacheService implements CacheService<CategoryDTO, Long>, SearchCacheService<CategoryDTO> {
     private static final long DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-    private final Map<Long, CacheEntry<ProductDTO>> productById = new ConcurrentHashMap<>();
-    private final Map<String, CacheEntry<PagedResponseDTO<ProductDTO>>> searchCache = new ConcurrentHashMap<>();
+    private final Map<Long, CacheEntry<CategoryDTO>> categoryById = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry<PagedResponseDTO<CategoryDTO>>> searchCache = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<ProductDTO> getById(Long id) {
-        CacheEntry<ProductDTO> entry = productById.get(id);
+    public Optional<CategoryDTO> getById(Long id) {
+        CacheEntry<CategoryDTO> entry = categoryById.get(id);
         if (entry == null || entry.isExpired()) {
-            productById.remove(id);
+            categoryById.remove(id);
             return Optional.empty();
         }
         return Optional.of(entry.value());
     }
 
     @Override
-    public void put(ProductDTO product) {
-        if (product == null || product.getId() == null) {
+    public void put(CategoryDTO category) {
+        if (category == null || category.getCategoryId() == null) {
             return;
         }
-        productById.put(product.getId(), new CacheEntry<>(product, DEFAULT_TTL_MS));
-    }
-
-
-
-    @Override
-    public void putAll(List<ProductDTO> products) {
-        if (products == null) {
-            return;
-        }
-        products.forEach(this::put);
+        categoryById.put(Long.valueOf(category.getCategoryId()), new CacheEntry<>(category, DEFAULT_TTL_MS));
     }
 
     @Override
-    public Optional<PagedResponseDTO<ProductDTO>> getSearchResults(String query, int page, int size, String sort) {
+    public void putAll(List<CategoryDTO> categories) {
+        if (categories == null) {
+            return;
+        }
+        categories.forEach(this::put);
+    }
+
+    @Override
+    public Optional<PagedResponseDTO<CategoryDTO>> getSearchResults(String query, int page, int size, String sort) {
         String key = createSearchKey(query, page, size, sort);
-        CacheEntry<PagedResponseDTO<ProductDTO>> entry = searchCache.get(key);
+        CacheEntry<PagedResponseDTO<CategoryDTO>> entry = searchCache.get(key);
         if (entry == null || entry.isExpired()) {
             searchCache.remove(key);
             return Optional.empty();
@@ -63,7 +61,7 @@ public class ProductCacheService implements CacheService<ProductDTO, Long>, Sear
     }
 
     @Override
-    public void putSearchResults(String query, int page, int size, String sort, PagedResponseDTO<ProductDTO> result) {
+    public void putSearchResults(String query, int page, int size, String sort, PagedResponseDTO<CategoryDTO> result) {
         if (result != null && query != null) {
             String key = createSearchKey(query, page, size, sort);
             searchCache.put(key, new CacheEntry<>(result, DEFAULT_TTL_MS));
@@ -77,7 +75,7 @@ public class ProductCacheService implements CacheService<ProductDTO, Long>, Sear
     @Override
     public void invalidateById(Long id) {
         if (id != null) {
-            productById.remove(id);
+            categoryById.remove(id);
             searchCache.clear();
         }
     }
@@ -89,7 +87,7 @@ public class ProductCacheService implements CacheService<ProductDTO, Long>, Sear
 
     @Override
     public void invalidateAll() {
-        productById.clear();
+        categoryById.clear();
         searchCache.clear();
     }
 }
