@@ -11,4 +11,5 @@ public interface InventoryService {
     PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable);
     InventoryDTO createInventory(CreateInventoryRequestDTO request);
     InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request);
+    void deleteInventory(Long inventoryId);
 }

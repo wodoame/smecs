@@ -25,16 +25,19 @@ public class InventoryServiceImpl implements InventoryService {
     private final ProductRepository productRepository;
     private final ProductService productService;
     private final CategoryRepository categoryRepository;
+    private final InventoryCacheService inventoryCacheService;
 
     @Autowired
     public InventoryServiceImpl(InventoryRepository inventoryRepository,
                                 ProductRepository productRepository,
                                 ProductService productService,
-                                CategoryRepository categoryRepository) {
+                                CategoryRepository categoryRepository,
+                                InventoryCacheService inventoryCacheService) {
         this.inventoryRepository = inventoryRepository;
         this.productRepository = productRepository;
         this.productService = productService;
         this.categoryRepository = categoryRepository;
+        this.inventoryCacheService = inventoryCacheService;
     }
 
     @Override
@@ -133,7 +136,9 @@ public class InventoryServiceImpl implements InventoryService {
         // Set quantity and save inventory
         inventory.setQuantity(request.getQuantity());
         Inventory savedInventory = inventoryRepository.save(inventory);
-
+        // Invalidate cache for this inventory and all search lists
+        inventoryCacheService.invalidateById(savedInventory.getId());
+        inventoryCacheService.invalidateAllList();
         return mapToDTO(savedInventory);
     }
 
@@ -195,8 +200,19 @@ public class InventoryServiceImpl implements InventoryService {
         // Update inventory quantity
         inventory.setQuantity(request.getQuantity());
         Inventory savedInventory = inventoryRepository.save(inventory);
-
+        // Invalidate cache for this inventory and all search lists
+        inventoryCacheService.invalidateById(savedInventory.getId());
+        inventoryCacheService.invalidateAllList();
         return mapToDTO(savedInventory);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInventory(Long inventoryId) {
+        inventoryRepository.deleteById(inventoryId);
+        // Invalidate cache for this inventory and all search lists
+        inventoryCacheService.invalidateById(inventoryId);
+        inventoryCacheService.invalidateAllList();
     }
 
     private InventoryDTO mapToDTO(Inventory inventory) {
