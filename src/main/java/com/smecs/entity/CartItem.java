@@ -1,8 +1,13 @@
 package com.smecs.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "CartItems")
 public class CartItem {
@@ -21,17 +26,4 @@ public class CartItem {
     private int quantity;
     private double priceAtAddition;
     private LocalDateTime addedAt;
-
-    public Long getCartItemId() { return cartItemId; }
-    public void setCartItemId(Long cartItemId) { this.cartItemId = cartItemId; }
-    public Cart getCart() { return cart; }
-    public void setCart(Cart cart) { this.cart = cart; }
-    public Product getProduct() { return product; }
-    public void setProduct(Product product) { this.product = product; }
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-    public double getPriceAtAddition() { return priceAtAddition; }
-    public void setPriceAtAddition(double priceAtAddition) { this.priceAtAddition = priceAtAddition; }
-    public LocalDateTime getAddedAt() { return addedAt; }
-    public void setAddedAt(LocalDateTime addedAt) { this.addedAt = addedAt; }
 }

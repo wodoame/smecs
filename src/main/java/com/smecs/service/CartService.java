@@ -1,5 +1,6 @@
 package com.smecs.service;
 
+import com.smecs.dto.CartItemRequest;
 import com.smecs.entity.Cart;
 import com.smecs.entity.CartItem;
 import com.smecs.entity.Product;
@@ -11,9 +12,12 @@ import com.smecs.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CartService {
@@ -109,5 +113,53 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId);
         if (cart == null) return false;
         return cartItemRepository.findByCartId(cart.getCartId()).stream().anyMatch(item -> item.getProduct().getId().equals(productId));
+    }
+
+    public List<CartItem> addItemsToCart(Long userId, List<CartItemRequest> items) {
+        List<CartItem> addedItems = new ArrayList<>();
+        // Simple implementation: iterate and add individually.
+        // Optimization: Fetch cart once, products in batch, save items in batch.
+        // For now, reusing addToCart logic via direct calls might be inefficient but ensures consistency.
+        // However, fetching cart repeatedly is bad. Let's optimize slightly.
+
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) {
+            cart = new Cart();
+            cart.setUser(userOpt.get());
+            cart = cartRepository.save(cart);
+        }
+
+        // Optimization: Batch fetch products
+        List<Long> productIds = items.stream().map(CartItemRequest::getProductId).collect(Collectors.toList());
+        Map<Long, Product> productMap = productRepository.findAllById(productIds).stream().collect(Collectors.toMap(Product::getId, product -> product));
+
+        for (CartItemRequest req : items) {
+            Product product = productMap.get(req.getProductId());
+            if (product == null) {
+                continue; // Or throw exception
+            }
+
+            // Check if item exists in cart
+            CartItem existingItem = cartItemRepository.findByCartIdAndProductId(cart.getCartId(), req.getProductId());
+
+            CartItem itemToSave;
+            if (existingItem != null) {
+                existingItem.setQuantity(existingItem.getQuantity() + req.getQuantity());
+                itemToSave = existingItem;
+            } else {
+                itemToSave = new CartItem();
+                itemToSave.setCart(cart);
+                itemToSave.setProduct(product);
+                itemToSave.setQuantity(req.getQuantity());
+                itemToSave.setPriceAtAddition(product.getPrice());
+            }
+            addedItems.add(cartItemRepository.save(itemToSave));
+        }
+        return addedItems;
     }
 }
