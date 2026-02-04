@@ -18,3 +18,22 @@ export interface ApiResponse<T> {
         page: PageInfo;
     };
 }
+export interface SingleApiResponse<T> {
+    status: string;
+    message: string;
+    data: T;
+}
+
+export interface AuthData {
+    email: string;
+    id: number;
+    role: string;
+    username: string;
+    authExpiry?: number;
+}
+
+export interface RegisterPayload {
+    username: string;
+    email: string;
+    password: string;
+}
