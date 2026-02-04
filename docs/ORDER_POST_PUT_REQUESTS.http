@@ -1,0 +1,121 @@
+### Order - Create
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1
+}
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Order created",
+  "data": {
+    "id": 10,
+    "userId": 1,
+    "totalAmount": 0.0,
+    "status": "PENDING",
+    "createdAt": "2026-02-04T12:00:00"
+  }
+}
+
+### Order - Get by ID
+GET http://localhost:8080/api/orders/10
+Accept: application/json
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Order found",
+  "data": {
+    "id": 10,
+    "userId": 1,
+    "totalAmount": 0.0,
+    "status": "PENDING",
+    "createdAt": "2026-02-04T12:00:00"
+  }
+}
+
+### Order - Get All
+GET http://localhost:8080/api/orders
+Accept: application/json
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Orders fetched",
+  "data": [
+    {
+      "id": 10,
+      "userId": 1,
+      "totalAmount": 0.0,
+      "status": "PENDING",
+      "createdAt": "2026-02-04T12:00:00"
+    },
+    {
+      "id": 11,
+      "userId": 2,
+      "totalAmount": 99.99,
+      "status": "SHIPPED",
+      "createdAt": "2026-02-04T13:00:00"
+    }
+  ]
+}
+
+### Order - Update (Status Only)
+PUT http://localhost:8080/api/orders/10
+Content-Type: application/json
+Accept: application/json
+
+{
+  "status": "SHIPPED"
+}
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Order updated",
+  "data": {
+    "id": 10,
+    "userId": 1,
+    "totalAmount": 0.0,
+    "status": "SHIPPED",
+    "createdAt": "2026-02-04T12:00:00"
+  }
+}
+
+### Order - Update (Full Example)
+PUT http://localhost:8080/api/orders/10
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "totalAmount": 199.99,
+  "status": "DELIVERED"
+}
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Order updated",
+  "data": {
+    "id": 10,
+    "userId": 1,
+    "totalAmount": 199.99,
+    "status": "DELIVERED",
+    "createdAt": "2026-02-04T12:00:00"
+  }
+}
+
+### Order - Delete
+DELETE http://localhost:8080/api/orders/10
+Accept: application/json
+
+# Sample Response
+{
+  "status": "success",
+  "message": "Order deleted",
+  "data": null
+}
