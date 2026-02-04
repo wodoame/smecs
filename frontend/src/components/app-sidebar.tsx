@@ -14,6 +14,7 @@ import {
   PieChart,
   Settings2,
   Shield,
+  ShoppingBag,
   SquareTerminal,
 } from "lucide-react"
 
@@ -130,6 +131,12 @@ const data = {
           url: "/admin/categories",
         },
       ],
+    },
+    {
+      title: "Cart",
+      url: "/cart",
+      icon: ShoppingBag,
+      items: [],
     },
     {
       title: "Settings",

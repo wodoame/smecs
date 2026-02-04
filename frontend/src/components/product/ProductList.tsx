@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
+import { useCart } from "@/hooks/use-cart";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -31,6 +32,7 @@ export function ProductList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTrigger, setSearchTrigger] = useState(0);
+  const { addToCart } = useCart();
 
   const handleSearch = () => {
     setQuery(searchTerm);
@@ -211,8 +213,13 @@ export function ProductList() {
                 title={product.name}
                 description={product.description}
                 price={`$${product.price}`}
-                onView={() => {
-                  alert(`Viewing: ${product.name}`);
+                onAddToCart={() => {
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                  });
                 }}
               />
             ))}

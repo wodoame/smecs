@@ -15,7 +15,7 @@ export interface ProductCardProps {
   description: string;
   price: string;
   featured?: boolean;
-  onView?: () => void;
+  onAddToCart?: () => void;
 }
 
 export function ProductCard({
@@ -24,7 +24,7 @@ export function ProductCard({
   description,
   price,
   featured = false,
-  onView,
+  onAddToCart,
 }: ProductCardProps) {
   return (
     <Card className="relative mx-auto w-full max-w-sm pt-0 flex flex-col h-full shadow-none border-zinc-200 dark:border-zinc-800">
@@ -47,8 +47,11 @@ export function ProductCard({
         <div className="flex-1" />
       </div>
       <CardFooter className="w-full pt-2 pb-4 px-4 mt-auto">
-        <Button className="w-full rounded-b-md" onClick={onView}>
-          View Product
+        <Button
+          className="w-full rounded-b-md bg-yellow-500 hover:bg-yellow-600 text-black"
+          onClick={onAddToCart}
+        >
+          Add to Cart
         </Button>
       </CardFooter>
     </Card>
