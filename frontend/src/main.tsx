@@ -9,6 +9,8 @@ import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import ComboboxTestPage from "./pages/ComboboxTestPage";
 import CartPage from "./pages/CartPage";
+import SignupPage from "./pages/SignupPage";
+import LoginPage from "./pages/LoginPage";
 
 
 const router = createBrowserRouter([
@@ -44,7 +46,16 @@ const router = createBrowserRouter([
         path: "cart",
         element: <CartPage />,
       },
+
     ],
+  },
+  {
+    path: "/signup",
+    element: <SignupPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
   },
 ]);
 

@@ -42,4 +42,18 @@ public class UserFrontendController {
         // Serve index.html for /contact
         return resourceLoader.getResource("classpath:/static/index.html");
     }
+
+    @GetMapping(value = "/signup", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Resource signupPage() {
+        // Serve index.html for /contact
+        return resourceLoader.getResource("classpath:/static/index.html");
+    }
+
+    @GetMapping(value = "/login", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Resource loginPage() {
+        // Serve index.html for /contact
+        return resourceLoader.getResource("classpath:/static/index.html");
+    }
 }
