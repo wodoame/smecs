@@ -1,141 +1,113 @@
-//package com.smecs.service;
-//
-//import com.smecs.dao.CartDAO;
-//import com.smecs.model.Cart;
-//import com.smecs.model.CartItem;
-//import com.smecs.model.Product;
-//import com.smecs.util.SessionManager;
-//
-//import java.util.List;
-//
-///**
-// * Service class for cart operations.
-// * Handles business logic related to shopping cart functionality.
-// */
-//public class CartService {
-//    private final CartDAO cartDAO;
-//
-//    public CartService() {
-//        this.cartDAO = new CartDAO();
-//    }
-//
-//    /**
-//     * Add a product to the current user's cart.
-//     *
-//     * @param product  The product to add
-//     * @param quantity The quantity to add
-//     * @return The cart item that was added/updated, or null if failed
-//     * @throws IllegalStateException if user is not logged in
-//     */
-//    public CartItem addToCart(Product product, int quantity) {
-//        SessionManager session = SessionManager.getInstance();
-//
-//        if (!session.isLoggedIn()) {
-//            throw new IllegalStateException("User must be logged in to add items to cart");
-//        }
-//
-//        int userId = session.getCurrentUserId();
-//        Cart cart = cartDAO.getOrCreateCart(userId);
-//
-//        if (cart == null) {
-//            throw new RuntimeException("Failed to get or create cart for user");
-//        }
-//
-//        return cartDAO.addItemToCart(cart.getCartId(), product.getProductId(), quantity, product.getPrice());
-//    }
-//
-//    /**
-//     * Get the current user's cart.
-//     *
-//     * @return The user's cart, or null if not logged in
-//     */
-//    public Cart getCurrentUserCart() {
-//        SessionManager session = SessionManager.getInstance();
-//
-//        if (!session.isLoggedIn()) {
-//            return null;
-//        }
-//
-//        return cartDAO.getOrCreateCart(session.getCurrentUserId());
-//    }
-//
-//    /**
-//     * Get all items in the current user's cart.
-//     *
-//     * @return List of cart items, or empty list if not logged in
-//     */
-//    public List<CartItem> getCartItems() {
-//        Cart cart = getCurrentUserCart();
-//        if (cart == null) {
-//            return List.of();
-//        }
-//        return cartDAO.getCartItems(cart.getCartId());
-//    }
-//
-//    /**
-//     * Update the quantity of an item in the cart.
-//     *
-//     * @param cartItemId The cart item ID
-//     * @param quantity   The new quantity
-//     * @return true if successful
-//     */
-//    public boolean updateItemQuantity(int cartItemId, int quantity) {
-//        if (quantity <= 0) {
-//            return removeFromCart(cartItemId);
-//        }
-//        return cartDAO.updateItemQuantity(cartItemId, quantity);
-//    }
-//
-//    /**
-//     * Remove an item from the cart.
-//     *
-//     * @param cartItemId The cart item ID to remove
-//     * @return true if successful
-//     */
-//    public boolean removeFromCart(int cartItemId) {
-//        return cartDAO.removeItemFromCart(cartItemId);
-//    }
-//
-//    /**
-//     * Clear all items from the current user's cart.
-//     *
-//     * @return true if successful
-//     */
-//    public boolean clearCart() {
-//        Cart cart = getCurrentUserCart();
-//        if (cart == null) {
-//            return false;
-//        }
-//        return cartDAO.clearCart(cart.getCartId());
-//    }
-//
-//    /**
-//     * Get the total number of items in the current user's cart.
-//     *
-//     * @return The total item count, or 0 if not logged in
-//     */
-//    public int getCartItemCount() {
-//        SessionManager session = SessionManager.getInstance();
-//
-//        if (!session.isLoggedIn()) {
-//            return 0;
-//        }
-//
-//        return cartDAO.getCartItemCount(session.getCurrentUserId());
-//    }
-//
-//    /**
-//     * Check if a product is in the current user's cart.
-//     *
-//     * @param productId The product ID to check
-//     * @return true if the product is in the cart
-//     */
-//    public boolean isProductInCart(int productId) {
-//        Cart cart = getCurrentUserCart();
-//        if (cart == null) {
-//            return false;
-//        }
-//        return cartDAO.findCartItem(cart.getCartId(), productId) != null;
-//    }
-//}
+package com.smecs.service;
 
+import com.smecs.entity.Cart;
+import com.smecs.entity.CartItem;
+import com.smecs.entity.Product;
+import com.smecs.entity.User;
+import com.smecs.repository.CartItemRepository;
+import com.smecs.repository.CartRepository;
+import com.smecs.repository.ProductRepository;
+import com.smecs.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class CartService {
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+
+    @Autowired
+    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRepository productRepository, UserRepository userRepository) {
+        this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.productRepository = productRepository;
+        this.userRepository = userRepository;
+    }
+
+    public CartItem addToCart(Long userId, Long productId, int quantity) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        Optional<Product> productOpt = productRepository.findById(productId);
+        if (userOpt.isEmpty() || productOpt.isEmpty()) {
+            throw new IllegalArgumentException("User or Product not found");
+        }
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) {
+            cart = new Cart();
+            cart.setUser(userOpt.get());
+            cart = cartRepository.save(cart);
+        }
+        Product product = productOpt.get();
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getCartId());
+        for (CartItem item : items) {
+            if (item.getProduct().getId().equals(productId)) {
+                item.setQuantity(item.getQuantity() + quantity);
+                return cartItemRepository.save(item);
+            }
+        }
+        CartItem newItem = new CartItem();
+        newItem.setCart(cart);
+        newItem.setProduct(product);
+        newItem.setQuantity(quantity);
+        newItem.setPriceAtAddition(product.getPrice());
+        return cartItemRepository.save(newItem);
+    }
+
+    public Cart getCurrentUserCart(Long userId) {
+        return cartRepository.findByUserId(userId);
+    }
+
+    public List<CartItem> getCartItems(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) return Collections.emptyList();
+        return cartItemRepository.findByCartId(cart.getCartId());
+    }
+
+    public boolean updateItemQuantity(Long userId, Long cartItemId, int quantity) {
+        Optional<CartItem> itemOpt = cartItemRepository.findById(cartItemId);
+        if (itemOpt.isEmpty()) return false;
+        CartItem item = itemOpt.get();
+        if (!item.getCart().getUser().getId().equals(userId)) return false;
+        if (quantity <= 0) {
+            cartItemRepository.deleteById(cartItemId);
+            return true;
+        }
+        item.setQuantity(quantity);
+        cartItemRepository.save(item);
+        return true;
+    }
+
+    public boolean removeFromCart(Long userId, Long cartItemId) {
+        Optional<CartItem> itemOpt = cartItemRepository.findById(cartItemId);
+        if (itemOpt.isEmpty()) return false;
+        CartItem item = itemOpt.get();
+        if (!item.getCart().getUser().getId().equals(userId)) return false;
+        cartItemRepository.deleteById(cartItemId);
+        return true;
+    }
+
+    public boolean clearCart(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) return false;
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getCartId());
+        cartItemRepository.deleteAll(items);
+        return true;
+    }
+
+    public int getCartItemCount(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) return 0;
+        return cartItemRepository.findByCartId(cart.getCartId()).stream().mapToInt(CartItem::getQuantity).sum();
+    }
+
+    public boolean isProductInCart(Long userId, Long productId) {
+        Cart cart = cartRepository.findByUserId(userId);
+        if (cart == null) return false;
+        return cartItemRepository.findByCartId(cart.getCartId()).stream().anyMatch(item -> item.getProduct().getId().equals(productId));
+    }
+}
