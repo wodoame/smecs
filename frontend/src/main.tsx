@@ -11,6 +11,7 @@ import ComboboxTestPage from "./pages/ComboboxTestPage";
 import CartPage from "./pages/CartPage";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
 
 
 const router = createBrowserRouter([
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
       {
         path: "products",
         element: <ProductList />,
+      },
+      {
+        path: "products/:productId",
+        element: <ProductDetailsPage />,
       },
       {
         path: "admin/inventories",
