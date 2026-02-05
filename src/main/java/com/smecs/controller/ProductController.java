@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
@@ -30,7 +31,7 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseDTO<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) {
+    public ResponseDTO<ProductDTO> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         return new ResponseDTO<>("success", "Product created", productService.createProduct(productDTO));
     }
 

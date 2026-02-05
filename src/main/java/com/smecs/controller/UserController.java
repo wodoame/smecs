@@ -8,6 +8,7 @@ import com.smecs.entity.User;
 import com.smecs.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,7 +21,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseDTO<UserResponseDTO> register(@RequestBody UserRegisterDTO dto) {
+    public ResponseDTO<UserResponseDTO> register(@Valid @RequestBody UserRegisterDTO dto) {
         boolean success = userService.registerUser(dto.getUsername(), dto.getEmail(), dto.getPassword(), null);
         if (!success) {
             return new ResponseDTO<>("error", "Registration failed", null);
@@ -35,7 +36,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseDTO<UserResponseDTO> login(@RequestBody UserLoginDTO dto) {
+    public ResponseDTO<UserResponseDTO> login(@Valid @RequestBody UserLoginDTO dto) {
         User user = userService.authenticateUser(dto.getUsername(), dto.getPassword());
         if (user == null) {
             return new ResponseDTO<>("error", "Invalid credentials", null);

@@ -9,6 +9,7 @@ import com.smecs.entity.CartItem;
 import com.smecs.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,14 +26,14 @@ public class CartController {
     }
 
     @PostMapping("/add")
-    public ResponseDTO<CartItemDTO> addToCart(@RequestBody AddToCartRequest request) {
+    public ResponseDTO<CartItemDTO> addToCart(@Valid @RequestBody AddToCartRequest request) {
         System.out.println(request);
         CartItem item = cartService.addToCart(request.getUserId(), request.getProductId(), request.getQuantity());
         return new ResponseDTO<>("success", "Item added to cart", mapToDTO(item));
     }
 
     @PostMapping("/add-batch")
-    public ResponseDTO<List<CartItemDTO>> addItemsToCart(@RequestBody BatchAddToCartRequest request) {
+    public ResponseDTO<List<CartItemDTO>> addItemsToCart(@Valid @RequestBody BatchAddToCartRequest request) {
         List<CartItem> items = cartService.addItemsToCart(request.getUserId(), request.getItems());
         List<CartItemDTO> dtos = items.stream().map(this::mapToDTO).collect(Collectors.toList());
         return new ResponseDTO<>("success", "Items added to cart", dtos);
@@ -46,7 +47,7 @@ public class CartController {
     }
 
     @PutMapping("/update")
-    public ResponseDTO<CartItemDTO> updateCartItem(@RequestBody UpdateCartItemRequest request) {
+    public ResponseDTO<CartItemDTO> updateCartItem(@Valid @RequestBody UpdateCartItemRequest request) {
         boolean updated = cartService.updateItemQuantity(request.getUserId(), request.getCartItemId(), request.getQuantity());
         if (updated) {
             return new ResponseDTO<>("success", "Cart item updated successfully", null);

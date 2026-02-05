@@ -7,6 +7,7 @@ import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @Validated
@@ -21,7 +22,7 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseDTO<OrderDTO> createOrder(@RequestBody CreateOrderRequestDTO request) {
+    public ResponseDTO<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
         return new ResponseDTO<>("success", "Order created", orderService.createOrder(request));
     }
 
