@@ -5,10 +5,12 @@ const AUTH_KEY = "smecs_auth";
 export const auth = {
     login: (data: AuthData) => {
         localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+        window.dispatchEvent(new Event("auth-change"));
     },
 
     logout: () => {
         localStorage.removeItem(AUTH_KEY);
+        window.dispatchEvent(new Event("auth-change"));
     },
 
     getUser: (): AuthData | null => {

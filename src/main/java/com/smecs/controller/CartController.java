@@ -4,6 +4,7 @@ import com.smecs.dto.AddToCartRequest;
 import com.smecs.dto.BatchAddToCartRequest;
 import com.smecs.dto.CartItemDTO;
 import com.smecs.dto.ResponseDTO;
+import com.smecs.dto.UpdateCartItemRequest;
 import com.smecs.entity.CartItem;
 import com.smecs.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class CartController {
 
     @PostMapping("/add")
     public ResponseDTO<CartItemDTO> addToCart(@RequestBody AddToCartRequest request) {
+        System.out.println(request);
         CartItem item = cartService.addToCart(request.getUserId(), request.getProductId(), request.getQuantity());
         return new ResponseDTO<>("success", "Item added to cart", mapToDTO(item));
     }
@@ -34,6 +36,23 @@ public class CartController {
         List<CartItem> items = cartService.addItemsToCart(request.getUserId(), request.getItems());
         List<CartItemDTO> dtos = items.stream().map(this::mapToDTO).collect(Collectors.toList());
         return new ResponseDTO<>("success", "Items added to cart", dtos);
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseDTO<List<CartItemDTO>> getCart(@PathVariable Long userId) {
+        List<CartItem> items = cartService.getCartItems(userId);
+        List<CartItemDTO> dtos = items.stream().map(this::mapToDTO).collect(Collectors.toList());
+        return new ResponseDTO<>("success", "Cart items retrieved successfully", dtos);
+    }
+
+    @PutMapping("/update")
+    public ResponseDTO<CartItemDTO> updateCartItem(@RequestBody UpdateCartItemRequest request) {
+        boolean updated = cartService.updateItemQuantity(request.getUserId(), request.getCartItemId(), request.getQuantity());
+        if (updated) {
+            return new ResponseDTO<>("success", "Cart item updated successfully", null);
+        } else {
+            return new ResponseDTO<>("error", "Failed to update cart item", null);
+        }
     }
 
     private CartItemDTO mapToDTO(CartItem item) {

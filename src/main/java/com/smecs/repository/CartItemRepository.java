@@ -2,12 +2,17 @@ package com.smecs.repository;
 
 import com.smecs.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
-    List<CartItem> findByCartId(Long cartId);
-    CartItem findByCartIdAndProductId(Long cartId, Long productId);
+    @Query("SELECT ci FROM CartItem ci WHERE ci.cart.cartId = :cartId")
+    List<CartItem> findByCartId(@Param("cartId") Long cartId);
+
+    @Query("SELECT ci FROM CartItem ci WHERE ci.cart.cartId = :cartId AND ci.product.id = :productId")
+    CartItem findByCartIdAndProductId(@Param("cartId") Long cartId, @Param("productId") Long productId);
 }

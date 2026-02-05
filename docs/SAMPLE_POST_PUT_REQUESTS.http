@@ -165,3 +165,124 @@ Accept: application/json
 #     "authExpiry": 1707075600000
 #   }
 # }
+###
+### Cart - Add Item
+POST http://localhost:8080/api/cart/add
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "productId": 5,
+  "quantity": 2
+}
+
+###
+### Cart - Add Item (response example)
+# Response body (200 OK):
+# {
+#   "status": "success",
+#   "message": "Item added to cart",
+#   "data": {
+#     "cartItemId": 10,
+#     "productId": 5,
+#     "productName": "All-Terrain Backpack Pro",
+#     "productImage": "https://cdn.example.com/images/products/all-terrain-backpack-pro.png",
+#     "quantity": 2,
+#     "price": 199.99,
+#     "subtotal": 399.98
+#   }
+# }
+
+###
+### Cart - Add Batch Items
+POST http://localhost:8080/api/cart/add-batch
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "items": [
+    {
+      "productId": 5,
+      "quantity": 1
+    },
+    {
+      "productId": 2,
+      "quantity": 3
+    }
+  ]
+}
+
+###
+### Cart - Add Batch Items (response example)
+# Response body (200 OK):
+# {
+#   "status": "success",
+#   "message": "Items added to cart",
+#   "data": [
+#     {
+#       "cartItemId": 11,
+#       "productId": 5,
+#       "productName": "All-Terrain Backpack Pro",
+#       "productImage": "https://cdn.example.com/images/products/all-terrain-backpack-pro.png",
+#       "quantity": 3,
+#       "price": 199.99,
+#       "subtotal": 599.97
+#     },
+#     {
+#       "cartItemId": 12,
+#       "productId": 2,
+#       "productName": "Compact Travel Towel",
+#       "productImage": "https://cdn.example.com/images/products/travel-towel.png",
+#       "quantity": 3,
+#       "price": 24.99,
+#       "subtotal": 74.97
+#     }
+#   ]
+# }
+
+###
+### Cart - Get User Cart
+GET http://localhost:8080/api/cart/1
+Accept: application/json
+
+###
+### Cart - Get User Cart (response example)
+# Response body (200 OK):
+# {
+#   "status": "success",
+#   "message": "Cart items retrieved successfully",
+#   "data": [
+#     {
+#       "cartItemId": 11,
+#       "productId": 5,
+#       "productName": "All-Terrain Backpack Pro",
+#       "productImage": "https://cdn.example.com/images/products/all-terrain-backpack-pro.png",
+#       "quantity": 3,
+#       "price": 199.99,
+#       "subtotal": 599.97
+#     },
+#     {
+#       "cartItemId": 12,
+#       "productId": 2,
+#       "productName": "Compact Travel Towel",
+#       "productImage": "https://cdn.example.com/images/products/travel-towel.png",
+#       "quantity": 3,
+#       "price": 24.99,
+#       "subtotal": 74.97
+#     }
+#   ]
+# }
+
+###
+### Cart - Update Item Quantity
+PUT http://localhost:8080/api/cart/update
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1,
+  "cartItemId": 11,
+  "quantity": 5
+}
