@@ -1,17 +1,13 @@
 package com.smecs.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-@Getter
-@Setter
-public class ProductDTO {
-    private Long id;
-
+@Data
+public class CreateProductRequestDTO {
     @NotBlank(message = "Product name is required")
     @Size(min = 3, max = 100, message = "Product name must be between 3 and 100 characters")
     private String name;
@@ -21,6 +17,8 @@ public class ProductDTO {
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be greater than zero")
     private Double price;
-    private Long categoryId;
+
     private String imageUrl;
+
+    private Long categoryId;
 }

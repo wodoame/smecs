@@ -7,10 +7,6 @@ Accept: application/json
   "categoryName": "Outdoor Gear",
   "description": "Equipment for camping and hiking adventures",
   "imageUrl": "https://cdn.example.com/images/categories/outdoor-gear.png",
-  "relatedImageUrls": [
-    "https://cdn.example.com/images/categories/outdoor-tents.png",
-    "https://cdn.example.com/images/categories/outdoor-backpacks.png"
-  ]
 }
 
 ###
@@ -24,9 +20,6 @@ Accept: application/json
   "categoryName": "Outdoor & Travel",
   "description": "Camping, hiking, and travel-ready products",
   "imageUrl": "https://cdn.example.com/images/categories/outdoor-travel.png",
-  "relatedImageUrls": [
-    "https://cdn.example.com/images/categories/travel-packs.png"
-  ]
 }
 
 ###

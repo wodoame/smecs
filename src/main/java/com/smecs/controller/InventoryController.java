@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,12 +36,13 @@ public class InventoryController {
     }
 
     @PostMapping
-    public ResponseDTO<InventoryDTO> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
-        return new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request));
+    public ResponseEntity<ResponseDTO<InventoryDTO>> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request)));
     }
 
     @GetMapping
-    public ResponseDTO<PagedResponseDTO<InventoryDTO>> searchInventory(
+    public ResponseEntity<ResponseDTO<PagedResponseDTO<InventoryDTO>>> searchInventory(
             @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
@@ -47,7 +50,7 @@ public class InventoryController {
     ) {
         Optional<PagedResponseDTO<InventoryDTO>> cached = inventoryCacheService.getSearchResults(query, page, size, sort);
         if (cached.isPresent()) {
-            return new ResponseDTO<>("success", "Inventory retrieved", cached.get());
+            return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", cached.get()));
         }
 
         Sort sortSpec = parseSort(sort);
@@ -56,21 +59,21 @@ public class InventoryController {
         PagedResponseDTO<InventoryDTO> result = inventoryService.searchInventory(query, pageable);
         inventoryCacheService.putSearchResults(query, page, size, sort, result);
 
-        return new ResponseDTO<>("success", "Inventory retrieved", result);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", result));
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseDTO<InventoryDTO> getInventoryByProductId(@PathVariable Long productId) {
-        return new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId));
+    public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryByProductId(@PathVariable Long productId) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId)));
     }
 
 
     @PutMapping("/{inventoryId}")
-    public ResponseDTO<InventoryDTO> updateInventory(
+    public ResponseEntity<ResponseDTO<InventoryDTO>> updateInventory(
             @PathVariable Long inventoryId,
             @Valid @RequestBody UpdateInventoryRequestDTO request) {
-        return new ResponseDTO<>("success", "Inventory updated",
-                inventoryService.updateInventory(inventoryId, request));
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory updated",
+                inventoryService.updateInventory(inventoryId, request)));
     }
 
     private Sort parseSort(String sort) {

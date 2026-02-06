@@ -5,6 +5,8 @@ import com.smecs.dto.OrderDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -22,23 +24,24 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseDTO<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
-        return new ResponseDTO<>("success", "Order created", orderService.createOrder(request));
+    public ResponseEntity<ResponseDTO<OrderDTO>> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ResponseDTO<>("success", "Order created", orderService.createOrder(request)));
     }
 
     @GetMapping("/{id}")
-    public ResponseDTO<OrderDTO> getOrder(@PathVariable Long id) {
-        return new ResponseDTO<>("success", "Order found", orderService.getOrderById(id));
+    public ResponseEntity<ResponseDTO<OrderDTO>> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Order found", orderService.getOrderById(id)));
     }
 
     @GetMapping
-    public ResponseDTO<List<OrderDTO>> getAllOrders() {
-        return new ResponseDTO<>("success", "Orders fetched", orderService.getAllOrders());
+    public ResponseEntity<ResponseDTO<List<OrderDTO>>> getAllOrders() {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Orders fetched", orderService.getAllOrders()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseDTO<Void> deleteOrder(@PathVariable Long id) {
+    public ResponseEntity<ResponseDTO<Void>> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
-        return new ResponseDTO<>("success", "Order deleted", null);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Order deleted", null));
     }
 }

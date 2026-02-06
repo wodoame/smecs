@@ -1,6 +1,6 @@
 package com.smecs.service.impl;
 
-import com.smecs.dto.CategoryDTO;
+import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -33,14 +33,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO createProduct(ProductDTO productDTO) {
+    public ProductDTO createProduct(CreateProductRequestDTO request) {
         Product product = new Product();
-        product.setName(productDTO.getName());
-        product.setDescription(productDTO.getDescription());
-        product.setPrice(productDTO.getPrice());
-        product.setImageUrl(productDTO.getImageUrl());
-        Category category = categoryRepository.findById(productDTO.getCategory().getCategoryId().longValue()).orElseThrow();
-        product.setCategory(category);
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setImageUrl(request.getImageUrl());
+
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            product.setCategory(category);
+        }
+
         product = productRepository.save(product);
         ProductDTO result = mapToDto(product);
         productCacheService.put(result);
@@ -85,14 +90,16 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
+    public ProductDTO updateProduct(Long id, CreateProductRequestDTO request) {
         Product product = productRepository.findById(id).orElseThrow();
-        product.setName(productDTO.getName());
-        product.setDescription(productDTO.getDescription());
-        product.setPrice(productDTO.getPrice());
-        product.setImageUrl(productDTO.getImageUrl());
-        Category category = categoryRepository.findById(productDTO.getCategory().getCategoryId().longValue()).orElseThrow();
-        product.setCategory(category);
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setImageUrl(request.getImageUrl());
+        if(request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+            product.setCategory(category);
+        }
         product = productRepository.save(product);
         ProductDTO result = mapToDto(product);
         productCacheService.put(result);
@@ -114,16 +121,9 @@ public class ProductServiceImpl implements ProductService {
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setImageUrl(product.getImageUrl());
-
-        // Map category to CategoryDTO
-        Category category = product.getCategory();
-        CategoryDTO categoryDTO = new CategoryDTO();
-        categoryDTO.setCategoryId(category.getId().intValue());
-        categoryDTO.setCategoryName(category.getName());
-        categoryDTO.setDescription(category.getDescription());
-        categoryDTO.setImageUrl(category.getImageUrl());
-        dto.setCategory(categoryDTO);
-
+        if(product.getCategory() != null) {
+            dto.setCategoryId(product.getCategory().getId());
+        }
         return dto;
     }
 }

@@ -119,11 +119,11 @@ public class InventoryServiceImpl implements InventoryService {
                 throw new RuntimeException("Category not found with id: " + categoryId);
             }
 
-            // Build ProductDTO from request
-            ProductDTO productDTO = buildProductDTO(request, categoryId);
+            // Build CreateProductRequestDTO from request
+            CreateProductRequestDTO createProductRequest = buildCreateProductRequestDTO(request, categoryId);
 
             // Create product using ProductService
-            ProductDTO createdProduct = productService.createProduct(productDTO);
+            ProductDTO createdProduct = productService.createProduct(createProductRequest);
 
             // Get the created product entity
             Product product = productRepository.findById(createdProduct.getId())
@@ -142,18 +142,14 @@ public class InventoryServiceImpl implements InventoryService {
         return mapToDTO(savedInventory);
     }
 
-    private static ProductDTO buildProductDTO(CreateInventoryRequestDTO request, Long categoryId) {
-        ProductDTO productDTO = new ProductDTO();
-        productDTO.setName(request.getProduct().getName());
-        productDTO.setDescription(request.getProduct().getDescription());
-        productDTO.setPrice(request.getProduct().getPrice());
-        productDTO.setImageUrl(request.getProduct().getImageUrl());
-
-        // Set category for product
-        CategoryDTO categoryDTO = new CategoryDTO();
-        categoryDTO.setCategoryId(categoryId.intValue());
-        productDTO.setCategory(categoryDTO);
-        return productDTO;
+    private static CreateProductRequestDTO buildCreateProductRequestDTO(CreateInventoryRequestDTO request, Long categoryId) {
+        CreateProductRequestDTO dto = new CreateProductRequestDTO();
+        dto.setName(request.getProduct().getName());
+        dto.setDescription(request.getProduct().getDescription());
+        dto.setPrice(request.getProduct().getPrice());
+        dto.setImageUrl(request.getProduct().getImageUrl());
+        dto.setCategoryId(categoryId);
+        return dto;
     }
 
     @Override
@@ -237,7 +233,7 @@ public class InventoryServiceImpl implements InventoryService {
                 categoryDTO.setCategoryName(category.getName());
                 categoryDTO.setDescription(category.getDescription());
                 categoryDTO.setImageUrl(category.getImageUrl());
-                productDTO.setCategory(categoryDTO);
+                productDTO.setCategoryId(categoryDTO.getCategoryId().longValue());
             }
             dto.setProduct(productDTO);
         }
