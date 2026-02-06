@@ -1,7 +1,7 @@
 package com.smecs.service.impl;
 
 import com.smecs.entity.User;
-import com.smecs.repository.UserRepository;
+import com.smecs.dao.UserDAO;
 import com.smecs.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,11 +14,11 @@ import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private final UserRepository userRepository;
+    private final UserDAO userDAO;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserServiceImpl(UserDAO userDAO) {
+        this.userDAO = userDAO;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(hashPassword(password));
         user.setRole(role != null ? role : "customer");
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        userRepository.save(user);
+        userDAO.save(user);
         return true;
     }
 
@@ -65,21 +65,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userDAO.findAll();
     }
 
     @Override
     public User findByUsername(String username) {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getUsername() != null && u.getUsername().equalsIgnoreCase(username))
-                .findFirst().orElse(null);
+        return userDAO.findByUsername(username).orElse(null);
+    }
+
+    @Override
+    public User findById(Long id) {
+        return userDAO.findById(id).orElse(null);
     }
 
     @Override
     public User findByEmail(String email) {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(email))
-                .findFirst().orElse(null);
+        return userDAO.findByEmail(email).orElse(null);
     }
 
     @Override
@@ -97,7 +98,7 @@ public class UserServiceImpl implements UserService {
         if (user == null || user.getId() == null || user.getId() <= 0) {
             throw new IllegalArgumentException("Invalid user");
         }
-        userRepository.save(user);
+        userDAO.update(user);
         return true;
     }
 
@@ -106,7 +107,7 @@ public class UserServiceImpl implements UserService {
         if (userId <= 0) {
             throw new IllegalArgumentException("Invalid user ID");
         }
-        userRepository.deleteById((long) userId);
+        userDAO.deleteById((long) userId);
         return true;
     }
 

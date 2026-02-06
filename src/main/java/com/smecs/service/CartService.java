@@ -8,7 +8,7 @@ import com.smecs.entity.User;
 import com.smecs.repository.CartItemRepository;
 import com.smecs.repository.CartRepository;
 import com.smecs.repository.ProductRepository;
-import com.smecs.repository.UserRepository;
+import com.smecs.dao.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,18 +24,18 @@ public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+    private final UserDAO userDAO;
 
     @Autowired
-    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRepository productRepository, UserRepository userRepository) {
+    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRepository productRepository, UserDAO userDAO) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
-        this.userRepository = userRepository;
+        this.userDAO = userDAO;
     }
 
     public CartItem addToCart(Long userId, Long productId, int quantity) {
-        Optional<User> userOpt = userRepository.findById(userId);
+        Optional<User> userOpt = userDAO.findById(userId);
         Optional<Product> productOpt = productRepository.findById(productId);
         if (userOpt.isEmpty() || productOpt.isEmpty()) {
             throw new IllegalArgumentException("User or Product not found");
@@ -122,7 +122,7 @@ public class CartService {
         // For now, reusing addToCart logic via direct calls might be inefficient but ensures consistency.
         // However, fetching cart repeatedly is bad. Let's optimize slightly.
 
-        Optional<User> userOpt = userRepository.findById(userId);
+        Optional<User> userOpt = userDAO.findById(userId);
         if (userOpt.isEmpty()) {
             throw new RuntimeException("User not found");
         }

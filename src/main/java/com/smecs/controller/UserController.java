@@ -12,6 +12,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/auth")
 public class UserController {
@@ -29,11 +32,7 @@ public class UserController {
             return ResponseEntity.badRequest().body(new ResponseDTO<>("error", "Registration failed", null));
         }
         User user = userService.findByUsername(dto.getUsername());
-        UserResponseDTO response = new UserResponseDTO();
-        response.setId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole()); // fallback to Lombok getter
+        UserResponseDTO response = mapToDTO(user);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Registration successful", response));
     }
@@ -45,13 +44,35 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO<>("error", "Invalid credentials", null));
         }
+        UserResponseDTO response = mapToDTO(user);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Login successful", response));
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<ResponseDTO<List<UserResponseDTO>>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        List<UserResponseDTO> userDTOs = users.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Users retrieved successfully", userDTOs));
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<ResponseDTO<UserResponseDTO>> getUserById(@PathVariable Long id) {
+        User user = userService.findById(id);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDTO<>("error", "User not found", null));
+        }
+        return ResponseEntity.ok(new ResponseDTO<>("success", "User found", mapToDTO(user)));
+    }
+
+    private UserResponseDTO mapToDTO(User user) {
         UserResponseDTO response = new UserResponseDTO();
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole());
-        // Set authentication expiry to 5 minutes from now
-        response.setAuthExpiry(System.currentTimeMillis() + 5 * 60_000L);
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Login successful", response));
+        return response;
     }
 }

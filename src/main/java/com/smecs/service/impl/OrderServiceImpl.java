@@ -5,7 +5,7 @@ import com.smecs.dto.OrderDTO;
 import com.smecs.entity.Order;
 import com.smecs.entity.User;
 import com.smecs.repository.OrderRepository;
-import com.smecs.repository.UserRepository;
+import com.smecs.dao.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,17 +17,17 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements com.smecs.service.OrderService {
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
+    private final UserDAO userDAO;
 
     @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository, UserDAO userDAO) {
         this.orderRepository = orderRepository;
-        this.userRepository = userRepository;
+        this.userDAO = userDAO;
     }
 
     @Override
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
-        Optional<User> userOpt = userRepository.findById(request.getUserId());
+        Optional<User> userOpt = userDAO.findById(request.getUserId());
         if (userOpt.isEmpty()) throw new RuntimeException("User not found");
         Order order = new Order();
         order.setUser(userOpt.get());

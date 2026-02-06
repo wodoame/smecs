@@ -8,6 +8,7 @@ public interface UserService {
     User authenticateUser(String usernameOrEmail, String password);
     List<User> getAllUsers();
     User findByUsername(String username);
+    User findById(Long id);
     User findByEmail(String email);
     boolean usernameExists(String username);
     boolean emailExists(String email);
