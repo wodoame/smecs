@@ -13,6 +13,6 @@ public interface UserService {
     boolean usernameExists(String username);
     boolean emailExists(String email);
     boolean updateUser(User user);
-    boolean deleteUser(int userId);
+    void deleteUser(Long userId);
     String hashPassword(String password);
 }

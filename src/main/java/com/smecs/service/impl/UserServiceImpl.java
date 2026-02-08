@@ -3,6 +3,7 @@ package com.smecs.service.impl;
 import com.smecs.entity.User;
 import com.smecs.dao.UserDAO;
 import com.smecs.service.UserService;
+import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -103,12 +104,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean deleteUser(int userId) {
-        if (userId <= 0) {
+    public void deleteUser(Long userId) {
+        if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("Invalid user ID");
         }
-        userDAO.deleteById((long) userId);
-        return true;
+        if (userDAO.findById(userId).isEmpty()) {
+            throw new ResourceNotFoundException("User not found with id: " + userId);
+        }
+        userDAO.deleteById(userId);
     }
 
     @Override

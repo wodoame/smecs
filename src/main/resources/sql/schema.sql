@@ -103,7 +103,6 @@ CREATE TABLE CartItems (
     cart_id INTEGER REFERENCES Carts(cart_id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES Products(product_id) ON DELETE CASCADE,
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
-    price_at_addition DECIMAL(10, 2) NOT NULL CHECK (price_at_addition >= 0),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(cart_id, product_id)
 );

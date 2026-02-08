@@ -9,6 +9,7 @@ import com.smecs.repository.InventoryRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
+import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -205,6 +206,9 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void deleteInventory(Long inventoryId) {
+        if (!inventoryRepository.existsById(inventoryId)) {
+            throw new ResourceNotFoundException("Inventory not found with id: " + inventoryId);
+        }
         inventoryRepository.deleteById(inventoryId);
         // Invalidate cache for this inventory and all search lists
         inventoryCacheService.invalidateById(inventoryId);

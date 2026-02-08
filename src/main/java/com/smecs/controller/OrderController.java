@@ -3,6 +3,7 @@ package com.smecs.controller;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.ResponseDTO;
+import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,11 +16,11 @@ import java.util.List;
 @Validated
 @RestController
 @RequestMapping("/api/orders")
-public class OrdersController {
+public class OrderController {
     private final OrderService orderService;
 
     @Autowired
-    public OrdersController(OrderService orderService) {
+    public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
@@ -32,6 +33,11 @@ public class OrdersController {
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO<OrderDTO>> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order found", orderService.getOrderById(id)));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ResponseDTO<OrderDTO>> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusRequestDTO request) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Order status updated", orderService.updateOrderStatus(id, request)));
     }
 
     @GetMapping

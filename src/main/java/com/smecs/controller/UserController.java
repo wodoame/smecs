@@ -67,6 +67,12 @@ public class UserController {
         return ResponseEntity.ok(new ResponseDTO<>("success", "User found", mapToDTO(user)));
     }
 
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<ResponseDTO<Void>> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "User deleted successfully", null));
+    }
+
     private UserResponseDTO mapToDTO(User user) {
         UserResponseDTO response = new UserResponseDTO();
         response.setId(user.getId());

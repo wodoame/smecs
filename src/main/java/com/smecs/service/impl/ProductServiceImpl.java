@@ -1,16 +1,17 @@
 package com.smecs.service.impl;
 
+import com.smecs.dao.ProductDAO;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Product;
 import com.smecs.entity.Category;
-import com.smecs.repository.ProductRepository;
 import com.smecs.repository.ProductSpecification;
 import com.smecs.repository.CategoryRepository;
 import com.smecs.service.ProductService;
 import com.smecs.service.CacheService;
+import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,13 +22,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
-    private final ProductRepository productRepository;
+    private final ProductDAO productDAO;
     private final CategoryRepository categoryRepository;
     private final CacheService<ProductDTO, Long> productCacheService;
 
     @Autowired
-    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, CacheService<ProductDTO, Long> productCacheService) {
-        this.productRepository = productRepository;
+    public ProductServiceImpl(ProductDAO productDAO, CategoryRepository categoryRepository, CacheService<ProductDTO, Long> productCacheService) {
+        this.productDAO = productDAO;
         this.categoryRepository = categoryRepository;
         this.productCacheService = productCacheService;
     }
@@ -46,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
             product.setCategory(category);
         }
 
-        product = productRepository.save(product);
+        product = productDAO.save(product);
         ProductDTO result = mapToDto(product);
         productCacheService.put(result);
         productCacheService.invalidateAllList();
@@ -56,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO getProductById(Long id) {
         return productCacheService.getById(id).orElseGet(() -> {
-            Product product = productRepository.findById(id).orElseThrow();
+            Product product = productDAO.findById(id).orElseThrow();
             ProductDTO dto = mapToDto(product);
             productCacheService.put(dto);
             return dto;
@@ -67,7 +68,7 @@ public class ProductServiceImpl implements ProductService {
     public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Pageable pageable) {
         // Don't use cache for paginated/filtered queries - they're too varied to cache effectively
         Specification<Product> spec = ProductSpecification.filterByCriteria(name, description);
-        Page<Product> productPage = productRepository.findAll(spec, pageable);
+        Page<Product> productPage = productDAO.findAll(spec, pageable);
 
         List<ProductDTO> content = productPage.getContent().stream()
                 .map(this::mapToDto)
@@ -91,7 +92,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO updateProduct(Long id, CreateProductRequestDTO request) {
-        Product product = productRepository.findById(id).orElseThrow();
+        Product product = productDAO.findById(id).orElseThrow();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
@@ -100,7 +101,7 @@ public class ProductServiceImpl implements ProductService {
             Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
             product.setCategory(category);
         }
-        product = productRepository.save(product);
+        product = productDAO.save(product);
         ProductDTO result = mapToDto(product);
         productCacheService.put(result);
         productCacheService.invalidateAllList();
@@ -109,7 +110,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public void deleteProduct(Long id) {
-        productRepository.deleteById(id);
+        if (!productDAO.existsById(id)) {
+            throw new ResourceNotFoundException("Product not found with id: " + id);
+        }
+        productDAO.deleteById(id);
         productCacheService.invalidateById(id);
         productCacheService.invalidateAllList();
     }

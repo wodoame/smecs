@@ -1,0 +1,211 @@
+### Authentication - Register
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "janedoe",
+  "email": "janedoe@example.com",
+  "password": "securePassword123"
+}
+
+### Authentication - Login
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "usernameOrEmail": "janedoe",
+  "password": "securePassword123"
+}
+
+### User - Get All
+GET http://localhost:8080/api/auth/users
+Accept: application/json
+
+### User - Get By ID
+GET http://localhost:8080/api/auth/users/1
+Accept: application/json
+
+### User - Delete
+DELETE http://localhost:8080/api/auth/users/1
+Accept: application/json
+
+###
+### Categories - Create
+POST http://localhost:8080/api/categories
+Content-Type: application/json
+Accept: application/json
+
+{
+  "categoryName": "Outdoor Gear",
+  "description": "Equipment for camping and hiking adventures",
+  "imageUrl": "https://cdn.example.com/images/categories/outdoor-gear.png"
+}
+
+### Categories - Get All (Search)
+GET http://localhost:8080/api/categories?page=1&size=10&sort=name,asc
+Accept: application/json
+
+### Categories - Get By ID
+GET http://localhost:8080/api/categories/1
+Accept: application/json
+
+### Categories - Update
+PUT http://localhost:8080/api/categories/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "categoryId": 1,
+  "categoryName": "Outdoor & Travel",
+  "description": "Camping, hiking, and travel-ready products",
+  "imageUrl": "https://cdn.example.com/images/categories/outdoor-travel.png"
+}
+
+### Categories - Delete
+DELETE http://localhost:8080/api/categories/1
+Accept: application/json
+
+###
+### Products - Create
+POST http://localhost:8080/api/products
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "All-Terrain Backpack",
+  "description": "55L waterproof backpack with modular compartments",
+  "price": 179.99,
+  "imageUrl": "https://cdn.example.com/images/products/all-terrain-backpack.png",
+  "category": {
+    "categoryId": 1
+  }
+}
+
+### Products - Get All (Search)
+GET http://localhost:8080/api/products?page=1&size=8&sort=name,asc
+Accept: application/json
+
+### Products - Get By ID
+GET http://localhost:8080/api/products/1
+Accept: application/json
+
+### Products - Update
+PUT http://localhost:8080/api/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "All-Terrain Backpack Pro",
+  "description": "60L waterproof backpack with reinforced frame",
+  "price": 199.99,
+  "imageUrl": "https://cdn.example.com/images/products/all-terrain-backpack-pro.png",
+  "category": {
+    "categoryId": 1
+  }
+}
+
+### Products - Delete
+DELETE http://localhost:8080/api/products/1
+Accept: application/json
+
+###
+### Inventories - Create
+POST http://localhost:8080/api/inventories
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 100,
+  "productId": 1
+}
+
+### Inventories - Get All (Search)
+GET http://localhost:8080/api/inventories?page=1&size=10&sort=id,asc
+Accept: application/json
+
+### Inventories - Get By Product ID
+GET http://localhost:8080/api/inventories/product/1
+Accept: application/json
+
+### Inventories - Update
+PUT http://localhost:8080/api/inventories/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 300,
+  "productId": 1
+}
+
+###
+### Carts - Create
+POST http://localhost:8080/api/carts
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1
+}
+
+### Carts - Get All
+GET http://localhost:8080/api/carts
+Accept: application/json
+
+### Carts - Get By ID
+GET http://localhost:8080/api/carts/1
+Accept: application/json
+
+### Carts - Delete
+DELETE http://localhost:8080/api/carts/1
+Accept: application/json
+
+###
+### Cart Items - Get
+GET http://localhost:8080/api/cart-items/1
+Accept: application/json
+
+### Cart Items - Update
+PUT http://localhost:8080/api/cart-items/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 5
+}
+
+### Cart Items - Delete
+DELETE http://localhost:8080/api/cart-items/1
+Accept: application/json
+
+###
+### Orders - Create
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+Accept: application/json
+
+{
+  "userId": 1
+}
+
+### Orders - Get All
+GET http://localhost:8080/api/orders
+Accept: application/json
+
+### Orders - Get By ID
+GET http://localhost:8080/api/orders/1
+Accept: application/json
+
+### Orders - Delete
+DELETE http://localhost:8080/api/orders/1
+Accept: application/json
+
+###
+### Order Items - Get
+GET http://localhost:8080/api/order-items/1
+Accept: application/json
+
+### Order Items - Get By Order ID
+GET http://localhost:8080/api/order-items/order/1
+Accept: application/json
