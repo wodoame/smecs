@@ -76,6 +76,12 @@ public class InventoryController {
                 inventoryService.updateInventory(inventoryId, request)));
     }
 
+    @DeleteMapping("/{inventoryId}")
+    public ResponseEntity<Void> deleteInventory(@PathVariable Long inventoryId) {
+        inventoryService.deleteInventory(inventoryId);
+        return ResponseEntity.noContent().build();
+    }
+
     private Sort parseSort(String sort) {
         if (sort == null || sort.isBlank()) {
             return Sort.by(Sort.Direction.ASC, "id");
