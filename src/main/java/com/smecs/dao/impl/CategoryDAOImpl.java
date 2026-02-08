@@ -72,8 +72,10 @@ public class CategoryDAOImpl implements CategoryDAO {
         }
 
         TypedQuery<Category> typedQuery = entityManager.createQuery(query);
-        typedQuery.setFirstResult((int) pageable.getOffset());
-        typedQuery.setMaxResults(pageable.getPageSize());
+        if (pageable.isPaged()) {
+            typedQuery.setFirstResult((int) pageable.getOffset());
+            typedQuery.setMaxResults(pageable.getPageSize());
+        }
 
         List<Category> content = typedQuery.getResultList();
 

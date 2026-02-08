@@ -72,8 +72,10 @@ public class ProductDAOImpl implements ProductDAO {
         }
 
         TypedQuery<Product> typedQuery = entityManager.createQuery(query);
-        typedQuery.setFirstResult((int) pageable.getOffset());
-        typedQuery.setMaxResults(pageable.getPageSize());
+        if (pageable.isPaged()) {
+            typedQuery.setFirstResult((int) pageable.getOffset());
+            typedQuery.setMaxResults(pageable.getPageSize());
+        }
 
         List<Product> content = typedQuery.getResultList();
 
