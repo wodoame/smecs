@@ -7,6 +7,6 @@ import lombok.Setter;
 @Setter
 public class InventoryDTO {
     private Long id;
-    private ProductDTO product;
+    private Long productId;
     private Integer quantity;
 }

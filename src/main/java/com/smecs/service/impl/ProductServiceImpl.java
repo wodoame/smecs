@@ -75,30 +75,21 @@ public class ProductServiceImpl implements ProductService {
                 .collect(Collectors.toList());
 
         PagedResponseDTO<ProductDTO> pagedResponse = new PagedResponseDTO<>();
-        PageMetadataDTO pageMetadata = new PageMetadataDTO();
         pagedResponse.setContent(content);
-        pageMetadata.setPage(productPage.getNumber());
-        pageMetadata.setSize(productPage.getSize());
-        pageMetadata.setTotalElements(productPage.getTotalElements());
-        pageMetadata.setTotalPages(productPage.getTotalPages());
-        pageMetadata.setFirst(productPage.isFirst());
-        pageMetadata.setLast(productPage.isLast());
-        pageMetadata.setEmpty(productPage.isEmpty());
-        pageMetadata.setHasNext(productPage.hasNext());
-        pageMetadata.setHasPrevious(productPage.hasPrevious());
-        pagedResponse.setPage(pageMetadata);
+        pagedResponse.setPage(PageMetadataDTO.from(productPage));
+
         return pagedResponse;
     }
 
     @Override
-    public ProductDTO updateProduct(Long id, CreateProductRequestDTO request) {
+    public ProductDTO updateProduct(Long id, CreateProductRequestDTO productDTO) {
         Product product = productDAO.findById(id).orElseThrow();
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setImageUrl(request.getImageUrl());
-        if(request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow();
+        product.setName(productDTO.getName());
+        product.setDescription(productDTO.getDescription());
+        product.setPrice(productDTO.getPrice());
+        product.setImageUrl(productDTO.getImageUrl());
+        if(productDTO.getCategoryId() != null) {
+            Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
             product.setCategory(category);
         }
         product = productDAO.save(product);

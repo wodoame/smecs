@@ -41,16 +41,6 @@ public class ProductCacheService implements CacheService<ProductDTO, Long>, Sear
         productById.put(product.getId(), new CacheEntry<>(product, DEFAULT_TTL_MS));
     }
 
-
-
-    @Override
-    public void putAll(List<ProductDTO> products) {
-        if (products == null) {
-            return;
-        }
-        products.forEach(this::put);
-    }
-
     @Override
     public Optional<PagedResponseDTO<ProductDTO>> getSearchResults(String query, int page, int size, String sort) {
         String key = createSearchKey(query, page, size, sort);
@@ -84,12 +74,6 @@ public class ProductCacheService implements CacheService<ProductDTO, Long>, Sear
 
     @Override
     public void invalidateAllList() {
-        searchCache.clear();
-    }
-
-    @Override
-    public void invalidateAll() {
-        productById.clear();
         searchCache.clear();
     }
 }

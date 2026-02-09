@@ -8,6 +8,7 @@ import com.smecs.dto.OrderItemDTO;
 import com.smecs.entity.Order;
 import com.smecs.entity.Product;
 import com.smecs.service.OrderItemService;
+import com.smecs.service.OrderService;
 import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,12 +22,14 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final OrderItemDAO orderItemDAO;
     private final ProductDAO productDAO;
     private final OrderDAO orderDAO;
+    private final OrderService orderService;
 
     @Autowired
-    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderDAO orderDAO) {
+    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderDAO orderDAO, OrderService orderService) {
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
         this.orderDAO = orderDAO;
+        this.orderService = orderService;
     }
 
     @Override
@@ -52,12 +55,16 @@ public class OrderItemServiceImpl implements OrderItemService {
             }
             orderItems.add(item);
         });
-        return orderItemDAO.saveAll(orderItems);
+        List<OrderItem> savedItems = orderItemDAO.saveAll(orderItems);
+        orderService.updateOrderTotalOrThrow(orderId);
+        return savedItems;
     }
 
     @Override
     public OrderItem saveOrderItem(OrderItem orderItem) {
-        return orderItemDAO.save(orderItem);
+        OrderItem savedItem = orderItemDAO.save(orderItem);
+        orderService.updateOrderTotalOrThrow(savedItem.getOrderId());
+        return savedItem;
     }
 
     @Override
@@ -94,14 +101,17 @@ public class OrderItemServiceImpl implements OrderItemService {
             item.setPriceAtPurchase(orderItemDTO.getPrice());
         }
 
-        return orderItemDAO.save(item);
+        OrderItem savedItem = orderItemDAO.save(item);
+        orderService.updateOrderTotalOrThrow(savedItem.getOrderId());
+        return savedItem;
     }
 
     @Override
     public void deleteOrderItem(Long orderItemId) {
-        if (!orderItemDAO.existsById(orderItemId)) {
-            throw new ResourceNotFoundException("OrderItem not found with id: " + orderItemId);
-        }
+        OrderItem item = orderItemDAO.findById(orderItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("OrderItem not found with id: " + orderItemId));
+        Long orderId = item.getOrderId();
         orderItemDAO.deleteById(orderItemId);
+        orderService.updateOrderTotalOrThrow(orderId);
     }
 }

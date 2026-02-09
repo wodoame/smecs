@@ -4,6 +4,7 @@ import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.ReviewDTO;
+import com.smecs.dto.UpdateReviewRequestDTO;
 import com.smecs.service.ReviewService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -34,6 +35,16 @@ public class ReviewController {
                 .body(new ResponseDTO<>("success", "Review submitted successfully", reviewService.createReview(request)));
     }
 
+    @GetMapping
+    public ResponseEntity<ResponseDTO<PagedResponseDTO<ReviewDTO>>> getAllReviews(
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "All reviews retrieved",
+                reviewService.getAllReviews(pageable)));
+    }
+
     @GetMapping("/product/{productId}")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<ReviewDTO>>> getProductReviews(
             @PathVariable Long productId,
@@ -46,11 +57,21 @@ public class ReviewController {
                 reviewService.getReviewsByProduct(productId, pageable)));
     }
 
+    @GetMapping("/{reviewId}")
+    public ResponseEntity<ResponseDTO<ReviewDTO>> getReview(@PathVariable Long reviewId) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Review retrieved",
+                reviewService.getReviewById(reviewId)));
+    }
+
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<ResponseDTO<ReviewDTO>> updateReview(@PathVariable Long reviewId, @Valid @RequestBody UpdateReviewRequestDTO request) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Review updated successfully",
+                reviewService.updateReview(reviewId, request)));
+    }
+
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
+    public ResponseEntity<ResponseDTO<Void>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Deleted review with id " + reviewId + "successfully", null));
     }
 }
-
-

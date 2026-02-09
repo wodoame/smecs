@@ -13,9 +13,8 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "product_id", nullable = false, unique = true)
-    private Product product;
+    @Column(name = "product_id")
+    private Long productId;
 
     private Integer quantity;
 }

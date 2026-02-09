@@ -1,7 +1,6 @@
 package com.smecs.service.impl;
 
 import com.smecs.dto.*;
-import com.smecs.entity.Category;
 import com.smecs.entity.Inventory;
 import com.smecs.entity.Product;
 import com.smecs.repository.CategoryRepository;
@@ -42,6 +41,13 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    public InventoryDTO getInventoryById(Long id) {
+        Inventory inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
+        return mapToDTO(inventory);
+    }
+
+    @Override
     public InventoryDTO getInventoryByProductId(Long productId) {
         Inventory inventory = inventoryRepository.findByProductId(productId)
                 .orElse(createEmptyInventoryForProduct(productId));
@@ -52,11 +58,12 @@ public class InventoryServiceImpl implements InventoryService {
         // Just return a virtual inventory item with 0 quantity if not found,
         // to avoid error when fetching inventory for a product that hasn't had stock set yet.
         // Check if product exists first
-        Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
+        if (!productRepository.existsById(productId)) {
+             throw new ResourceNotFoundException("Product not found with id: " + productId);
+        }
 
         Inventory inventory = new Inventory();
-        inventory.setProduct(product);
+        inventory.setProductId(productId);
         inventory.setQuantity(0);
         return inventory;
     }
@@ -68,7 +75,13 @@ public class InventoryServiceImpl implements InventoryService {
         if (query == null || query.isBlank()) {
             inventoryPage = inventoryRepository.findAll(pageable);
         } else {
-            inventoryPage = inventoryRepository.findByProduct_NameContainingIgnoreCase(query, pageable);
+            List<Long> productIds = productRepository.findByNameContainingIgnoreCase(query)
+                    .stream().map(Product::getId).collect(Collectors.toList());
+            if (productIds.isEmpty()) {
+                inventoryPage = Page.empty(pageable);
+            } else {
+                inventoryPage = inventoryRepository.findByProductIdIn(productIds, pageable);
+            }
         }
         return getInventoryDTOPagedResponseDTO(inventoryPage);
     }
@@ -79,20 +92,9 @@ public class InventoryServiceImpl implements InventoryService {
                 .collect(Collectors.toList());
 
         PagedResponseDTO<InventoryDTO> pagedResponse = new PagedResponseDTO<>();
-        PageMetadataDTO pageMetadata = new PageMetadataDTO();
-
-        pageMetadata.setPage(inventoryPage.getNumber());
-        pageMetadata.setSize(inventoryPage.getSize());
-        pageMetadata.setTotalElements(inventoryPage.getTotalElements());
-        pageMetadata.setTotalPages(inventoryPage.getTotalPages());
-        pageMetadata.setFirst(inventoryPage.isFirst());
-        pageMetadata.setLast(inventoryPage.isLast());
-        pageMetadata.setEmpty(inventoryPage.isEmpty());
-        pageMetadata.setHasNext(inventoryPage.hasNext());
-        pageMetadata.setHasPrevious(inventoryPage.hasPrevious());
-
         pagedResponse.setContent(content);
-        pagedResponse.setPage(pageMetadata);
+        pagedResponse.setPage(PageMetadataDTO.from(inventoryPage));
+
         return pagedResponse;
     }
 
@@ -104,19 +106,20 @@ public class InventoryServiceImpl implements InventoryService {
         // Check if creating inventory for existing product or new product
         if (request.getProductId() != null) {
             // Create inventory for existing product
-            Product product = productRepository.findById(request.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + request.getProductId()));
+            if (!productRepository.existsById(request.getProductId())) {
+                throw new ResourceNotFoundException("Product not found with id: " + request.getProductId());
+            }
 
             // Check if inventory already exists for this product
             if (inventoryRepository.findByProductId(request.getProductId()).isPresent()) {
                 throw new RuntimeException("Inventory already exists for product id: " + request.getProductId());
             }
 
-            inventory.setProduct(product);
+            inventory.setProductId(request.getProductId());
         } else if (request.getProduct() != null) {
             // Create new product and inventory together
             Long categoryId = request.getProduct().getCategoryId();
-            if (!categoryRepository.existsById(categoryId)) {
+            if (categoryId != null && !categoryRepository.existsById(categoryId)) {
                 throw new RuntimeException("Category not found with id: " + categoryId);
             }
 
@@ -125,11 +128,7 @@ public class InventoryServiceImpl implements InventoryService {
 
             // Create product using ProductService
             ProductDTO createdProduct = productService.createProduct(createProductRequest);
-
-            // Get the created product entity
-            Product product = productRepository.findById(createdProduct.getId())
-                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + createdProduct.getId()));
-            inventory.setProduct(product);
+            inventory.setProductId(createdProduct.getId());
         } else {
             throw new RuntimeException("Either productId or product details must be provided");
         }
@@ -160,40 +159,6 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + inventoryId));
 
-        // Update product details if product data is provided
-        if (request.getProduct() != null) {
-            Product product = inventory.getProduct();
-            if (product == null) {
-                throw new RuntimeException("Cannot update product: inventory has no associated product");
-            }
-
-            UpdateInventoryRequestDTO.ProductUpdate productUpdate = request.getProduct();
-
-            // Validate that category exists if categoryId is provided
-            if (productUpdate.getCategoryId() != null) {
-                Category category = categoryRepository.findById(productUpdate.getCategoryId())
-                        .orElseThrow(() -> new RuntimeException("Category not found with id: " + productUpdate.getCategoryId()));
-                product.setCategory(category);
-            }
-
-            // Update product fields
-            if (productUpdate.getName() != null) {
-                product.setName(productUpdate.getName());
-            }
-            if (productUpdate.getDescription() != null) {
-                product.setDescription(productUpdate.getDescription());
-            }
-            if (productUpdate.getPrice() != null) {
-                product.setPrice(productUpdate.getPrice());
-            }
-            if (productUpdate.getImageUrl() != null) {
-                product.setImageUrl(productUpdate.getImageUrl());
-            }
-
-            // Save updated product
-            productRepository.save(product);
-        }
-
         // Update inventory quantity
         inventory.setQuantity(request.getQuantity());
         Inventory savedInventory = inventoryRepository.save(inventory);
@@ -218,29 +183,8 @@ public class InventoryServiceImpl implements InventoryService {
     private InventoryDTO mapToDTO(Inventory inventory) {
         InventoryDTO dto = new InventoryDTO();
         dto.setId(inventory.getId());
+        dto.setProductId(inventory.getProductId());
         dto.setQuantity(inventory.getQuantity());
-
-        // Map Product to ProductDTO
-        Product product = inventory.getProduct();
-//        System.out.println("product_name = " + product.getName());
-        if (product != null) {
-            ProductDTO productDTO = new ProductDTO();
-            productDTO.setId(product.getId());
-            productDTO.setName(product.getName());
-            productDTO.setDescription(product.getDescription());
-            productDTO.setPrice(product.getPrice());
-            productDTO.setImageUrl(product.getImageUrl());
-            if (product.getCategory() != null) {
-                Category category = product.getCategory();
-                CategoryDTO categoryDTO = new CategoryDTO();
-                categoryDTO.setCategoryId(category.getId().intValue());
-                categoryDTO.setCategoryName(category.getName());
-                categoryDTO.setDescription(category.getDescription());
-                categoryDTO.setImageUrl(category.getImageUrl());
-                productDTO.setCategoryId(categoryDTO.getCategoryId().longValue());
-            }
-            dto.setProduct(productDTO);
-        }
         return dto;
     }
 }

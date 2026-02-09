@@ -10,7 +10,7 @@ public interface ReviewDAO {
     Review save(Review review);
     Optional<Review> findById(Long id);
     Page<Review> findByProductId(Long productId, Pageable pageable);
+    Page<Review> findAll(Pageable pageable);
     void deleteById(Long id);
     boolean existsById(Long id);
 }
-

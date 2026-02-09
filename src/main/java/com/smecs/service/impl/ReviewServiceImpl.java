@@ -7,11 +7,13 @@ import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ReviewDTO;
+import com.smecs.dto.UpdateReviewRequestDTO;
 import com.smecs.entity.Product;
 import com.smecs.entity.Review;
 import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.service.ReviewService;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,13 +44,49 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
         Review review = new Review();
-        review.setUser(user);
-        review.setProduct(product);
+        review.setUserId(user.getId());
+        review.setProductId(product.getId());
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
         review = reviewDAO.save(review);
         return mapToDTO(review);
+    }
+
+    @Override
+    public ReviewDTO updateReview(Long reviewId, UpdateReviewRequestDTO request) {
+        Review review = reviewDAO.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
+
+        if (request.getRating() != null) {
+            review.setRating(request.getRating());
+        }
+
+        if (request.getComment() != null) {
+            review.setComment(request.getComment());
+        }
+
+        review = reviewDAO.save(review);
+        return mapToDTO(review);
+    }
+
+    @Override
+    public PagedResponseDTO<ReviewDTO> getAllReviews(Pageable pageable) {
+        Page<Review> reviewPage = reviewDAO.findAll(pageable);
+        return getPagedResponse(reviewPage);
+    }
+
+    @NonNull
+    private PagedResponseDTO<ReviewDTO> getPagedResponse(Page<Review> reviewPage) {
+        List<ReviewDTO> content = reviewPage.getContent().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+
+        PagedResponseDTO<ReviewDTO> pagedResponse = new PagedResponseDTO<>();
+        pagedResponse.setContent(content);
+        pagedResponse.setPage(PageMetadataDTO.from(reviewPage));
+
+        return pagedResponse;
     }
 
     @Override
@@ -59,27 +97,14 @@ public class ReviewServiceImpl implements ReviewService {
 
         Page<Review> reviewPage = reviewDAO.findByProductId(productId, pageable);
 
-        List<ReviewDTO> content = reviewPage.getContent().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        return getPagedResponse(reviewPage);
+    }
 
-        PagedResponseDTO<ReviewDTO> pagedResponse = new PagedResponseDTO<>();
-        PageMetadataDTO pageMetadata = new PageMetadataDTO();
-
-        pageMetadata.setPage(reviewPage.getNumber());
-        pageMetadata.setSize(reviewPage.getSize());
-        pageMetadata.setTotalElements(reviewPage.getTotalElements());
-        pageMetadata.setTotalPages(reviewPage.getTotalPages());
-        pageMetadata.setFirst(reviewPage.isFirst());
-        pageMetadata.setLast(reviewPage.isLast());
-        pageMetadata.setEmpty(reviewPage.isEmpty());
-        pageMetadata.setHasNext(reviewPage.hasNext());
-        pageMetadata.setHasPrevious(reviewPage.hasPrevious());
-
-        pagedResponse.setContent(content);
-        pagedResponse.setPage(pageMetadata);
-
-        return pagedResponse;
+    @Override
+    public ReviewDTO getReviewById(Long reviewId) {
+        Review review = reviewDAO.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
+        return mapToDTO(review);
     }
 
     @Override
@@ -93,13 +118,11 @@ public class ReviewServiceImpl implements ReviewService {
     private ReviewDTO mapToDTO(Review review) {
         ReviewDTO dto = new ReviewDTO();
         dto.setId(review.getId());
-        dto.setUserId(review.getUser().getId());
-        dto.setProductId(review.getProduct().getId());
-        dto.setUserName(review.getUser().getUsername()); // Assuming User has username
+        dto.setUserId(review.getUserId());
+        dto.setProductId(review.getProductId());
         dto.setRating(review.getRating());
         dto.setComment(review.getComment());
         dto.setCreatedAt(review.getCreatedAt());
         return dto;
     }
 }
-

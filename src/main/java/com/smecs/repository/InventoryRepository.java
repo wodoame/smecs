@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface InventoryRepository extends JpaRepository<Inventory, Long>, JpaSpecificationExecutor<Inventory> {
     Optional<Inventory> findByProductId(Long productId);
 
-    Page<Inventory> findByProduct_NameContainingIgnoreCase(String name, Pageable pageable);
+    Page<Inventory> findByProductIdIn(java.util.List<Long> productIds, Pageable pageable);
 }

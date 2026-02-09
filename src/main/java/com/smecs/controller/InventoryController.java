@@ -67,6 +67,11 @@ public class InventoryController {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId)));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", inventoryService.getInventoryById(id)));
+    }
+
 
     @PutMapping("/{inventoryId}")
     public ResponseEntity<ResponseDTO<InventoryDTO>> updateInventory(
@@ -77,9 +82,9 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{inventoryId}")
-    public ResponseEntity<Void> deleteInventory(@PathVariable Long inventoryId) {
+    public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfuly", null));
     }
 
     private Sort parseSort(String sort) {

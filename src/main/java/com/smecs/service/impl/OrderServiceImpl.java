@@ -8,6 +8,8 @@ import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.dao.OrderDAO;
 import com.smecs.dao.UserDAO;
+import com.smecs.dao.OrderItemDAO;
+import com.smecs.entity.OrderItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.smecs.service.OrderService;
@@ -20,11 +22,13 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
     private final OrderDAO orderDAO;
     private final UserDAO userDAO;
+    private final OrderItemDAO orderItemDAO;
 
     @Autowired
-    public OrderServiceImpl(OrderDAO orderDAO, UserDAO userDAO) {
+    public OrderServiceImpl(OrderDAO orderDAO, UserDAO userDAO, OrderItemDAO orderItemDAO) {
         this.orderDAO = orderDAO;
         this.userDAO = userDAO;
+        this.orderItemDAO = orderItemDAO;
     }
 
     @Override
@@ -68,9 +72,23 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void deleteOrder(Long id) {
         if (!orderDAO.existsById(id)) {
-            throw new ResourceNotFoundException("Order not found with id: " + id);
+             throw new ResourceNotFoundException("Order not found with id: " + id);
         }
         orderDAO.deleteById(id);
+    }
+
+    @Override
+    public void updateOrderTotalOrThrow(Long orderId) {
+        Order order = orderDAO.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
+        double total = items.stream()
+                .mapToDouble(item -> item.getPriceAtPurchase() * item.getQuantity())
+                .sum();
+
+        order.setTotalAmount(total);
+        orderDAO.save(order);
     }
 
     private OrderDTO toDTO(Order order) {

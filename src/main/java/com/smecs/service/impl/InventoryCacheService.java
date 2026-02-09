@@ -42,14 +42,6 @@ public class InventoryCacheService implements CacheService<InventoryDTO, Long>, 
     }
 
     @Override
-    public void putAll(List<InventoryDTO> inventories) {
-        if (inventories == null) {
-            return;
-        }
-        inventories.forEach(this::put);
-    }
-
-    @Override
     public Optional<PagedResponseDTO<InventoryDTO>> getSearchResults(String query, int page, int size, String sort) {
         String key = createSearchKey(query, page, size, sort);
         CacheEntry<PagedResponseDTO<InventoryDTO>> entry = searchCache.get(key);
@@ -82,12 +74,6 @@ public class InventoryCacheService implements CacheService<InventoryDTO, Long>, 
 
     @Override
     public void invalidateAllList() {
-        searchCache.clear();
-    }
-
-    @Override
-    public void invalidateAll() {
-        inventoryById.clear();
         searchCache.clear();
     }
 }

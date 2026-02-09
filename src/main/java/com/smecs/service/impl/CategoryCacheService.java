@@ -42,14 +42,6 @@ public class CategoryCacheService implements CacheService<CategoryDTO, Long>, Se
     }
 
     @Override
-    public void putAll(List<CategoryDTO> categories) {
-        if (categories == null) {
-            return;
-        }
-        categories.forEach(this::put);
-    }
-
-    @Override
     public Optional<PagedResponseDTO<CategoryDTO>> getSearchResults(String query, int page, int size, String sort) {
         String key = createSearchKey(query, page, size, sort);
         CacheEntry<PagedResponseDTO<CategoryDTO>> entry = searchCache.get(key);
@@ -82,12 +74,6 @@ public class CategoryCacheService implements CacheService<CategoryDTO, Long>, Se
 
     @Override
     public void invalidateAllList() {
-        searchCache.clear();
-    }
-
-    @Override
-    public void invalidateAll() {
-        categoryById.clear();
         searchCache.clear();
     }
 }

@@ -47,13 +47,36 @@ public class ReviewDAOImpl implements ReviewDAO {
         CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
         Root<Review> countRoot = countQuery.from(Review.class);
         countQuery.select(cb.count(countRoot))
-                  .where(cb.equal(countRoot.get("product").get("id"), productId));
+                  .where(cb.equal(countRoot.get("productId"), productId));
         Long total = entityManager.createQuery(countQuery).getSingleResult();
 
         // Data query
         CriteriaQuery<Review> query = cb.createQuery(Review.class);
         Root<Review> root = query.from(Review.class);
-        query.where(cb.equal(root.get("product").get("id"), productId));
+        query.where(cb.equal(root.get("productId"), productId));
+        query.orderBy(cb.desc(root.get("createdAt")));
+
+        TypedQuery<Review> typedQuery = entityManager.createQuery(query);
+        typedQuery.setFirstResult((int) pageable.getOffset());
+        typedQuery.setMaxResults(pageable.getPageSize());
+        List<Review> content = typedQuery.getResultList();
+
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    @Override
+    public Page<Review> findAll(Pageable pageable) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Count query
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Review> countRoot = countQuery.from(Review.class);
+        countQuery.select(cb.count(countRoot));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        // Data query
+        CriteriaQuery<Review> query = cb.createQuery(Review.class);
+        Root<Review> root = query.from(Review.class);
         query.orderBy(cb.desc(root.get("createdAt")));
 
         TypedQuery<Review> typedQuery = entityManager.createQuery(query);
@@ -81,4 +104,3 @@ public class ReviewDAOImpl implements ReviewDAO {
         return count > 0;
     }
 }
-

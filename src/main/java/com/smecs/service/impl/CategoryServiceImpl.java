@@ -64,25 +64,13 @@ public class CategoryServiceImpl implements CategoryService {
             dto.setCategoryName(category.getName());
             dto.setDescription(category.getDescription());
             dto.setImageUrl(category.getImageUrl());
-            if (includeRelatedImages) {
-                dto.setRelatedImageUrls(productDAO.findTop5ImagesByCategoryId(category.getId()));
-            }
             return dto;
         }).collect(Collectors.toList());
 
         PagedResponseDTO<CategoryDTO> pagedResponse = new PagedResponseDTO<>();
-        PageMetadataDTO pageMetadata = new PageMetadataDTO();
         pagedResponse.setContent(content);
-        pageMetadata.setPage(categoryPage.getNumber());
-        pageMetadata.setSize(categoryPage.getSize());
-        pageMetadata.setTotalElements(categoryPage.getTotalElements());
-        pageMetadata.setTotalPages(categoryPage.getTotalPages());
-        pageMetadata.setFirst(categoryPage.isFirst());
-        pageMetadata.setLast(categoryPage.isLast());
-        pageMetadata.setEmpty(categoryPage.isEmpty());
-        pageMetadata.setHasNext(categoryPage.hasNext());
-        pageMetadata.setHasPrevious(categoryPage.hasPrevious());
-        pagedResponse.setPage(pageMetadata);
+        pagedResponse.setPage(PageMetadataDTO.from(categoryPage));
+
         return pagedResponse;
     }
 

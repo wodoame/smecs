@@ -7,6 +7,7 @@ import com.smecs.dto.UpdateInventoryRequestDTO;
 import org.springframework.data.domain.Pageable;
 
 public interface InventoryService {
+    InventoryDTO getInventoryById(Long id);
     InventoryDTO getInventoryByProductId(Long productId);
     PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable);
     InventoryDTO createInventory(CreateInventoryRequestDTO request);
