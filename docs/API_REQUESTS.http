@@ -209,3 +209,116 @@ Accept: application/json
 ### Order Items - Get By Order ID
 GET http://localhost:8080/api/order-items/order/1
 Accept: application/json
+
+###
+### GraphQL - Get All Products
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  products {
+    id
+    name
+    description
+    price
+    imageUrl
+    category {
+      id
+      name
+    }
+  }
+}
+
+### GraphQL - Get Product By ID
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  productById(id: "1") {
+    id
+    name
+    description
+    price
+    category {
+      name
+    }
+  }
+}
+
+### GraphQL - Get All Categories
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  categories {
+    id
+    name
+    description
+    imageUrl
+  }
+}
+
+### GraphQL - Get Category By ID
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  categoryById(id: "1") {
+    id
+    name
+    description
+  }
+}
+
+### GraphQL - Create Category
+GRAPHQL http://localhost:8080/graphql
+
+mutation {
+  createCategory(
+    name: "GraphQL Category"
+    description: "Created via GraphQL"
+  ) {
+    id
+    name
+  }
+}
+
+### GraphQL - Create Product
+GRAPHQL http://localhost:8080/graphql
+
+mutation {
+  createProduct(
+    name: "GraphQL Product"
+    description: "Created via GraphQL"
+    price: 99.99
+    categoryId: "1"
+  ) {
+    id
+    name
+    price
+    category {
+      name
+    }
+  }
+}
+
+### GraphQL - Get All Users
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  users {
+    id
+    username
+    email
+    role
+    createdAt
+  }
+}
+
+### GraphQL - Get User By ID
+GRAPHQL http://localhost:8080/graphql
+
+query {
+  userById(id: "1") {
+    id
+    username
+    email
+    role
+  }
+}

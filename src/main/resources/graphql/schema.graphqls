@@ -13,12 +13,12 @@ type Mutation {
 }
 
 type Product {
-    id: ID!
+    id: Int!
     name: String!
     description: String
     price: Float!
     imageUrl: String
-    category: Category
+    categoryId: Int
 }
 
 type Category {
