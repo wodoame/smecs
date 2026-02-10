@@ -5,6 +5,7 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.CategoryService;
 import com.smecs.service.impl.CategoryCacheService;
+import com.smecs.util.PaginationUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -34,42 +34,29 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<ResponseDTO<PagedResponseDTO<CategoryDTO>>> list(
             @RequestParam(required = false, defaultValue = "") String query,
-            @RequestParam(required = false, defaultValue = "false") boolean includeRelatedImages,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort
     ) {
-        // Construct a cache key that includes all search parameters
-        String cacheQueryKey = query + "|" + includeRelatedImages;
-
-        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(cacheQueryKey, page, size, sort);
+        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort);
         if (cached.isPresent()) {
              return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", cached.get()));
         }
 
-        Sort sortSpec = parseSort(sort);
+        Sort sortSpec = PaginationUtils.parseSort(sort);
         // Use 0-based page index for Spring Data
         PageRequest pageRequest = PageRequest.of(page - 1, size, sortSpec);
-        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, includeRelatedImages, pageRequest);
+        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, pageRequest);
 
-        categoryCacheService.putSearchResults(cacheQueryKey, page, size, sort, data);
+        categoryCacheService.putSearchResults(query, page, size, sort, data);
 
         return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", data));
     }
 
-    private Sort parseSort(String sort) {
-        if (sort == null || sort.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "name");
-        }
-        String[] parts = sort.split(",");
-        String property = parts[0].trim();
-        Sort.Direction direction = parts.length > 1 ? Sort.Direction.fromString(parts[1].trim()) : Sort.Direction.ASC;
-        return Sort.by(direction, property);
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO<CategoryDTO>> get(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean includeRelatedImages) {
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Category found", categoryService.getCategoryById(id, includeRelatedImages)));
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Category found", categoryService.getCategoryById(id)));
     }
 
     @PostMapping

@@ -6,10 +6,10 @@ import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.service.ProductService;
 import com.smecs.service.impl.ProductCacheService;
+import com.smecs.util.PaginationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -49,28 +49,19 @@ public class ProductController {
             @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
-            @RequestParam(defaultValue = "name,asc") String sort
+            @RequestParam(defaultValue = "id,asc") String sort
     ) {
         Optional<PagedResponseDTO<ProductDTO>> cached = productCacheService.getSearchResults(query, page, size, sort);
         if (cached.isPresent()) {
             return ResponseEntity.ok(new ResponseDTO<>("success", "Products retrieved", cached.get()));
         }
 
-        Pageable pageable = PageRequest.of(page - 1, size, parseSort(sort));
+        Pageable pageable = PageRequest.of(page - 1, size, PaginationUtils.parseSort(sort));
         PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, pageable);
         productCacheService.putSearchResults(query, page, size, sort, results);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Products retrieved", results));
     }
 
-    private Sort parseSort(String sort) {
-        if (sort == null || sort.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "name");
-        }
-        String[] parts = sort.split(",");
-        String property = parts[0].trim();
-        Sort.Direction direction = parts.length > 1 ? Sort.Direction.fromString(parts[1].trim()) : Sort.Direction.ASC;
-        return Sort.by(direction, property);
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResponseDTO<ProductDTO>> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequestDTO request) {

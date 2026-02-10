@@ -41,7 +41,7 @@ public class GraphQLController {
     @SchemaMapping(typeName = "Product", field = "category")
     public GqlCategory category(ProductDTO product) {
         if (product.getCategoryId() == null) return null;
-        CategoryDTO dto = categoryService.getCategoryById(product.getCategoryId(), false);
+        CategoryDTO dto = categoryService.getCategoryById(product.getCategoryId());
         return toGqlCategory(dto);
     }
 
@@ -59,7 +59,7 @@ public class GraphQLController {
 
     @QueryMapping
     public List<GqlCategory> categories() {
-        return categoryService.getCategories(null, null, false, Pageable.unpaged())
+        return categoryService.getCategories(null, null, Pageable.unpaged())
                 .getContent().stream()
                 .map(this::toGqlCategory)
                 .collect(Collectors.toList());
@@ -67,7 +67,7 @@ public class GraphQLController {
 
     @QueryMapping
     public GqlCategory categoryById(@Argument String id) {
-        return toGqlCategory(categoryService.getCategoryById(Long.parseLong(id), false));
+        return toGqlCategory(categoryService.getCategoryById(Long.parseLong(id)));
     }
 
     @MutationMapping

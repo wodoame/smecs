@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 public interface InventoryService {
     InventoryDTO getInventoryById(Long id);
     InventoryDTO getInventoryByProductId(Long productId);
-    PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable);
+    PagedResponseDTO<InventoryDTO> searchInventory(Pageable pageable);
     InventoryDTO createInventory(CreateInventoryRequestDTO request);
     InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request);
     void deleteInventory(Long inventoryId);

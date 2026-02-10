@@ -12,8 +12,8 @@ public interface ProductDAO {
     Product save(Product product);
     Optional<Product> findById(Long id);
     Page<Product> findAll(Specification<Product> spec, Pageable pageable);
+    Page<Product> searchProducts(String nameQuery, String descriptionQuery, Pageable pageable);
     boolean existsById(Long id);
     void deleteById(Long id);
-    List<String> findTop5ImagesByCategoryId(Long categoryId);
 }
 

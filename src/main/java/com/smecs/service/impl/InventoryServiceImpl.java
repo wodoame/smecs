@@ -1,10 +1,9 @@
 package com.smecs.service.impl;
 
+import com.smecs.dao.InventoryDAO;
 import com.smecs.dto.*;
 import com.smecs.entity.Inventory;
-import com.smecs.entity.Product;
 import com.smecs.repository.CategoryRepository;
-import com.smecs.repository.InventoryRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
@@ -21,19 +20,19 @@ import java.util.stream.Collectors;
 @Service
 public class InventoryServiceImpl implements InventoryService {
 
-    private final InventoryRepository inventoryRepository;
+    private final InventoryDAO inventoryDAO;
     private final ProductRepository productRepository;
     private final ProductService productService;
     private final CategoryRepository categoryRepository;
     private final InventoryCacheService inventoryCacheService;
 
     @Autowired
-    public InventoryServiceImpl(InventoryRepository inventoryRepository,
+    public InventoryServiceImpl(InventoryDAO inventoryDAO,
                                 ProductRepository productRepository,
                                 ProductService productService,
                                 CategoryRepository categoryRepository,
                                 InventoryCacheService inventoryCacheService) {
-        this.inventoryRepository = inventoryRepository;
+        this.inventoryDAO = inventoryDAO;
         this.productRepository = productRepository;
         this.productService = productService;
         this.categoryRepository = categoryRepository;
@@ -42,14 +41,14 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDTO getInventoryById(Long id) {
-        Inventory inventory = inventoryRepository.findById(id)
+        Inventory inventory = inventoryDAO.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
         return mapToDTO(inventory);
     }
 
     @Override
     public InventoryDTO getInventoryByProductId(Long productId) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
+        Inventory inventory = inventoryDAO.findByProductId(productId)
                 .orElse(createEmptyInventoryForProduct(productId));
         return mapToDTO(inventory);
     }
@@ -70,19 +69,10 @@ public class InventoryServiceImpl implements InventoryService {
 
 
     @Override
-    public PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable) {
-        Page<Inventory> inventoryPage;
-        if (query == null || query.isBlank()) {
-            inventoryPage = inventoryRepository.findAll(pageable);
-        } else {
-            List<Long> productIds = productRepository.findByNameContainingIgnoreCase(query)
-                    .stream().map(Product::getId).collect(Collectors.toList());
-            if (productIds.isEmpty()) {
-                inventoryPage = Page.empty(pageable);
-            } else {
-                inventoryPage = inventoryRepository.findByProductIdIn(productIds, pageable);
-            }
-        }
+    public PagedResponseDTO<InventoryDTO> searchInventory(Pageable pageable) {
+        // Delegate to DAO native SQL search
+        Page<Inventory> inventoryPage = inventoryDAO.searchInventory(pageable);
+
         return getInventoryDTOPagedResponseDTO(inventoryPage);
     }
 
@@ -111,7 +101,7 @@ public class InventoryServiceImpl implements InventoryService {
             }
 
             // Check if inventory already exists for this product
-            if (inventoryRepository.findByProductId(request.getProductId()).isPresent()) {
+            if (inventoryDAO.findByProductId(request.getProductId()).isPresent()) {
                 throw new RuntimeException("Inventory already exists for product id: " + request.getProductId());
             }
 
@@ -135,7 +125,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         // Set quantity and save inventory
         inventory.setQuantity(request.getQuantity());
-        Inventory savedInventory = inventoryRepository.save(inventory);
+        Inventory savedInventory = inventoryDAO.save(inventory);
         // Invalidate cache for this inventory and all search lists
         inventoryCacheService.invalidateById(savedInventory.getId());
         inventoryCacheService.invalidateAllList();
@@ -156,12 +146,12 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request) {
         // Find the inventory
-        Inventory inventory = inventoryRepository.findById(inventoryId)
+        Inventory inventory = inventoryDAO.findById(inventoryId)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + inventoryId));
 
         // Update inventory quantity
         inventory.setQuantity(request.getQuantity());
-        Inventory savedInventory = inventoryRepository.save(inventory);
+        Inventory savedInventory = inventoryDAO.save(inventory);
         // Invalidate cache for this inventory and all search lists
         inventoryCacheService.invalidateById(savedInventory.getId());
         inventoryCacheService.invalidateAllList();
@@ -171,10 +161,10 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void deleteInventory(Long inventoryId) {
-        if (!inventoryRepository.existsById(inventoryId)) {
+        if (!inventoryDAO.existsById(inventoryId)) {
             throw new ResourceNotFoundException("Inventory not found with id: " + inventoryId);
         }
-        inventoryRepository.deleteById(inventoryId);
+        inventoryDAO.deleteById(inventoryId);
         // Invalidate cache for this inventory and all search lists
         inventoryCacheService.invalidateById(inventoryId);
         inventoryCacheService.invalidateAllList();

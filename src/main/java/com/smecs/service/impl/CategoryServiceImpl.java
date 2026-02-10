@@ -1,20 +1,17 @@
 package com.smecs.service.impl;
 
 import com.smecs.dao.CategoryDAO;
-import com.smecs.dao.ProductDAO;
 import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Category;
-import com.smecs.repository.CategorySpecification;
-import com.smecs.service.CategoryService;
-import com.smecs.service.CacheService;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.service.CacheService;
+import com.smecs.service.CategoryService;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,13 +20,11 @@ import java.util.stream.Collectors;
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryDAO categoryDAO;
-    private final ProductDAO productDAO;
     private final CacheService<CategoryDTO, Long> categoryCacheService;
 
     @Autowired
-    public CategoryServiceImpl(CategoryDAO categoryDAO, ProductDAO productDAO, CacheService<CategoryDTO, Long> categoryCacheService) {
+    public CategoryServiceImpl(CategoryDAO categoryDAO, CacheService<CategoryDTO, Long> categoryCacheService) {
         this.categoryDAO = categoryDAO;
-        this.productDAO = productDAO;
         this.categoryCacheService = categoryCacheService;
     }
 
@@ -40,23 +35,20 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryDTO getCategoryById(Long id, boolean includeRelatedImages) {
+    public CategoryDTO getCategoryById(Long id) {
         Category category = categoryDAO.findById(id).orElseThrow();
         CategoryDTO dto = new CategoryDTO();
         dto.setCategoryId(category.getId().intValue());
         dto.setCategoryName(category.getName());
         dto.setDescription(category.getDescription());
         dto.setImageUrl(category.getImageUrl());
-        if (includeRelatedImages) {
-            dto.setRelatedImageUrls(productDAO.findTop5ImagesByCategoryId(id));
-        }
         return dto;
     }
 
     @Override
-    public PagedResponseDTO<CategoryDTO> getCategories(String name, String description, boolean includeRelatedImages, Pageable pageable) {
-        Specification<Category> spec = CategorySpecification.filterByCriteria(name, description);
-        Page<Category> categoryPage = categoryDAO.findAll(spec, pageable);
+    public PagedResponseDTO<CategoryDTO> getCategories(String name, String description, Pageable pageable) {
+        // Use native SQL implementation from DAO for low-level database operations
+        Page<Category> categoryPage = categoryDAO.searchCategories(name, description, pageable);
 
         List<CategoryDTO> content = categoryPage.getContent().stream().map(category -> {
             CategoryDTO dto = new CategoryDTO();

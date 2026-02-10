@@ -11,6 +11,7 @@ public interface CategoryDAO {
     Category save(Category category);
     Optional<Category> findById(Long id);
     Page<Category> findAll(Specification<Category> spec, Pageable pageable);
+    Page<Category> searchCategories(String nameQuery, String descriptionQuery, Pageable pageable);
     boolean existsById(Long id);
     void deleteById(Long id);
 }

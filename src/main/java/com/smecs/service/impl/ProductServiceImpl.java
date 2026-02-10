@@ -6,16 +6,13 @@ import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Product;
-import com.smecs.entity.Category;
-import com.smecs.repository.ProductSpecification;
-import com.smecs.repository.CategoryRepository;
 import com.smecs.service.ProductService;
 import com.smecs.service.CacheService;
 import com.smecs.exception.ResourceNotFoundException;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,35 +20,18 @@ import java.util.stream.Collectors;
 @Service
 public class ProductServiceImpl implements ProductService {
     private final ProductDAO productDAO;
-    private final CategoryRepository categoryRepository;
     private final CacheService<ProductDTO, Long> productCacheService;
 
     @Autowired
-    public ProductServiceImpl(ProductDAO productDAO, CategoryRepository categoryRepository, CacheService<ProductDTO, Long> productCacheService) {
+    public ProductServiceImpl(ProductDAO productDAO, CacheService<ProductDTO, Long> productCacheService) {
         this.productDAO = productDAO;
-        this.categoryRepository = categoryRepository;
         this.productCacheService = productCacheService;
     }
 
     @Override
     public ProductDTO createProduct(CreateProductRequestDTO request) {
         Product product = new Product();
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setImageUrl(request.getImageUrl());
-
-        if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
-            product.setCategory(category);
-        }
-
-        product = productDAO.save(product);
-        ProductDTO result = mapToDto(product);
-        productCacheService.put(result);
-        productCacheService.invalidateAllList();
-        return result;
+        return getProductDTO(request, product);
     }
 
     @Override
@@ -66,9 +46,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Pageable pageable) {
-        // Don't use cache for paginated/filtered queries - they're too varied to cache effectively
-        Specification<Product> spec = ProductSpecification.filterByCriteria(name, description);
-        Page<Product> productPage = productDAO.findAll(spec, pageable);
+        // Use native SQL implementation from DAO for low-level database operations
+        Page<Product> productPage = productDAO.searchProducts(name, description, pageable);
 
         List<ProductDTO> content = productPage.getContent().stream()
                 .map(this::mapToDto)
@@ -84,14 +63,16 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO updateProduct(Long id, CreateProductRequestDTO productDTO) {
         Product product = productDAO.findById(id).orElseThrow();
+        return getProductDTO(productDTO, product);
+    }
+
+    @NonNull
+    private ProductDTO getProductDTO(CreateProductRequestDTO productDTO, Product product) {
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
         product.setImageUrl(productDTO.getImageUrl());
-        if(productDTO.getCategoryId() != null) {
-            Category category = categoryRepository.findById(productDTO.getCategoryId()).orElseThrow();
-            product.setCategory(category);
-        }
+
         product = productDAO.save(product);
         ProductDTO result = mapToDto(product);
         productCacheService.put(result);
@@ -116,9 +97,7 @@ public class ProductServiceImpl implements ProductService {
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setImageUrl(product.getImageUrl());
-        if(product.getCategory() != null) {
-            dto.setCategoryId(product.getCategory().getId());
-        }
+        dto.setCategoryId(product.getCategoryId());
         return dto;
     }
 }

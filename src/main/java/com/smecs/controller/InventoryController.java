@@ -7,6 +7,7 @@ import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.UpdateInventoryRequestDTO;
 import com.smecs.service.InventoryService;
 import com.smecs.service.impl.InventoryCacheService;
+import com.smecs.util.PaginationUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -43,20 +44,20 @@ public class InventoryController {
 
     @GetMapping
     public ResponseEntity<ResponseDTO<PagedResponseDTO<InventoryDTO>>> searchInventory(
-            @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "id,asc") String sort
     ) {
+        String query = ""; // Empty query as filtering is removed
         Optional<PagedResponseDTO<InventoryDTO>> cached = inventoryCacheService.getSearchResults(query, page, size, sort);
         if (cached.isPresent()) {
             return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", cached.get()));
         }
 
-        Sort sortSpec = parseSort(sort);
+        Sort sortSpec = PaginationUtils.parseSort(sort, "id");
         Pageable pageable = PageRequest.of(page - 1, size, sortSpec);
 
-        PagedResponseDTO<InventoryDTO> result = inventoryService.searchInventory(query, pageable);
+        PagedResponseDTO<InventoryDTO> result = inventoryService.searchInventory(pageable);
         inventoryCacheService.putSearchResults(query, page, size, sort, result);
 
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", result));
@@ -85,15 +86,5 @@ public class InventoryController {
     public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfuly", null));
-    }
-
-    private Sort parseSort(String sort) {
-        if (sort == null || sort.isBlank()) {
-            return Sort.by(Sort.Direction.ASC, "id");
-        }
-        String[] parts = sort.split(",");
-        String property = parts[0].trim();
-        Sort.Direction direction = parts.length > 1 ? Sort.Direction.fromString(parts[1].trim()) : Sort.Direction.ASC;
-        return Sort.by(direction, property);
     }
 }
