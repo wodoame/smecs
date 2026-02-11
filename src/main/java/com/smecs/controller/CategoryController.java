@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
@@ -36,41 +37,47 @@ public class CategoryController {
             @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
-            @RequestParam(defaultValue = "name,asc") String sort
-    ) {
-        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort);
+            @RequestParam(defaultValue = "name,asc") String sort,
+            @RequestParam(required = false, defaultValue = "false") boolean relatedImages) {
+        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort,
+                relatedImages);
         if (cached.isPresent()) {
-             return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", cached.get()));
+            return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", cached.get()));
         }
 
         Sort sortSpec = PaginationUtils.parseSort(sort);
         // Use 0-based page index for Spring Data
         PageRequest pageRequest = PageRequest.of(page - 1, size, sortSpec);
-        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, pageRequest);
+        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, pageRequest, relatedImages);
 
-        categoryCacheService.putSearchResults(query, page, size, sort, data);
+        categoryCacheService.putSearchResults(query, page, size, sort, relatedImages, data);
 
         return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", data));
     }
 
-
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseDTO<CategoryDTO>> get(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean includeRelatedImages) {
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Category found", categoryService.getCategoryById(id)));
+    public ResponseEntity<ResponseDTO<CategoryDTO>> get(@PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "false") boolean relatedImages) {
+        return ResponseEntity
+                .ok(new ResponseDTO<>("success", "Category found", categoryService.getCategoryById(id, relatedImages)));
     }
 
     @PostMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<CategoryDTO>> create(@Valid @RequestBody CategoryDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Category created", categoryService.createCategory(dto)));
     }
 
     @PutMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<CategoryDTO>> update(@PathVariable Long id, @Valid @RequestBody CategoryDTO dto) {
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Category updated", categoryService.updateCategory(id, dto)));
+        return ResponseEntity
+                .ok(new ResponseDTO<>("success", "Category updated", categoryService.updateCategory(id, dto)));
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> delete(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Category deleted", null));

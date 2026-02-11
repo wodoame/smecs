@@ -43,7 +43,12 @@ public class CategoryCacheService implements CacheService<CategoryDTO, Long>, Se
 
     @Override
     public Optional<PagedResponseDTO<CategoryDTO>> getSearchResults(String query, int page, int size, String sort) {
-        String key = createSearchKey(query, page, size, sort);
+        return getSearchResults(query, page, size, sort, false);
+    }
+
+    public Optional<PagedResponseDTO<CategoryDTO>> getSearchResults(String query, int page, int size, String sort,
+            boolean relatedImages) {
+        String key = createSearchKey(query, page, size, sort, relatedImages);
         CacheEntry<PagedResponseDTO<CategoryDTO>> entry = searchCache.get(key);
         if (entry == null || entry.isExpired()) {
             searchCache.remove(key);
@@ -54,14 +59,23 @@ public class CategoryCacheService implements CacheService<CategoryDTO, Long>, Se
 
     @Override
     public void putSearchResults(String query, int page, int size, String sort, PagedResponseDTO<CategoryDTO> result) {
+        putSearchResults(query, page, size, sort, false, result);
+    }
+
+    public void putSearchResults(String query, int page, int size, String sort, boolean relatedImages,
+            PagedResponseDTO<CategoryDTO> result) {
         if (result != null && query != null) {
-            String key = createSearchKey(query, page, size, sort);
+            String key = createSearchKey(query, page, size, sort, relatedImages);
             searchCache.put(key, new CacheEntry<>(result, DEFAULT_TTL_MS));
         }
     }
 
     private String createSearchKey(String query, int page, int size, String sort) {
-        return String.format("%s|%d|%d|%s", query, page, size, sort);
+        return createSearchKey(query, page, size, sort, false);
+    }
+
+    private String createSearchKey(String query, int page, int size, String sort, boolean relatedImages) {
+        return String.format("%s|%d|%d|%s|%b", query, page, size, sort, relatedImages);
     }
 
     @Override

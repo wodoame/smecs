@@ -10,10 +10,16 @@ import java.util.Optional;
 
 public interface ProductDAO {
     Product save(Product product);
-    Optional<Product> findById(Long id);
-    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
-    Page<Product> searchProducts(String nameQuery, String descriptionQuery, Pageable pageable);
-    boolean existsById(Long id);
-    void deleteById(Long id);
-}
 
+    Optional<Product> findById(Long id);
+
+    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
+
+    Page<Product> searchProducts(String nameQuery, String descriptionQuery, Pageable pageable);
+
+    boolean existsById(Long id);
+
+    void deleteById(Long id);
+
+    List<Product> findTop5ByCategory(Long categoryId);
+}

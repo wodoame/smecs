@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -37,12 +38,14 @@ public class InventoryController {
     }
 
     @PostMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<InventoryDTO>> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request)));
     }
 
     @GetMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<InventoryDTO>>> searchInventory(
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,

@@ -1,8 +1,10 @@
 type Query {
-    products: [Product]
+    products(page: Int = 1, size: Int = 10, sort: String = "id,asc"): [Product]
     productById(id: ID!): Product
-    categories: [Category]
+    categories(page: Int = 1, size: Int = 10, sort: String = "id,asc"): [Category]
     categoryById(id: ID!): Category
+    inventories(page: Int = 1, size: Int = 10, sort: String = "id,asc", query: String): InventoryPage
+    inventoryById(id: ID!): Inventory
     users: [User]
     userById(id: ID!): User
 }
@@ -13,12 +15,12 @@ type Mutation {
 }
 
 type Product {
-    id: Int!
+    id: ID!
     name: String!
     description: String
     price: Float!
     imageUrl: String
-    categoryId: Int
+    category: Category
 }
 
 type Category {
@@ -27,6 +29,30 @@ type Category {
     description: String
     imageUrl: String
 }
+
+type Inventory {
+    id: ID!
+    product: Product
+    quantity: Int!
+}
+
+type PageMetadata {
+    page: Int
+    size: Int
+    totalElements: Int
+    totalPages: Int
+    first: Boolean
+    last: Boolean
+    empty: Boolean
+    hasNext: Boolean
+    hasPrevious: Boolean
+}
+
+type InventoryPage {
+    content: [Inventory]
+    page: PageMetadata
+}
+
 
 type User {
     id: ID!

@@ -3,220 +3,66 @@
 import * as React from "react"
 import { useLocation } from "react-router-dom"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
   GalleryVerticalEnd,
   LayoutList,
-  Map,
-  PieChart,
-  Settings2,
   Shield,
   ShoppingBag,
-  SquareTerminal,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Admin",
-      url: "#",
-      icon: Shield,
-      items: [
-        {
-          title: "Inventories",
-          url: "/admin/inventories",
-        },
-        {
-          title: "Categories",
-          url: "/admin/categories",
-        },
-      ],
-    },
-    {
-      title: "Cart",
-      url: "/cart",
-      icon: ShoppingBag,
-      items: [],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-}
+import { useAuth } from "@/hooks/use-auth"
 
 interface Category {
   categoryId: number
   categoryName: string
-  description: string
-  imageUrl: string
-  relatedImageUrls: string[] | null
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { pathname } = useLocation()
-  const dataWithActiveState = {
-    ...data,
-    navMain: data.navMain.map((item) => ({
-      ...item,
-      isActive:
-        item.title === "Admin"
-          ? pathname.startsWith("/admin")
-          : item.isActive,
-    })),
-  }
-
+  const { user, isAdmin } = useAuth()
   const [categories, setCategories] = React.useState<Category[]>([])
 
   React.useEffect(() => {
-    fetch("/api/categories")
+    // Using GraphQL to demonstrate coexistence with REST
+    const query = `
+      query {
+        categories {
+          id
+          name
+        }
+      }
+    `;
+
+    fetch("/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    })
       .then((res) => res.json())
-      .then((data) => {
-        // Handle paginated response if necessary, assuming data.content is the array
-        // based on AdminCategoriesPage logic: payload.data.content
-        if (data.data?.content) {
-          setCategories(data.data.content)
-        } else if (Array.isArray(data)) {
-          setCategories(data)
+      .then((result) => {
+        if (result.data?.categories) {
+          // Map GraphQL response to match the expected Category interface
+          const mappedCategories = result.data.categories.map((cat: any) => ({
+            categoryId: parseInt(cat.id),
+            categoryName: cat.name,
+          }));
+          setCategories(mappedCategories);
         }
       })
-      .catch((err) => console.error("Failed to fetch categories", err))
+      .catch((err) => console.error("Failed to fetch categories via GraphQL", err));
   }, [])
 
   const navCatalog = [
@@ -228,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [
         ...categories.map((cat) => ({
           title: cat.categoryName,
-          url: `/categories/${cat.categoryId}`, // Assuming a route exists or just a placeholder
+          url: `/categories/${cat.categoryId}`,
         })),
         {
           title: "See more",
@@ -238,18 +84,74 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ]
 
+  const navMainItems = [
+    {
+      title: "Cart",
+      url: "/cart",
+      icon: ShoppingBag,
+      items: [],
+      // Always show cart
+      visible: true
+    },
+    {
+      title: "Admin",
+      url: "#",
+      icon: Shield,
+      visible: isAdmin, // Only show if admin
+      items: [
+        {
+          title: "Inventories",
+          url: "/admin/inventories",
+        },
+        {
+          title: "Categories",
+          url: "/admin/categories",
+        },
+      ],
+    }
+  ]
+
+  const filteredNavMain = navMainItems
+    .filter(item => item.visible)
+    .map(({ visible, ...item }) => ({
+      ...item,
+      isActive:
+        item.title === "Admin"
+          ? pathname.startsWith("/admin")
+          : false, // simplified isActive logic
+    }))
+
+  const userData = user ? {
+    name: user.username,
+    email: user.email,
+    avatar: "", // Placeholder or add to AuthData if available
+  } : null
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="#">
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <GalleryVerticalEnd className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold">SMECS</span>
+                  <span className="">v1.0.0</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={dataWithActiveState.navMain} />
+        <NavMain items={filteredNavMain} />
         <NavMain items={navCatalog} label="Catalog" />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {userData && <NavUser user={userData} />}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

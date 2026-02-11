@@ -25,12 +25,10 @@ public class ProductDAOImpl implements ProductDAO {
             "description", "description",
             "price", "price",
             "imageUrl", "image_url",
-            "categoryId", "category_id"
-    );
+            "categoryId", "category_id");
 
     private static final Set<String> VALID_COLUMNS = Set.of(
-            "id", "name", "description", "price", "image_url", "category_id"
-    );
+            "id", "name", "description", "price", "image_url", "category_id");
 
     @Override
     @Transactional
@@ -66,7 +64,8 @@ public class ProductDAOImpl implements ProductDAO {
     public Page<Product> findAll(Specification<Product> spec, Pageable pageable) {
         // For backward compatibility, delegate to the native SQL implementation
         // Since specifications are complex to parse, we'll do a simple search
-        // This method is kept for interface compatibility but searchProducts is preferred
+        // This method is kept for interface compatibility but searchProducts is
+        // preferred
         return searchProducts("", "", pageable);
     }
 
@@ -126,9 +125,9 @@ public class ProductDAOImpl implements ProductDAO {
      * Search products using native SQL with manual pagination and sorting.
      * This method demonstrates low-level SQL implementation for academic purposes.
      *
-     * @param nameQuery Search term for product name
+     * @param nameQuery        Search term for product name
      * @param descriptionQuery Search term for product description
-     * @param pageable Contains pagination and sorting parameters
+     * @param pageable         Contains pagination and sorting parameters
      * @return Page of products matching the search criteria
      */
     @Override
@@ -146,10 +145,10 @@ public class ProductDAOImpl implements ProductDAO {
 
         // Step 4: Construct and execute the main SELECT query
         String dataQuery = "SELECT p.id, p.name, p.description, p.price, p.image_url, p.category_id " +
-                          "FROM products p" + whereClause + orderByClause + " LIMIT ? OFFSET ?";
+                "FROM products p" + whereClause + orderByClause + " LIMIT ? OFFSET ?";
 
-        System.out.println("Generated SQL Query: " + dataQuery);
-        System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
+        // System.out.println("Generated SQL Query: " + dataQuery);
+        // System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
 
         Query query = entityManager.createNativeQuery(dataQuery);
         setQueryParameters(query, parameters, limit, offset);
@@ -171,7 +170,7 @@ public class ProductDAOImpl implements ProductDAO {
      */
     private String buildWhereClause(String nameQuery, String descriptionQuery, List<Object> parameters) {
         if ((nameQuery == null || nameQuery.isBlank()) &&
-            (descriptionQuery == null || descriptionQuery.isBlank())) {
+                (descriptionQuery == null || descriptionQuery.isBlank())) {
             return "";
         }
 
@@ -248,5 +247,15 @@ public class ProductDAOImpl implements ProductDAO {
     private Double toDouble(Object value) {
         return value != null ? ((Number) value).doubleValue() : null;
     }
-}
 
+    @Override
+    public List<Product> findTop5ByCategory(Long categoryId) {
+        String sql = "SELECT id, name, description, price, image_url, category_id FROM products WHERE category_id = ? LIMIT 5";
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter(1, categoryId);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> results = query.getResultList();
+        return mapResultsToProducts(results);
+    }
+}

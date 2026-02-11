@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.dto.UserRegisterDTO;
 import com.smecs.entity.User;
 import com.smecs.dao.UserDAO;
 import com.smecs.service.UserService;
@@ -23,7 +24,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean registerUser(String username, String email, String password, String role) {
+    public boolean registerUser(UserRegisterDTO registrationDTO) {
+        String username = registrationDTO.getUsername();
+        String email = registrationDTO.getEmail();
+        String password = registrationDTO.getPassword();
+        String role = registrationDTO.getRole();
+
         if (!StringUtils.hasText(username) || username.trim().length() < 3) {
             throw new IllegalArgumentException("Username must be at least 3 characters long");
         }

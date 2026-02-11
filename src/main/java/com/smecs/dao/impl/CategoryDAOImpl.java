@@ -83,8 +83,8 @@ public class CategoryDAOImpl implements CategoryDAO {
         String dataQuery = "SELECT c.id, c.name, c.description, c.image_url " +
                           "FROM categories c" + whereClause + orderByClause + " LIMIT ? OFFSET ?";
 
-        System.out.println("Generated SQL Query: " + dataQuery);
-        System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
+//        System.out.println("Generated SQL Query: " + dataQuery);
+//        System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
 
         Query query = entityManager.createNativeQuery(dataQuery);
         setQueryParameters(query, parameters, limit, offset);

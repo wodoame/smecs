@@ -42,7 +42,8 @@ public class CartController {
     @GetMapping("/{cartId}")
     public ResponseEntity<ResponseDTO<CartDTO>> getCartById(@PathVariable Long cartId) {
         return cartService.getCartById(cartId)
-                .map(cart -> ResponseEntity.ok(new ResponseDTO<>("success", "Cart retrieved successfully", mapToCartDTO(cart))))
+                .map(cart -> ResponseEntity
+                        .ok(new ResponseDTO<>("success", "Cart retrieved successfully", mapToCartDTO(cart))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new ResponseDTO<>("error", "Cart not found", null)));
     }

@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
@@ -34,6 +35,7 @@ public class ProductController {
     }
 
     @PostMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<ProductDTO>> createProduct(@Valid @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Product created", productService.createProduct(request)));
@@ -64,11 +66,13 @@ public class ProductController {
 
 
     @PutMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<ProductDTO>> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product updated", productService.updateProduct(id, request)));
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product deleted", null));

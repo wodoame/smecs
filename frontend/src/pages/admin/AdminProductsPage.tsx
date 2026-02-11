@@ -56,7 +56,6 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/ui/combobox"
-import type { ApiResponse } from "@/types/api"
 
 export interface InventoryItem {
     id: number;
@@ -67,8 +66,6 @@ export interface InventoryItem {
     category: {
         categoryId: number;
         categoryName: string;
-        description?: string;
-        imageUrl?: string;
     };
     image: string;
     quantity: number;
@@ -114,27 +111,74 @@ export default function AdminProductsPage() {
 
     const fetchInventory = (query = "", pageIndex = 1) => {
         setLoading(true);
-        fetch(`/api/inventories?query=${encodeURIComponent(query)}&page=${pageIndex}`)
+        const graphqlQuery = {
+            query: `
+                query GetInventories($page: Int, $size: Int, $query: String) {
+                    inventories(page: $page, size: $size, query: $query) {
+                        content {
+                            id
+                            quantity
+                            product {
+                                id
+                                name
+                                description
+                                price
+                                imageUrl
+                                category {
+                                    id
+                                    name
+                                }
+                            }
+                        }
+                        page {
+                            totalPages
+                        }
+                    }
+                }
+            `,
+            variables: {
+                page: pageIndex,
+                size: 10,
+                query: query
+            }
+        };
+
+        fetch("/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(graphqlQuery),
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to fetch inventory");
                 return res.json();
             })
-            .then((payload: ApiResponse<any>) => {
-                const inventory = (payload.data.content || []).map((item: any) => ({
-                    id: item.id,
-                    productId: item.product.id,
+            .then((payload) => {
+                if (payload.errors) {
+                    throw new Error(payload.errors[0].message);
+                }
+                const data = payload.data.inventories;
+                const inventory = (data.content || []).map((item: any) => ({
+                    id: parseInt(item.id),
+                    productId: parseInt(item.product.id),
                     name: item.product.name ?? "Unnamed Product",
                     description: item.product.description,
                     price: item.product.price,
-                    category: item.product.category,
+                    category: {
+                        categoryId: parseInt(item.product.category?.id || "0"),
+                        categoryName: item.product.category?.name || "Uncategorized"
+                    },
                     image: item.product.imageUrl,
                     quantity: item.quantity,
                 }));
                 setData(inventory);
-                // Access totalPages from the nested page object
-                setTotalPages(payload.data.page?.totalPages || 0);
+                setTotalPages(data.page?.totalPages || 0);
             })
-            .catch((err) => console.error("Error fetching inventory:", err))
+            .catch((err) => {
+                console.error("Error fetching inventory:", err);
+                toast.error("Failed to load inventory");
+            })
             .finally(() => setLoading(false));
     };
 

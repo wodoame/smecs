@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.AddToCartRequest;
 import com.smecs.dto.CartItemDTO;
 import com.smecs.dto.ResponseDTO;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/cartitems")
+@RequestMapping("/api/cart-items")
 public class CartItemsController {
 
     private final CartItemService cartItemService;
@@ -26,6 +27,7 @@ public class CartItemsController {
     }
 
     @PostMapping
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody AddToCartRequest request) {
         CartItem createdItem = cartItemService.addItemToCart(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -41,6 +43,7 @@ public class CartItemsController {
     }
 
     @GetMapping("/cart/{cartId}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<List<CartItemDTO>>> getCartItemsByCart(@PathVariable Long cartId) {
         List<CartItem> items = cartItemService.getCartItemsByCartId(cartId);
         List<CartItemDTO> dtos = items.stream()
@@ -50,7 +53,8 @@ public class CartItemsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id, @RequestBody CartItemDTO dto) {
+    public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id,
+            @RequestBody CartItemDTO dto) {
         CartItem updated = cartItemService.updateCartItem(id, dto.getQuantity());
         return ResponseEntity.ok(new ResponseDTO<>("success", "Cart item updated", mapToDTO(updated)));
     }
@@ -61,8 +65,8 @@ public class CartItemsController {
             cartItemService.deleteCartItem(id);
             return ResponseEntity.ok(new ResponseDTO<>("success", "Cart item deleted", null));
         } else {
-             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ResponseDTO<>("error", "Cart item not found", null));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDTO<>("error", "Cart item not found", null));
         }
     }
 
@@ -72,6 +76,8 @@ public class CartItemsController {
         Product product = item.getProduct();
         if (product != null) {
             dto.setProductId(item.getProduct().getId());
+            dto.setProductName(product.getName());
+            dto.setProductImage(product.getImageUrl());
             dto.setPrice(product.getPrice());
         }
         dto.setQuantity(item.getQuantity());

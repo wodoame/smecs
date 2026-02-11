@@ -19,4 +19,6 @@ public class CategoryDTO {
 
     @NotBlank(message = "Image URL is required")
     private String imageUrl;
+
+    private List<String> relatedImageUrls;
 }

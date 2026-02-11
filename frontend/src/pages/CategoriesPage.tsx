@@ -18,7 +18,7 @@ export default function CategoriesPage() {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`/api/categories?includeRelatedImages=true&page=${page}`)
+        fetch(`/api/categories?relatedImages=true&page=${page}`)
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to fetch categories");
                 return res.json();
