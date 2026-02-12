@@ -80,4 +80,14 @@ public class CartItemServiceImpl implements CartItemService {
         }
         cartItemDAO.deleteById(cartItemId);
     }
+
+    @Override
+    public void deleteCartItemsByCartIdAndProductIds(Long cartId, List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return;
+        }
+        for (Long productId : productIds) {
+            cartItemDAO.deleteByCartIdAndProductId(cartId, productId);
+        }
+    }
 }

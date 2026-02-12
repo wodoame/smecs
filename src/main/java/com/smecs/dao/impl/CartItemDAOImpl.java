@@ -68,5 +68,15 @@ public class CartItemDAOImpl implements CartItemDAO {
             entityManager.remove(cartItem);
         }
     }
+
+    @Override
+    @Transactional
+    public void deleteByCartIdAndProductId(Long cartId, Long productId) {
+        entityManager.createQuery(
+                "DELETE FROM CartItem ci WHERE ci.cartId = :cartId AND ci.product.id = :productId")
+                .setParameter("cartId", cartId)
+                .setParameter("productId", productId)
+                .executeUpdate();
+    }
 }
 

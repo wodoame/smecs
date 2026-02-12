@@ -1,6 +1,5 @@
 package com.smecs.dto;
 
-import com.smecs.entity.User;
 import lombok.Getter;
 import lombok.Setter;
 

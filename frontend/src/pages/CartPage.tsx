@@ -1,15 +1,99 @@
+import { useState } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, LogIn, ShieldAlert } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Trash2, LogIn, ShieldAlert, CircleCheck } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { auth } from "@/lib/auth";
+import type { SingleApiResponse } from "@/types/api";
 
 export default function CartPage() {
     const location = useLocation();
+    const navigate = useNavigate();
     const { cartItems, authError, removeFromCart, updateQuantity, clearCart } = useCart();
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
 
     const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    const handleCheckout = async () => {
+        const user = auth.getUser();
+        if (!user) {
+            toast.error("You must be logged in to checkout");
+            return;
+        }
+
+        if (cartItems.length === 0) {
+            toast.error("Your cart is empty");
+            return;
+        }
+
+        setCheckoutLoading(true);
+
+        try {
+            // Step 1: Create the order
+            const orderResponse = await fetch("/api/orders", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${user.token}`,
+                },
+                body: JSON.stringify({
+                    userId: user.id,
+                }),
+            });
+
+            if (!orderResponse.ok) {
+                throw new Error("Failed to create order");
+            }
+
+            const orderData: SingleApiResponse<{ id: number; userId: number; totalAmount: number; status: string; createdAt: string }> = await orderResponse.json();
+            const orderId = orderData.data.id;
+
+            // Step 2: Create order items from cart items
+            const orderItems = cartItems.map(item => ({
+                orderId: orderId,
+                productId: item.id,
+                quantity: item.quantity,
+                price: item.price,
+            }));
+
+            const orderItemsResponse = await fetch("/api/orderitems", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${user.token}`,
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    items: orderItems,
+                }),
+            });
+
+            if (!orderItemsResponse.ok) {
+                throw new Error("Failed to create order items");
+            }
+
+            // Step 3: Clear the cart
+            await clearCart();
+
+            // Step 4: Show success message and redirect
+            toast.success("Order placed successfully!", {
+                icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+            });
+
+            // Redirect to orders page
+            navigate("/orders");
+        } catch (error) {
+            console.error("Checkout error:", error);
+            toast.error("Failed to complete checkout. Please try again.");
+        } finally {
+            setCheckoutLoading(false);
+        }
+    };
+
+
 
     // Show error screens for auth issues
     if (authError === 'unauthorized') {
@@ -122,7 +206,14 @@ export default function CartPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" size="lg">Checkout</Button>
+                            <Button
+                                className="w-full"
+                                size="lg"
+                                onClick={handleCheckout}
+                                disabled={checkoutLoading}
+                            >
+                                {checkoutLoading ? "Processing..." : "Checkout"}
+                            </Button>
                         </CardFooter>
                     </Card>
                 </div>

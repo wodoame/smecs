@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import com.smecs.util.JwtUtil;
 import com.smecs.service.CartService;
 import com.smecs.entity.Cart;
+import com.smecs.annotation.RequireRole;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -60,6 +62,30 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Login successful", response));
     }
 
+    @GetMapping("/verify")
+    @RequireRole("customer")
+    public ResponseEntity<ResponseDTO<UserResponseDTO>> verify(HttpServletRequest request) {
+        // This endpoint simply verifies that the user's token is valid
+        // The @RequireRole annotation will handle authentication/authorization
+        // If we reach here, the user is authenticated and user info is in request
+        // attributes
+        Long userId = (Long) request.getAttribute("userId");
+        String username = (String) request.getAttribute("username");
+        String role = (String) request.getAttribute("role");
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>("error", "Not authenticated", null));
+        }
+
+        UserResponseDTO response = new UserResponseDTO();
+        response.setId(userId);
+        response.setUsername(username);
+        response.setRole(role);
+
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Authenticated", response));
+    }
+
     private UserResponseDTO mapToDTO(User user) {
         UserResponseDTO response = new UserResponseDTO();
         response.setId(user.getId());
@@ -69,4 +95,3 @@ public class AuthController {
         return response;
     }
 }
-

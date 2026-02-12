@@ -22,4 +22,6 @@ public interface ProductDAO {
     void deleteById(Long id);
 
     List<Product> findTop5ByCategory(Long categoryId);
+
+    long countByCategoryId(Long categoryId);
 }

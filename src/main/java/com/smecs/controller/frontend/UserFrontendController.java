@@ -63,4 +63,11 @@ public class UserFrontendController {
         // Serve index.html for /contact
         return resourceLoader.getResource("classpath:/static/index.html");
     }
+
+    @GetMapping(value = "/orders", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Resource ordersPage() {
+        // Serve index.html for /contact
+        return resourceLoader.getResource("classpath:/static/index.html");
+    }
 }

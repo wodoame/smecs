@@ -269,4 +269,12 @@ public class ProductDAOImpl implements ProductDAO {
         List<Object[]> results = query.getResultList();
         return mapResultsToProducts(results);
     }
+
+    @Override
+    public long countByCategoryId(Long categoryId) {
+        String sql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter(1, categoryId);
+        return ((Number) query.getSingleResult()).longValue();
+    }
 }

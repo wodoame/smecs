@@ -2,7 +2,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+// import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -32,7 +32,7 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, Trash2, ListRestart } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -61,6 +61,7 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination"
 import type { ApiResponse } from "@/types/api"
+import { auth } from "@/lib/auth"
 
 export interface Category {
     categoryId: number;
@@ -99,6 +100,7 @@ export default function AdminCategoriesPage() {
 
     // Search and Pagination State
     const [searchTerm, setSearchTerm] = React.useState("")
+    const [globalFilter, setGlobalFilter] = React.useState("")
     const [page, setPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(0)
 
@@ -123,6 +125,13 @@ export default function AdminCategoriesPage() {
         fetchCategories(searchTerm, 1);
     };
 
+    const handleShowAll = () => {
+        setSearchTerm("");
+        setGlobalFilter("");
+        setPage(1);
+        fetchCategories("", 1);
+    };
+
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
             setPage(newPage);
@@ -135,9 +144,18 @@ export default function AdminCategoriesPage() {
     }, []);
 
     const handleCreateCategory = () => {
+        const user = auth.getUser();
+        if (!user) {
+            toast.error("You must be logged in to create categories");
+            return;
+        }
+
         fetch("/api/categories", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${user.token}`,
+            },
             body: JSON.stringify(newCategory),
         })
             .then((res) => {
@@ -156,21 +174,40 @@ export default function AdminCategoriesPage() {
                     icon: <CircleCheck className="h-5 w-5 text-green-500" />,
                 })
             })
-            .catch((err) => alert(err.message));
+            .catch((err) => toast.error(err.message));
     };
 
-    const handleDeleteCategory = (id: number) => {
-        fetch(`/api/categories/${id}`, {
-            method: "DELETE",
-        })
-            .then((res) => {
-                if (!res.ok) throw new Error("Failed to delete category");
-                toast.success("Category deleted successfully", {
-                    icon: <CircleCheck className="h-5 w-5 text-green-500" />,
-                });
-                fetchCategories(searchTerm, page);
-            })
-            .catch((err) => toast.error(err.message));
+    const handleDeleteCategory = async (id: number) => {
+        const user = auth.getUser();
+        if (!user) {
+            toast.error("You must be logged in to delete categories");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/categories/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${user.token}`,
+                },
+            });
+
+            if (!response.ok) {
+                // Try to parse the error response
+                const errorData = await response.json();
+                const errorMessage = errorData.message || "Failed to delete category";
+                toast.error(errorMessage);
+                return;
+            }
+
+            toast.success("Category deleted successfully", {
+                icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+            });
+            fetchCategories(searchTerm, page);
+        } catch (error) {
+            console.error("Error deleting category:", error);
+            toast.error("Failed to delete category");
+        }
     };
 
     const handleEditCategory = (category: Category) => {
@@ -181,9 +218,18 @@ export default function AdminCategoriesPage() {
     const handleUpdateCategory = () => {
         if (!editingCategory) return;
 
+        const user = auth.getUser();
+        if (!user) {
+            toast.error("You must be logged in to update categories");
+            return;
+        }
+
         fetch(`/api/categories/${editingCategory.categoryId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${user.token}`,
+            },
             body: JSON.stringify({
                 categoryName: editingCategory.categoryName,
                 description: editingCategory.description,
@@ -212,28 +258,29 @@ export default function AdminCategoriesPage() {
 
     const columns: ColumnDef<Category>[] = React.useMemo(
         () => [
-            {
-                id: "select",
-                header: ({ table }) => (
-                    <Checkbox
-                        checked={
-                            table.getIsAllPageRowsSelected() ||
-                            (table.getIsSomePageRowsSelected() && "indeterminate")
-                        }
-                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                        aria-label="Select all"
-                    />
-                ),
-                cell: ({ row }) => (
-                    <Checkbox
-                        checked={row.getIsSelected()}
-                        onCheckedChange={(value) => row.toggleSelected(!!value)}
-                        aria-label="Select row"
-                    />
-                ),
-                enableSorting: false,
-                enableHiding: false,
-            },
+            // Commented out for now - no bulk operations
+            // {
+            //     id: "select",
+            //     header: ({ table }) => (
+            //         <Checkbox
+            //             checked={
+            //                 table.getIsAllPageRowsSelected() ||
+            //                 (table.getIsSomePageRowsSelected() && "indeterminate")
+            //             }
+            //             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            //             aria-label="Select all"
+            //         />
+            //     ),
+            //     cell: ({ row }) => (
+            //         <Checkbox
+            //             checked={row.getIsSelected()}
+            //             onCheckedChange={(value) => row.toggleSelected(!!value)}
+            //             aria-label="Select row"
+            //         />
+            //     ),
+            //     enableSorting: false,
+            //     enableHiding: false,
+            // },
             {
                 accessorKey: "imageUrl",
                 header: "Image",
@@ -331,17 +378,26 @@ export default function AdminCategoriesPage() {
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
+        onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
+        globalFilterFn: (row, _columnId, filterValue) => {
+            const searchValue = filterValue.toLowerCase();
+            const name = row.getValue<string>("categoryName")?.toLowerCase() || "";
+            const description = row.getValue<string>("description")?.toLowerCase() || "";
+
+            return name.includes(searchValue) || description.includes(searchValue);
+        },
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            globalFilter,
         },
     })
 
@@ -350,11 +406,12 @@ export default function AdminCategoriesPage() {
             <div className="flex items-center py-4">
                 <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
-                        placeholder="Filter products..."
+                        placeholder="Filter categories..."
                         value={searchTerm}
                         onChange={(event) => {
-                            setSearchTerm(event.target.value);
-                            table.getColumn("categoryName")?.setFilterValue(event.target.value);
+                            const value = event.target.value;
+                            setSearchTerm(value);
+                            setGlobalFilter(value);
                         }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
@@ -364,6 +421,10 @@ export default function AdminCategoriesPage() {
                     />
                     <Button type="submit" size="icon" onClick={handleSearch}>
                         <Search className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" onClick={handleShowAll}>
+                        <ListRestart className="h-4 w-4 mr-2" />
+                        Show All
                     </Button>
                 </div>
 

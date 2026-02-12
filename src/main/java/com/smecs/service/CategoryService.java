@@ -14,6 +14,8 @@ public interface CategoryService {
     PagedResponseDTO<CategoryDTO> getCategories(String name, String description, Pageable pageable,
             boolean includeRelatedImages);
 
+    PagedResponseDTO<CategoryDTO> getCategories(String query, int page, int size, String sort, boolean relatedImages);
+
     CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO);
 
     void deleteCategory(Long id);

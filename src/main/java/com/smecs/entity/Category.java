@@ -14,6 +14,8 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
+    @Column(name = "image_url", length = 512)
     private String imageUrl;
 }

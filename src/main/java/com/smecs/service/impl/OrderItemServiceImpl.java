@@ -4,11 +4,14 @@ import com.smecs.entity.OrderItem;
 import com.smecs.dao.OrderItemDAO;
 import com.smecs.dao.OrderDAO;
 import com.smecs.dao.ProductDAO;
+import com.smecs.dao.CartDAO;
 import com.smecs.dto.OrderItemDTO;
 import com.smecs.entity.Order;
 import com.smecs.entity.Product;
+import com.smecs.entity.Cart;
 import com.smecs.service.OrderItemService;
 import com.smecs.service.OrderService;
+import com.smecs.service.CartItemService;
 import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import java.util.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderItemServiceImpl implements OrderItemService {
@@ -23,13 +27,18 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final ProductDAO productDAO;
     private final OrderDAO orderDAO;
     private final OrderService orderService;
+    private final CartDAO cartDAO;
+    private final CartItemService cartItemService;
 
     @Autowired
-    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderDAO orderDAO, OrderService orderService) {
+    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderDAO orderDAO,
+                                OrderService orderService, CartDAO cartDAO, CartItemService cartItemService) {
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
         this.orderDAO = orderDAO;
         this.orderService = orderService;
+        this.cartDAO = cartDAO;
+        this.cartItemService = cartItemService;
     }
 
     @Override
@@ -57,6 +66,17 @@ public class OrderItemServiceImpl implements OrderItemService {
         });
         List<OrderItem> savedItems = orderItemDAO.saveAll(orderItems);
         orderService.updateOrderTotalOrThrow(orderId);
+
+        // Delete cart items for the user after successfully creating order items
+        Long userId = order.getUserId();
+        Cart userCart = cartDAO.findByUserId(userId);
+        if (userCart != null) {
+            List<Long> productIds = savedItems.stream()
+                    .map(OrderItem::getProductId)
+                    .collect(Collectors.toList());
+            cartItemService.deleteCartItemsByCartIdAndProductIds(userCart.getCartId(), productIds);
+        }
+
         return savedItems;
     }
 

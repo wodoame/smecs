@@ -13,6 +13,9 @@ import CartPage from "./pages/CartPage";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
+import OrdersPage from "./pages/OrdersPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 
 
 const router = createBrowserRouter([
@@ -34,11 +37,19 @@ const router = createBrowserRouter([
       },
       {
         path: "admin/inventories",
-        element: <AdminProductsPage />,
+        element: (
+          <AdminRoute>
+            <AdminProductsPage />
+          </AdminRoute>
+        ),
       },
       {
         path: "admin/categories",
-        element: <AdminCategoriesPage />,
+        element: (
+          <AdminRoute>
+            <AdminCategoriesPage />
+          </AdminRoute>
+        ),
       },
       {
         path: "categories",
@@ -54,7 +65,19 @@ const router = createBrowserRouter([
       },
       {
         path: "cart",
-        element: <CartPage />,
+        element: (
+          <ProtectedRoute>
+            <CartPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "orders",
+        element: (
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        ),
       },
 
     ],

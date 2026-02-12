@@ -11,5 +11,6 @@ public interface CartItemDAO {
     CartItem findByCartIdAndProductId(Long cartId, Long productId);
     boolean existsById(Long id);
     void deleteById(Long id);
+    void deleteByCartIdAndProductId(Long cartId, Long productId);
 }
 

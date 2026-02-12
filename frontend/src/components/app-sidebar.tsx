@@ -6,6 +6,7 @@ import {
   GalleryVerticalEnd,
   LayoutList,
   LogIn,
+  Package,
   Shield,
   ShoppingBag,
 } from "lucide-react"
@@ -39,8 +40,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const query = `
       query {
         categories {
-          id
-          name
+          content {
+            id
+            name
+          }
+          page {
+            totalPages
+          }
         }
       }
     `;
@@ -54,9 +60,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     })
       .then((res) => res.json())
       .then((result) => {
-        if (result.data?.categories) {
+        if (result.data?.categories?.content) {
           // Map GraphQL response to match the expected Category interface
-          const mappedCategories = result.data.categories.map((cat: any) => ({
+          const mappedCategories = result.data.categories.content.map((cat: any) => ({
             categoryId: parseInt(cat.id),
             categoryName: cat.name,
           }));
@@ -93,6 +99,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [],
       // Always show cart
       visible: true
+    },
+    {
+      title: "Orders",
+      url: "/orders",
+      icon: Package,
+      items: [],
+      // Show orders for authenticated users
+      visible: !!user
     },
     {
       title: "Admin",

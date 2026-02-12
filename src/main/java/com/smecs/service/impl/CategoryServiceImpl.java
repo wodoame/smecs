@@ -7,27 +7,31 @@ import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Category;
 import com.smecs.entity.Product;
+import com.smecs.exception.CategoryInUseException;
 import com.smecs.exception.ResourceNotFoundException;
-import com.smecs.service.CacheService;
 import com.smecs.service.CategoryService;
+import com.smecs.util.PaginationUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryDAO categoryDAO;
     private final ProductDAO productDAO;
-    private final CacheService<CategoryDTO, Long> categoryCacheService;
+    private final CategoryCacheService categoryCacheService;
 
     @Autowired
     public CategoryServiceImpl(CategoryDAO categoryDAO, ProductDAO productDAO,
-            CacheService<CategoryDTO, Long> categoryCacheService) {
+            CategoryCacheService categoryCacheService) {
         this.categoryDAO = categoryDAO;
         this.productDAO = productDAO;
         this.categoryCacheService = categoryCacheService;
@@ -89,6 +93,24 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public PagedResponseDTO<CategoryDTO> getCategories(String query, int page, int size, String sort, boolean relatedImages) {
+        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort, relatedImages);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+
+        Sort sortSpec = PaginationUtils.parseSort(sort);
+        // Use 0-based page index for Spring Data
+        Pageable pageRequest = PageRequest.of(page - 1, size, sortSpec);
+
+        PagedResponseDTO<CategoryDTO> data = getCategories(query, query, pageRequest, relatedImages);
+
+        categoryCacheService.putSearchResults(query, page, size, sort, relatedImages, data);
+
+        return data;
+    }
+
+    @Override
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = categoryDAO.findById(id).orElseThrow();
         return getCategoryDTO(categoryDTO, category);
@@ -115,6 +137,16 @@ public class CategoryServiceImpl implements CategoryService {
         if (!categoryDAO.existsById(id)) {
             throw new ResourceNotFoundException("Category not found with id: " + id);
         }
+
+        // Check if category has any products
+        long productCount = productDAO.countByCategoryId(id);
+        if (productCount > 0) {
+            throw new CategoryInUseException(
+                "Cannot delete category because it contains " + productCount +
+                " product(s). Please remove or reassign all products first."
+            );
+        }
+
         categoryDAO.deleteById(id);
         categoryCacheService.invalidateById(id);
         categoryCacheService.invalidateAllList();

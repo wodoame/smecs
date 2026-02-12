@@ -1,7 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+// import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -31,7 +31,7 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, ShieldAlert, LogIn, ListRestart } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, ShieldAlert, LogIn, ListRestart, Trash2 } from "lucide-react"
 import {
     DialogTrigger,
     Dialog,
@@ -48,6 +48,17 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
     Combobox,
     ComboboxContent,
@@ -402,30 +413,63 @@ export default function AdminProductsPage() {
         setIsViewDialogOpen(true);
     };
 
+    const handleDeleteProduct = async (productId: number) => {
+        try {
+            const user = auth.getUser();
+            if (!user) {
+                toast.error("You must be logged in to delete products");
+                return;
+            }
+
+            const response = await fetch(`/api/products/${productId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${user.token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete product");
+            }
+
+            toast.success("Product deleted successfully", {
+                icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+            });
+
+            // Refresh the inventory list
+            fetchInventory(searchTerm, page);
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast.error("Failed to delete product");
+        }
+    };
+
     const columns: ColumnDef<InventoryItem>[] = React.useMemo(
         () => [
-            {
-                id: "select",
-                header: ({ table }) => (
-                    <Checkbox
-                        checked={
-                            table.getIsAllPageRowsSelected() ||
-                            (table.getIsSomePageRowsSelected() && "indeterminate")
-                        }
-                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                        aria-label="Select all"
-                    />
-                ),
-                cell: ({ row }) => (
-                    <Checkbox
-                        checked={row.getIsSelected()}
-                        onCheckedChange={(value) => row.toggleSelected(!!value)}
-                        aria-label="Select row"
-                    />
-                ),
-                enableSorting: false,
-                enableHiding: false,
-            },
+            // Commented out for now - no bulk operations
+            // {
+            //     id: "select",
+            //     header: ({ table }) => (
+            //         <Checkbox
+            //             checked={
+            //                 table.getIsAllPageRowsSelected() ||
+            //                 (table.getIsSomePageRowsSelected() && "indeterminate")
+            //             }
+            //             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            //             aria-label="Select all"
+            //         />
+            //     ),
+            //     cell: ({ row }) => (
+            //         <Checkbox
+            //             checked={row.getIsSelected()}
+            //             onCheckedChange={(value) => row.toggleSelected(!!value)}
+            //             aria-label="Select row"
+            //         />
+            //     ),
+            //     enableSorting: false,
+            //     enableHiding: false,
+            // },
             {
                 accessorKey: "image",
                 header: "Image",
@@ -503,24 +547,50 @@ export default function AdminProductsPage() {
                     const item = row.original
 
                     return (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => handleViewItem(item)}>
-                                        View details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                                        Edit product
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem onClick={() => handleViewItem(item)}>
+                                            View details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditItem(item)}>
+                                            Edit product
+                                        </DropdownMenuItem>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete product
+                                            </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the product
+                                        "{item.name}" and remove it from the inventory.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDeleteProduct(item.productId)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )
                 },
             },
@@ -590,7 +660,7 @@ export default function AdminProductsPage() {
             <div className="flex items-center py-4">
                 <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
-                        placeholder="Filter products..."
+                        placeholder="Filter inventories..."
                         value={searchTerm}
                         onChange={(event) => {
                             const value = event.target.value;

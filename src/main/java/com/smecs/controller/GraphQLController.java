@@ -126,18 +126,22 @@ public class GraphQLController {
     // --- Categories ---
 
     @QueryMapping
-    public List<GqlCategory> categories(@Argument Integer page, @Argument Integer size, @Argument String sort) {
+    public PagedResponseDTO<GqlCategory> categories(@Argument Integer page, @Argument Integer size, @Argument String sort,
+                                        @Argument String query) {
         int pageNo = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
+        String searchQuery = (query != null) ? query : "";
 
-        Sort sortSpec = PaginationUtils.parseSort(sortStr, "id");
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sortSpec);
+        PagedResponseDTO<CategoryDTO> serviceResponse = categoryService.getCategories(searchQuery, pageNo, pageSize, sortStr, false);
 
-        return categoryService.getCategories(null, null, pageable, false)
-                .getContent().stream()
+        PagedResponseDTO<GqlCategory> response = new PagedResponseDTO<>();
+        response.setPage(serviceResponse.getPage());
+        response.setContent(serviceResponse.getContent().stream()
                 .map(this::toGqlCategory)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+
+        return response;
     }
 
     @QueryMapping
@@ -147,11 +151,11 @@ public class GraphQLController {
 
     @MutationMapping
     @RequireRole("admin")
-    public GqlCategory createCategory(@Argument String name, @Argument String description) {
+    public GqlCategory createCategory(@Argument String name, @Argument String description, @Argument String imageUrl) {
         CategoryDTO dto = new CategoryDTO();
         dto.setCategoryName(name);
         dto.setDescription(description);
-        dto.setImageUrl(""); // Default
+        dto.setImageUrl(imageUrl);
 
         CategoryDTO created = categoryService.createCategory(dto);
         return toGqlCategory(created);

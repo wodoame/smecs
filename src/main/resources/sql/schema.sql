@@ -39,7 +39,7 @@ CREATE TABLE Categories (
 -- Requirements: Linked to categories, pricing constraints
 CREATE TABLE Products (
     product_id SERIAL PRIMARY KEY,
-    category_id INTEGER REFERENCES Categories(category_id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES Categories(category_id) ON DELETE RESTRICT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
@@ -186,6 +186,21 @@ DECLARE
     v_prod_cookbook_id INTEGER;
     v_prod_history_id INTEGER;
 
+    v_prod_fishing_rod_id INTEGER;
+    v_prod_tackle_box_id INTEGER;
+    v_prod_mouse_id INTEGER;
+    v_prod_keyboard_id INTEGER;
+    v_prod_watch_analog_id INTEGER;
+    v_prod_watch_digital_id INTEGER;
+    v_prod_honey_id INTEGER;
+    v_prod_chocolate_id INTEGER;
+    v_prod_pillow_id INTEGER;
+    v_prod_suitcase_id INTEGER;
+    v_prod_antivirus_id INTEGER;
+    v_prod_editor_id INTEGER;
+    v_prod_microscope_id INTEGER;
+    v_prod_labcoat_id INTEGER;
+
     v_user_admin_id INTEGER;
     v_user_john_id INTEGER;
     v_user_jane_id INTEGER;
@@ -317,6 +332,65 @@ BEGIN
     VALUES ('Dumbbell Set', v_cat_sports_id, 'Adjustable weights 5-25lbs', 59.99, 'https://images.unsplash.com/photo-1662386392891-688364c5a5d7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
     RETURNING product_id INTO v_prod_dumbbell_id;
 
+    -- Fishing Gear
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Graphite Fishing Rod', v_cat_fishing_id, 'Lightweight rod for fast action', 89.99, 'https://images.unsplash.com/photo-1532985686121-69cd16c17471?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_fishing_rod_id;
+
+    -- Gaming
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('RGB Gaming Mouse', v_cat_gaming_id, 'High precision sensor 16000 DPI', 49.99, 'https://images.unsplash.com/photo-1632160871990-be30194885aa?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_mouse_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Mechanical Keyboard', v_cat_gaming_id, 'Tactile switches with backlighting', 109.99, 'https://images.unsplash.com/photo-1614920847152-93b7e90b4bd7?q=80&w=1174&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_keyboard_id;
+
+    -- Watches
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Classic Leather Watch', v_cat_watches_id, 'Timeless design with leather strap', 129.00, 'https://images.unsplash.com/photo-1599143844678-6f232bb16ae6?q=80&w=1175&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_watch_analog_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Sport Smartwatch', v_cat_watches_id, 'Fitness tracking and notifications', 199.99, 'https://images.unsplash.com/photo-1758348844371-dfbae2780bd3?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_watch_digital_id;
+
+    -- Food
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Organic Raw Honey', v_cat_food_id, 'Pure wildflower honey 500g', 15.99, 'https://images.unsplash.com/photo-1654515722385-c684c5331c04?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_honey_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Artisan Dark Chocolate', v_cat_food_id, '70% cocoa with sea salt', 8.50, 'https://images.unsplash.com/photo-1511381939415-e44015466834?q=80&w=1000')
+    RETURNING product_id INTO v_prod_chocolate_id;
+
+    -- Travel
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Memory Foam Neck Pillow', v_cat_travel_id, 'Ergonomic support for flights', 22.99, 'https://images.unsplash.com/photo-1629949009765-40fc74c9ec21?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_pillow_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Carry-On Suitcase', v_cat_travel_id, 'Hardshell spinner wheels', 119.99, 'https://images.unsplash.com/photo-1666238855001-d11112be431f?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_suitcase_id;
+
+    -- Software
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Security Suite 365', v_cat_software_id, '1-year antivirus protection', 39.99, 'https://imgs.search.brave.com/3-d_avcWFr0JC0xb9V-12fYWag3IguKcAqFNvFUoBSY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/cHJlbWl1bS12ZWN0/b3IvYW50aXZpcnVz/LXZlY3Rvci1pbGx1/c3RyYXRpb25fNzcy/MzUtNDEyLmpwZz9z/ZW10PWFpc19oeWJy/aWQmdz03NDA')
+    RETURNING product_id INTO v_prod_antivirus_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Photo Editor Pro', v_cat_software_id, 'Lifetime license for editing software', 79.99, 'https://imgs.search.brave.com/XYWUNGcnwgs-UsZcTRIo6lnEHFUs4DXEuWKYqCRA8RU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pNS53/YWxtYXJ0aW1hZ2Vz/LmNvbS9zZW8vQWRv/YmUtQ3JlYXRpdmUt/Q2xvdWQtZm9yLVdp/bmRvd3MtTWFjLTEt/WWVhci1TdHVkZW50/LVRlYWNoZXItU3Vi/c2NyaXB0aW9uLURp/Z2l0YWwtRG93bmxv/YWRfMGRmYTE2NmMt/ZGE1Yi00YmNhLWE0/ZWEtN2UwNDkyMGYy/NzI5LjIwYjg5MjI0/YTBiZmViNjdlYjQ0/NThlMjU2MGFiOWEz/LnBuZz9vZG5IZWln/aHQ9NTc2Jm9kbldp/ZHRoPTU3NiZvZG5C/Zz1GRkZGRkY')
+    RETURNING product_id INTO v_prod_editor_id;
+
+    -- Industrial & Scientific
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Digital Microscope', v_cat_industrial_id, '1000x magnification with USB', 149.50, 'https://images.unsplash.com/photo-1614081989290-bcdba07cd9d3?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_microscope_id;
+
+    INSERT INTO Products (name, category_id, description, price, image_url)
+    VALUES ('Safety Lab Coat', v_cat_industrial_id, 'Chemical resistant material', 29.99, 'https://plus.unsplash.com/premium_photo-1673953510107-d5aee40d80a7?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    RETURNING product_id INTO v_prod_labcoat_id;
+
     -- 4. Inventory
     INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_laptop_id, 50);
     INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_phone_id, 100);
@@ -335,6 +409,22 @@ BEGIN
 
     INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_yoga_id, 150);
     INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_dumbbell_id, 20);
+
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_fishing_rod_id, 15);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_tackle_box_id, 30);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_mouse_id, 80);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_keyboard_id, 45);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_watch_analog_id, 10);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_watch_digital_id, 25);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_honey_id, 100);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_chocolate_id, 200);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_pillow_id, 60);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_suitcase_id, 12);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_antivirus_id, 999);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_editor_id, 999);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_microscope_id, 5);
+    INSERT INTO Inventory (product_id, quantity) VALUES (v_prod_labcoat_id, 50);
+
     RAISE NOTICE 'Database seeding completed successfully.';
 END;
 $$;

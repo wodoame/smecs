@@ -19,7 +19,7 @@ public class PageMetadataDTO {
 
     public static PageMetadataDTO from(Page<?> page) {
         PageMetadataDTO metadata = new PageMetadataDTO();
-        metadata.setPage(page.getNumber());
+        metadata.setPage(page.getNumber() + 1); // Convert 0-based to 1-based
         metadata.setSize(page.getSize());
         metadata.setTotalElements(page.getTotalElements());
         metadata.setTotalPages(page.getTotalPages());

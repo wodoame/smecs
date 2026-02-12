@@ -2,6 +2,8 @@ package com.smecs.service.impl;
 
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
+import com.smecs.dto.PagedResponseDTO;
+import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.entity.Order;
 import com.smecs.entity.User;
@@ -11,6 +13,8 @@ import com.smecs.dao.UserDAO;
 import com.smecs.dao.OrderItemDAO;
 import com.smecs.entity.OrderItem;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.smecs.service.OrderService;
 import java.time.LocalDateTime;
@@ -70,6 +74,23 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public PagedResponseDTO<OrderDTO> getAllOrders(Pageable pageable) {
+        Page<Order> orderPage = orderDAO.findAll(pageable);
+        return getPagedResponse(orderPage);
+    }
+
+    @Override
+    public List<OrderDTO> getOrdersByUserId(Long userId) {
+        return orderDAO.findByUserId(userId).stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, Pageable pageable) {
+        Page<Order> orderPage = orderDAO.findByUserId(userId, pageable);
+        return getPagedResponse(orderPage);
+    }
+
+    @Override
     public void deleteOrder(Long id) {
         if (!orderDAO.existsById(id)) {
              throw new ResourceNotFoundException("Order not found with id: " + id);
@@ -99,5 +120,17 @@ public class OrderServiceImpl implements OrderService {
         dto.setStatus(order.getStatus().toString());
         dto.setCreatedAt(order.getCreatedAt());
         return dto;
+    }
+
+    private PagedResponseDTO<OrderDTO> getPagedResponse(Page<Order> orderPage) {
+        List<OrderDTO> content = orderPage.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+
+        PagedResponseDTO<OrderDTO> pagedResponse = new PagedResponseDTO<>();
+        pagedResponse.setContent(content);
+        pagedResponse.setPage(PageMetadataDTO.from(orderPage));
+
+        return pagedResponse;
     }
 }

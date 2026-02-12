@@ -1,7 +1,7 @@
 type Query {
     products(categoryId: ID, page: Int = 1, size: Int = 10, sort: String = "id,asc"): ProductPage
     productById(id: ID!): Product
-    categories(page: Int = 1, size: Int = 10, sort: String = "id,asc"): [Category]
+    categories(page: Int = 1, size: Int = 10, sort: String = "id,asc", query: String): CategoryPage
     categoryById(id: ID!): Category
     inventories(page: Int = 1, size: Int = 10, sort: String = "id,asc", query: String): InventoryPage
     inventoryById(id: ID!): Inventory
@@ -24,7 +24,7 @@ input CreateInventoryInput {
 
 type Mutation {
     createProduct(name: String!, description: String, price: Float!, categoryId: ID!): Product
-    createCategory(name: String!, description: String): Category
+    createCategory(name: String!, description: String, imageUrl: String): Category
     createInventory(input: CreateInventoryInput!): Inventory
 }
 
@@ -72,6 +72,10 @@ type InventoryPage {
     page: PageMetadata
 }
 
+type CategoryPage {
+    content: [Category]
+    page: PageMetadata
+}
 
 type User {
     id: ID!
@@ -80,4 +84,3 @@ type User {
     role: String
     createdAt: String
 }
-

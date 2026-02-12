@@ -5,10 +5,6 @@ import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.CategoryService;
-import com.smecs.service.impl.CategoryCacheService;
-import com.smecs.util.PaginationUtils;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -17,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -25,11 +20,9 @@ import java.util.Optional;
 public class CategoryController {
 
     private final CategoryService categoryService;
-    private final CategoryCacheService categoryCacheService;
 
-    public CategoryController(CategoryService service, CategoryCacheService cacheService) {
+    public CategoryController(CategoryService service) {
         this.categoryService = service;
-        this.categoryCacheService = cacheService;
     }
 
     @GetMapping
@@ -39,19 +32,8 @@ public class CategoryController {
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "name,asc") String sort,
             @RequestParam(required = false, defaultValue = "false") boolean relatedImages) {
-        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort,
-                relatedImages);
-        if (cached.isPresent()) {
-            return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", cached.get()));
-        }
 
-        Sort sortSpec = PaginationUtils.parseSort(sort);
-        // Use 0-based page index for Spring Data
-        PageRequest pageRequest = PageRequest.of(page - 1, size, sortSpec);
-        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, query, pageRequest, relatedImages);
-
-        categoryCacheService.putSearchResults(query, page, size, sort, relatedImages, data);
-
+        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, page, size, sort, relatedImages);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", data));
     }
 

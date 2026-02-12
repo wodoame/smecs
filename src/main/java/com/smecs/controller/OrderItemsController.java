@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderItemsRequestDTO;
 import com.smecs.dto.OrderItemDTO;
 import com.smecs.dto.ResponseDTO;
@@ -26,6 +27,7 @@ public class OrderItemsController {
     }
 
     @GetMapping("/{id}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> getOrderItem(@PathVariable Long id) {
         return orderItemService.getOrderItemById(id)
                 .map(item -> ResponseEntity.ok(new ResponseDTO<>("success", "Order item found", mapToDTO(item))))
@@ -34,6 +36,7 @@ public class OrderItemsController {
     }
 
     @GetMapping("/order/{orderId}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> getOrderItemsByOrder(@PathVariable Long orderId) {
         List<OrderItem> items = orderItemService.getOrderItemsByOrderId(orderId);
         List<OrderItemDTO> dtos = items.stream().map(this::mapToDTO).collect(Collectors.toList());
@@ -41,6 +44,7 @@ public class OrderItemsController {
     }
 
     @PostMapping
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems(@RequestBody CreateOrderItemsRequestDTO request) {
         List<OrderItem> savedItems = orderItemService.createOrderItems(request.getOrderId(), request.getItems());
         List<OrderItemDTO> dtos = savedItems.stream().map(this::mapToDTO).collect(Collectors.toList());
@@ -49,6 +53,7 @@ public class OrderItemsController {
     }
 
     @PutMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> updateOrderItem(@PathVariable Long id, @RequestBody OrderItemDTO orderItemDTO) {
         try {
             OrderItem updatedItem = orderItemService.updateOrderItem(id, orderItemDTO);
@@ -60,6 +65,7 @@ public class OrderItemsController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> deleteOrderItem(@PathVariable Long id) {
         try {
             orderItemService.deleteOrderItem(id);
