@@ -15,7 +15,7 @@ public interface ProductDAO {
 
     Page<Product> findAll(Specification<Product> spec, Pageable pageable);
 
-    Page<Product> searchProducts(String nameQuery, String descriptionQuery, Pageable pageable);
+    Page<Product> searchProducts(String nameQuery, String descriptionQuery, Long categoryId, Pageable pageable);
 
     boolean existsById(Long id);
 

@@ -1,5 +1,5 @@
 type Query {
-    products(page: Int = 1, size: Int = 10, sort: String = "id,asc"): [Product]
+    products(categoryId: ID, page: Int = 1, size: Int = 10, sort: String = "id,asc"): ProductPage
     productById(id: ID!): Product
     categories(page: Int = 1, size: Int = 10, sort: String = "id,asc"): [Category]
     categoryById(id: ID!): Category
@@ -46,6 +46,11 @@ type PageMetadata {
     empty: Boolean
     hasNext: Boolean
     hasPrevious: Boolean
+}
+
+type ProductPage {
+    content: [Product]
+    page: PageMetadata
 }
 
 type InventoryPage {

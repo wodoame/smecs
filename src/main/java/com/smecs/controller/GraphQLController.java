@@ -36,7 +36,9 @@ public class GraphQLController {
     // --- Products ---
 
     @QueryMapping
-    public List<ProductDTO> products(@Argument Integer page, @Argument Integer size, @Argument String sort) {
+    public PagedResponseDTO<ProductDTO> products(@Argument String categoryId, @Argument Integer page,
+            @Argument Integer size,
+            @Argument String sort) {
         int pageNo = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
@@ -44,7 +46,8 @@ public class GraphQLController {
         Sort sortSpec = PaginationUtils.parseSort(sortStr, "id");
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sortSpec);
 
-        return productService.getProducts(null, null, pageable).getContent();
+        Long catId = (categoryId != null) ? Long.parseLong(categoryId) : null;
+        return productService.getProducts(null, null, catId, pageable);
     }
 
     @QueryMapping

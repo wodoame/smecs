@@ -8,24 +8,30 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Product;
 import com.smecs.service.ProductService;
 import com.smecs.service.CacheService;
+import com.smecs.service.SearchCacheService;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.util.PaginationUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl implements ProductService {
     private final ProductDAO productDAO;
     private final CacheService<ProductDTO, Long> productCacheService;
+    private final SearchCacheService<ProductDTO> searchCacheService;
 
     @Autowired
-    public ProductServiceImpl(ProductDAO productDAO, CacheService<ProductDTO, Long> productCacheService) {
+    public ProductServiceImpl(ProductDAO productDAO, CacheService<ProductDTO, Long> productCacheService, SearchCacheService<ProductDTO> searchCacheService) {
         this.productDAO = productDAO;
         this.productCacheService = productCacheService;
+        this.searchCacheService = searchCacheService;
     }
 
     @Override
@@ -45,9 +51,28 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Pageable pageable) {
+    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Long categoryId, int page, int size, String sort) {
+        // Check cache first - include categoryId in cache key
+        String queryKey = buildCacheKey(name, categoryId);
+        Optional<PagedResponseDTO<ProductDTO>> cached = searchCacheService.getSearchResults(queryKey, page, size, sort);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+
+        // Cache miss - create Pageable and fetch from database
+        Pageable pageable = PageRequest.of(page - 1, size, PaginationUtils.parseSort(sort, "id"));
+        PagedResponseDTO<ProductDTO> results = getProducts(name, description, categoryId, pageable);
+
+        // Store in cache
+        searchCacheService.putSearchResults(queryKey, page, size, sort, results);
+
+        return results;
+    }
+
+    @Override
+    public PagedResponseDTO<ProductDTO> getProducts(String name, String description, Long categoryId, Pageable pageable) {
         // Use native SQL implementation from DAO for low-level database operations
-        Page<Product> productPage = productDAO.searchProducts(name, description, pageable);
+        Page<Product> productPage = productDAO.searchProducts(name, description, categoryId, pageable);
 
         List<ProductDTO> content = productPage.getContent().stream()
                 .map(this::mapToDto)
@@ -58,6 +83,18 @@ public class ProductServiceImpl implements ProductService {
         pagedResponse.setPage(PageMetadataDTO.from(productPage));
 
         return pagedResponse;
+    }
+
+    /**
+     * Builds a cache key that includes both the search query and category filter.
+     * This ensures separate cache entries for different category filters.
+     */
+    private String buildCacheKey(String name, Long categoryId) {
+        String baseKey = name != null ? name : "";
+        if (categoryId != null) {
+            return baseKey + "|cat:" + categoryId;
+        }
+        return baseKey;
     }
 
     @Override

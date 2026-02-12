@@ -66,7 +66,7 @@ public class ProductDAOImpl implements ProductDAO {
         // Since specifications are complex to parse, we'll do a simple search
         // This method is kept for interface compatibility but searchProducts is
         // preferred
-        return searchProducts("", "", pageable);
+        return searchProducts("", "", null, pageable);
     }
 
     /**
@@ -127,14 +127,15 @@ public class ProductDAOImpl implements ProductDAO {
      *
      * @param nameQuery        Search term for product name
      * @param descriptionQuery Search term for product description
+     * @param categoryId       Optional category filter
      * @param pageable         Contains pagination and sorting parameters
      * @return Page of products matching the search criteria
      */
     @Override
-    public Page<Product> searchProducts(String nameQuery, String descriptionQuery, Pageable pageable) {
+    public Page<Product> searchProducts(String nameQuery, String descriptionQuery, Long categoryId, Pageable pageable) {
         // Step 1: Build WHERE clause for filtering
         List<Object> parameters = new ArrayList<>();
-        String whereClause = buildWhereClause(nameQuery, descriptionQuery, parameters);
+        String whereClause = buildWhereClause(nameQuery, descriptionQuery, categoryId, parameters);
 
         // Step 2: Build ORDER BY clause from Sort specification
         String orderByClause = buildOrderByClause(pageable.getSort());
@@ -166,27 +167,41 @@ public class ProductDAOImpl implements ProductDAO {
     }
 
     /**
-     * Builds the WHERE clause for filtering by name and description.
+     * Builds the WHERE clause for filtering by name, description, and category.
+     * Category filter uses AND logic, while name/description use OR logic.
      */
-    private String buildWhereClause(String nameQuery, String descriptionQuery, List<Object> parameters) {
-        if ((nameQuery == null || nameQuery.isBlank()) &&
-                (descriptionQuery == null || descriptionQuery.isBlank())) {
-            return "";
-        }
+    private String buildWhereClause(String nameQuery, String descriptionQuery, Long categoryId, List<Object> parameters) {
+        List<String> textSearchConditions = new ArrayList<>();
+        List<String> allConditions = new ArrayList<>();
 
-        List<String> conditions = new ArrayList<>();
-
+        // Text search conditions (name OR description)
         if (nameQuery != null && !nameQuery.isBlank()) {
-            conditions.add("LOWER(p.name) LIKE LOWER(?)");
+            textSearchConditions.add("LOWER(p.name) LIKE LOWER(?)");
             parameters.add("%" + nameQuery + "%");
         }
 
         if (descriptionQuery != null && !descriptionQuery.isBlank()) {
-            conditions.add("LOWER(p.description) LIKE LOWER(?)");
+            textSearchConditions.add("LOWER(p.description) LIKE LOWER(?)");
             parameters.add("%" + descriptionQuery + "%");
         }
 
-        return " WHERE " + String.join(" OR ", conditions);
+        // Combine text search with OR
+        if (!textSearchConditions.isEmpty()) {
+            allConditions.add("(" + String.join(" OR ", textSearchConditions) + ")");
+        }
+
+        // Category filter uses AND logic
+        if (categoryId != null) {
+            allConditions.add("p.category_id = ?");
+            parameters.add(categoryId);
+        }
+
+        if (allConditions.isEmpty()) {
+            return "";
+        }
+
+        // Combine all conditions with AND
+        return " WHERE " + String.join(" AND ", allConditions);
     }
 
     /**

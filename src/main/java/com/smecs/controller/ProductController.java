@@ -6,11 +6,7 @@ import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.service.ProductService;
-import com.smecs.service.impl.ProductCacheService;
-import com.smecs.util.PaginationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,19 +15,15 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-import java.util.Optional;
-
 @Validated
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
-    private final ProductCacheService productCacheService;
 
     @Autowired
-    public ProductController(ProductService productService, ProductCacheService productCacheService) {
+    public ProductController(ProductService productService) {
         this.productService = productService;
-        this.productCacheService = productCacheService;
     }
 
     @PostMapping
@@ -49,18 +41,12 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ResponseDTO<PagedResponseDTO<ProductDTO>>> searchProducts(
             @RequestParam(required = false, defaultValue = "") String query,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "id,asc") String sort
     ) {
-        Optional<PagedResponseDTO<ProductDTO>> cached = productCacheService.getSearchResults(query, page, size, sort);
-        if (cached.isPresent()) {
-            return ResponseEntity.ok(new ResponseDTO<>("success", "Products retrieved", cached.get()));
-        }
-
-        Pageable pageable = PageRequest.of(page - 1, size, PaginationUtils.parseSort(sort));
-        PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, pageable);
-        productCacheService.putSearchResults(query, page, size, sort, results);
+        PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, categoryId, page, size, sort);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Products retrieved", results));
     }
 

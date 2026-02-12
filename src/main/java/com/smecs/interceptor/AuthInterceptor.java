@@ -2,6 +2,7 @@ package com.smecs.interceptor;
 
 import com.smecs.annotation.RequireRole;
 import com.smecs.util.JwtUtil;
+import com.smecs.util.RoleHierarchy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NonNull;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.util.Arrays;
 
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
@@ -55,8 +55,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         String[] requiredRoles = requireRole.value();
 
         if (requiredRoles.length > 0) {
-            boolean hasRole = Arrays.asList(requiredRoles).contains(userRole);
-            if (!hasRole) {
+            boolean hasPermission = RoleHierarchy.hasPermission(userRole, requiredRoles);
+            if (!hasPermission) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Insufficient permissions");
                 return false;
             }

@@ -1,4 +1,4 @@
-
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface Category {
@@ -14,10 +14,18 @@ interface CategoryCardProps {
 }
 
 export function CategoryCard({ category }: CategoryCardProps) {
+    const navigate = useNavigate();
     const allImages = [category.imageUrl, ...category.relatedImageUrls];
 
+    const handleCardClick = () => {
+        navigate(`/categories/${category.categoryId}`);
+    };
+
     return (
-        <Card className="w-full shadow-none">
+        <Card
+            className="w-full shadow-none cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+            onClick={handleCardClick}
+        >
             <CardHeader>
                 <CardTitle>{category.categoryName}</CardTitle>
                 <p className="text-sm text-muted-foreground">{category.description}</p>
