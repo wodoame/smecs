@@ -8,13 +8,17 @@ import com.smecs.repository.ProductRepository;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.util.PaginationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,11 +73,28 @@ public class InventoryServiceImpl implements InventoryService {
 
 
     @Override
-    public PagedResponseDTO<InventoryDTO> searchInventory(Pageable pageable) {
+    public PagedResponseDTO<InventoryDTO> searchInventory(String query, Pageable pageable) {
         // Delegate to DAO native SQL search
-        Page<Inventory> inventoryPage = inventoryDAO.searchInventory(pageable);
+        Page<Inventory> inventoryPage = inventoryDAO.searchInventory(query, pageable);
 
         return getInventoryDTOPagedResponseDTO(inventoryPage);
+    }
+
+    @Override
+    public PagedResponseDTO<InventoryDTO> searchInventory(String query, int page, int size, String sort) {
+        Optional<PagedResponseDTO<InventoryDTO>> cached = inventoryCacheService.getSearchResults(query, page, size, sort);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+
+        Sort sortSpec = PaginationUtils.parseSort(sort, "id");
+        Pageable pageable = PageRequest.of(page - 1, size, sortSpec);
+
+        PagedResponseDTO<InventoryDTO> result = searchInventory(query, pageable);
+
+        inventoryCacheService.putSearchResults(query, page, size, sort, result);
+
+        return result;
     }
 
     private PagedResponseDTO<InventoryDTO> getInventoryDTOPagedResponseDTO(Page<Inventory> inventoryPage) {

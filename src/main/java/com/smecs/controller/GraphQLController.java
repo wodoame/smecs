@@ -1,6 +1,8 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CategoryDTO;
+import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -64,6 +66,7 @@ public class GraphQLController {
     }
 
     @MutationMapping
+    @RequireRole("admin")
     public ProductDTO createProduct(@Argument String name, @Argument String description, @Argument Double price,
             @Argument String categoryId) {
         CreateProductRequestDTO request = new CreateProductRequestDTO();
@@ -77,6 +80,7 @@ public class GraphQLController {
     // --- Inventories ---
 
     @QueryMapping
+    @RequireRole("admin")
     public PagedResponseDTO<InventoryDTO> inventories(@Argument Integer page, @Argument Integer size,
             @Argument String sort,
             @Argument String query) {
@@ -84,13 +88,11 @@ public class GraphQLController {
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
 
-        Sort sortSpec = PaginationUtils.parseSort(sortStr, "id");
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sortSpec);
-
-        return inventoryService.searchInventory(pageable);
+        return inventoryService.searchInventory(query, pageNo, pageSize, sortStr);
     }
 
     @QueryMapping
+    @RequireRole("admin")
     public InventoryDTO inventoryById(@Argument String id) {
         return inventoryService.getInventoryById(Long.parseLong(id));
     }
@@ -100,6 +102,25 @@ public class GraphQLController {
         if (inventory.getProductId() == null)
             return null;
         return productService.getProductById(inventory.getProductId());
+    }
+
+    @MutationMapping
+    @RequireRole("admin")
+    public InventoryDTO createInventory(@Argument CreateInventoryInput input) {
+        CreateInventoryRequestDTO request = new CreateInventoryRequestDTO();
+        request.setQuantity(input.quantity());
+
+        // Map product input to nested ProductRequest
+        CreateInventoryRequestDTO.ProductRequest productRequest = new CreateInventoryRequestDTO.ProductRequest();
+        productRequest.setName(input.product().name());
+        productRequest.setDescription(input.product().description());
+        productRequest.setPrice(input.product().price());
+        productRequest.setCategoryId(Long.parseLong(input.product().categoryId()));
+        productRequest.setImageUrl(input.product().imageUrl());
+
+        request.setProduct(productRequest);
+
+        return inventoryService.createInventory(request);
     }
 
     // --- Categories ---
@@ -125,6 +146,7 @@ public class GraphQLController {
     }
 
     @MutationMapping
+    @RequireRole("admin")
     public GqlCategory createCategory(@Argument String name, @Argument String description) {
         CategoryDTO dto = new CategoryDTO();
         dto.setCategoryName(name);
@@ -138,6 +160,7 @@ public class GraphQLController {
     // --- Users ---
 
     @QueryMapping
+    @RequireRole("admin")
     public List<GqlUser> users() {
         return userService.getAllUsers().stream()
                 .map(this::toGqlUser)
@@ -145,6 +168,7 @@ public class GraphQLController {
     }
 
     @QueryMapping
+    @RequireRole("admin")
     public GqlUser userById(@Argument String id) {
         return toGqlUser(userService.findById(Long.parseLong(id)));
     }
@@ -175,5 +199,11 @@ public class GraphQLController {
     }
 
     public record GqlUser(String id, String username, String email, String role, String createdAt) {
+    }
+
+    public record ProductInput(String name, String description, Double price, String categoryId, String imageUrl) {
+    }
+
+    public record CreateInventoryInput(Integer quantity, ProductInput product) {
     }
 }

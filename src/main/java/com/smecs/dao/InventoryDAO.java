@@ -10,7 +10,7 @@ public interface InventoryDAO {
     Inventory save(Inventory inventory);
     Optional<Inventory> findById(Long id);
     Optional<Inventory> findByProductId(Long productId);
-    Page<Inventory> searchInventory(Pageable pageable);
+    Page<Inventory> searchInventory(String query, Pageable pageable);
     boolean existsById(Long id);
     void deleteById(Long id);
 }

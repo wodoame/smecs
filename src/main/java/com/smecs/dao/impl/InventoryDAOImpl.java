@@ -70,7 +70,7 @@ public class InventoryDAOImpl implements InventoryDAO {
     }
 
     @Override
-    public Page<Inventory> searchInventory(Pageable pageable) {
+    public Page<Inventory> searchInventory(String searchQuery, Pageable pageable) {
         // Step 1: Build ORDER BY clause
         String orderByClause = buildOrderByClause(pageable.getSort());
 
@@ -78,27 +78,53 @@ public class InventoryDAOImpl implements InventoryDAO {
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
 
-        // Step 3: Construct and execute query
-        // Simple select from inventory table
-        String baseQuery = "FROM inventory i";
+        // Step 3: Build base query with Joins
+        StringBuilder baseQuery = new StringBuilder("FROM inventory i ")
+                .append("JOIN products p ON i.product_id = p.id ")
+                .append("LEFT JOIN categories c ON p.category_id = c.category_id ");
 
+        List<Object> params = new ArrayList<>();
+        if (searchQuery != null && !searchQuery.isBlank()) {
+            baseQuery.append("WHERE LOWER(p.name) LIKE LOWER(?) OR ")
+                    .append("LOWER(p.description) LIKE LOWER(?) OR ")
+                    .append("LOWER(c.name) LIKE LOWER(?) OR ")
+                    .append("LOWER(c.description) LIKE LOWER(?) ");
+            String likePattern = "%" + searchQuery + "%";
+            params.add(likePattern); // for p.name
+            params.add(likePattern); // for p.description
+            params.add(likePattern); // for c.name
+            params.add(likePattern); // for c.description
+        }
+
+        // Step 4: Construct and execute data query
         String dataQuery = "SELECT i.id, i.product_id, i.quantity " +
-                           baseQuery + orderByClause + " LIMIT ? OFFSET ?";
+                baseQuery.toString() +
+                orderByClause + " LIMIT ? OFFSET ?";
 
-        System.out.println("Generated SQL Query: " + dataQuery);
-        System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
+        // System.out.println("Generated SQL Query: " + dataQuery);
+        // System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
 
         Query query = entityManager.createNativeQuery(dataQuery);
-        setQueryParameters(query, limit, offset);
 
-        // Step 4: Map results
+        // Set search params (1-based index)
+        int paramIndex = 1;
+        for (Object param : params) {
+            query.setParameter(paramIndex++, param);
+        }
+
+        // Set pagination params
+        query.setParameter(paramIndex++, limit);
+        query.setParameter(paramIndex++, offset);
+
+        // Step 5: Map results
+        @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
         List<Inventory> inventories = mapResultsToInventory(results);
 
-        // Step 5: Execute count query
-        long total = executeCountQuery(baseQuery);
+        // Step 6: Execute count query
+        long total = executeCountQuery(baseQuery.toString(), params);
 
-        // Step 6: Return paginated results
+        // Step 7: Return paginated results
         return new PageImpl<>(inventories, pageable, total);
     }
 
@@ -137,11 +163,6 @@ public class InventoryDAOImpl implements InventoryDAO {
         return VALID_COLUMNS.contains(columnName);
     }
 
-    private void setQueryParameters(Query query, int limit, int offset) {
-        query.setParameter(1, limit);
-        query.setParameter(2, offset);
-    }
-
     private List<Inventory> mapResultsToInventory(List<Object[]> results) {
         List<Inventory> inventories = new ArrayList<>();
         for (Object[] row : results) {
@@ -154,9 +175,14 @@ public class InventoryDAOImpl implements InventoryDAO {
         return inventories;
     }
 
-    private long executeCountQuery(String baseQuery) {
+    private long executeCountQuery(String baseQuery, List<Object> params) {
         String countQuery = "SELECT COUNT(*) " + baseQuery;
         Query countQ = entityManager.createNativeQuery(countQuery);
+
+        int paramIndex = 1;
+        for (Object param : params) {
+            countQ.setParameter(paramIndex++, param);
+        }
 
         return ((Number) countQ.getSingleResult()).longValue();
     }

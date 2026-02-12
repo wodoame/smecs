@@ -35,6 +35,7 @@ public class CartItemsController {
     }
 
     @GetMapping("/{id}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<CartItemDTO>> getCartItem(@PathVariable Long id) {
         return cartItemService.getCartItemById(id)
                 .map(item -> ResponseEntity.ok(new ResponseDTO<>("success", "Cart item found", mapToDTO(item))))
@@ -53,6 +54,7 @@ public class CartItemsController {
     }
 
     @PutMapping("/{id}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id,
             @RequestBody CartItemDTO dto) {
         CartItem updated = cartItemService.updateCartItem(id, dto.getQuantity());
@@ -60,6 +62,7 @@ public class CartItemsController {
     }
 
     @DeleteMapping("/{id}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<Void>> deleteCartItem(@PathVariable Long id) {
         if (cartItemService.getCartItemById(id).isPresent()) {
             cartItemService.deleteCartItem(id);

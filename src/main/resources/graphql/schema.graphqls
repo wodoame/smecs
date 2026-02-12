@@ -9,9 +9,23 @@ type Query {
     userById(id: ID!): User
 }
 
+input ProductInput {
+    name: String!
+    description: String
+    price: Float!
+    categoryId: ID!
+    imageUrl: String
+}
+
+input CreateInventoryInput {
+    quantity: Int!
+    product: ProductInput!
+}
+
 type Mutation {
     createProduct(name: String!, description: String, price: Float!, categoryId: ID!): Product
     createCategory(name: String!, description: String): Category
+    createInventory(input: CreateInventoryInput!): Inventory
 }
 
 type Product {

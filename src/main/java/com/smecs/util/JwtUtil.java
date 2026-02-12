@@ -22,8 +22,8 @@ public class JwtUtil {
     private static final String SECRET = "your_very_secret_key_which_must_be_long_enough_for_hs256_algorithm";
     private static final Key KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // Token validity: 5 minutes
-    private static final long EXPIRATION_TIME = 1000 * 60 * 5;
+    // Token validity: 15 minutes
+    private static final long EXPIRATION_TIME = 1000 * 60 * 15;
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();

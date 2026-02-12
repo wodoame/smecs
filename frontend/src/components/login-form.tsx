@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +25,7 @@ export function LoginForm({
     ...props
 }: React.ComponentProps<"div">) {
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState({
         username: "",
@@ -57,7 +58,10 @@ export function LoginForm({
 
             auth.login(data.data)
             toast.success("Login successful!")
-            navigate("/")
+
+            // Redirect to 'next' parameter if present, otherwise go to home
+            const nextUrl = searchParams.get('next') || '/';
+            navigate(nextUrl)
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Something went wrong")
         } finally {

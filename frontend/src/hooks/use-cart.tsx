@@ -13,6 +13,7 @@ export interface CartItem {
 
 interface CartOperations {
     cartItems: CartItem[];
+    authError: 'unauthorized' | 'forbidden' | null;
     addToCart: (product: { id: number; name: string; price: number; image: string }) => Promise<void> | void;
     removeFromCart: (id: number) => Promise<void> | void;
     updateQuantity: (id: number, quantity: number) => Promise<void> | void;
@@ -22,18 +23,32 @@ interface CartOperations {
 export function useCart(): CartOperations {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [cartId, setCartId] = useState<number | null>(null);
+    const [authError, setAuthError] = useState<'unauthorized' | 'forbidden' | null>(null);
 
     const fetchCartItems = useCallback(async (id: number) => {
         const user = auth.getUser();
-        if (!user) return;
 
         try {
             const response = await fetch(`/api/cart-items/cart/${id}`, {
                 headers: {
-                    "Authorization": `Bearer ${user.token}`
+                    ...(user?.token && { "Authorization": `Bearer ${user.token}` })
                 }
             });
+
+            if (response.status === 401) {
+                setAuthError('unauthorized');
+                setCartItems([]);
+                return;
+            }
+
+            if (response.status === 403) {
+                setAuthError('forbidden');
+                setCartItems([]);
+                return;
+            }
+
             if (response.ok) {
+                setAuthError(null);
                 const json = await response.json();
                 const items = json.data || [];
                 const mappedItems: CartItem[] = items.map((item: any) => ({
@@ -53,7 +68,10 @@ export function useCart(): CartOperations {
 
     const initCart = useCallback(async () => {
         const user = auth.getUser();
+
+        // If no user is logged in, show unauthorized error
         if (!user) {
+            setAuthError('unauthorized');
             setCartItems([]);
             setCartId(null);
             return;
@@ -70,7 +88,22 @@ export function useCart(): CartOperations {
                 body: JSON.stringify({ userId: user.id })
             });
 
+            if (response.status === 401) {
+                setAuthError('unauthorized');
+                setCartItems([]);
+                setCartId(null);
+                return;
+            }
+
+            if (response.status === 403) {
+                setAuthError('forbidden');
+                setCartItems([]);
+                setCartId(null);
+                return;
+            }
+
             if (response.ok) {
+                setAuthError(null);
                 const json = await response.json();
                 const dto = json.data;
                 const newCartId = dto.cartId;
@@ -78,9 +111,17 @@ export function useCart(): CartOperations {
 
                 // Fetch items from the separate endpoint
                 await fetchCartItems(newCartId);
+            } else {
+                // Non-401/403 error responses
+                setCartItems([]);
+                setCartId(null);
+                setAuthError(null);
             }
         } catch (error) {
             console.error("Failed to initialize cart", error);
+            setCartItems([]);
+            setCartId(null);
+            setAuthError(null);
         }
     }, [fetchCartItems]);
 
@@ -240,5 +281,5 @@ export function useCart(): CartOperations {
         }
     };
 
-    return { cartItems, addToCart, removeFromCart, updateQuantity, clearCart };
+    return { cartItems, authError, addToCart, removeFromCart, updateQuantity, clearCart };
 }

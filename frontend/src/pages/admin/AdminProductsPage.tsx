@@ -31,7 +31,7 @@ import {
     type SortingState,
     type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search } from "lucide-react"
+import { ArrowUpDown, ChevronDown, CircleCheck, MoreHorizontal, Plus, Search, ShieldAlert, LogIn, ListRestart } from "lucide-react"
 import {
     DialogTrigger,
     Dialog,
@@ -56,6 +56,8 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/ui/combobox"
+import { auth } from "@/lib/auth"
+import { Link, useLocation } from "react-router-dom"
 
 export interface InventoryItem {
     id: number;
@@ -74,6 +76,7 @@ export interface InventoryItem {
 
 
 export default function AdminProductsPage() {
+    const location = useLocation();
     const [data, setData] = React.useState<InventoryItem[]>([])
     const [loading, setLoading] = React.useState(true)
     const [sorting, setSorting] = React.useState<SortingState>([])
@@ -106,8 +109,12 @@ export default function AdminProductsPage() {
 
     // Search and Pagination State
     const [searchTerm, setSearchTerm] = React.useState("")
+    const [globalFilter, setGlobalFilter] = React.useState("")
     const [page, setPage] = React.useState(1)
     const [totalPages, setTotalPages] = React.useState(0)
+
+    // Error State
+    const [authError, setAuthError] = React.useState<'unauthorized' | 'forbidden' | null>(null)
 
     const fetchInventory = (query = "", pageIndex = 1) => {
         setLoading(true);
@@ -143,20 +150,41 @@ export default function AdminProductsPage() {
             }
         };
 
+        const user = auth.getUser();
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+
+        if (user?.token) {
+            headers["Authorization"] = `Bearer ${user.token}`;
+        }
+
         fetch("/graphql", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers,
             body: JSON.stringify(graphqlQuery),
         })
             .then((res) => {
+                // GraphQL always returns 200, so we can't check status codes here
+                // We need to check the error types in the response payload
                 if (!res.ok) throw new Error("Failed to fetch inventory");
                 return res.json();
             })
             .then((payload) => {
-                if (payload.errors) {
-                    throw new Error(payload.errors[0].message);
+                // Check for GraphQL errors with specific error types
+                if (payload.errors && payload.errors.length > 0) {
+                    const error = payload.errors[0];
+                    const errorType = error.extensions?.errorType || error.extensions?.classification;
+
+                    if (errorType === 'UNAUTHORIZED' || error.message.includes('Authorization')) {
+                        setAuthError('unauthorized');
+                        throw new Error(error.message || "Unauthorized - Please log in");
+                    }
+                    if (errorType === 'FORBIDDEN' || error.message.includes('Insufficient permissions')) {
+                        setAuthError('forbidden');
+                        throw new Error(error.message || "Forbidden - You don't have permission to access this resource");
+                    }
+                    throw new Error(error.message || "Failed to fetch inventory");
                 }
                 const data = payload.data.inventories;
                 const inventory = (data.content || []).map((item: any) => ({
@@ -185,6 +213,13 @@ export default function AdminProductsPage() {
     const handleSearch = () => {
         setPage(1);
         fetchInventory(searchTerm, 1);
+    };
+
+    const handleShowAll = () => {
+        setSearchTerm("");
+        setGlobalFilter("");
+        setPage(1);
+        fetchInventory("", 1);
     };
 
     const handlePageChange = (newPage: number) => {
@@ -223,27 +258,85 @@ export default function AdminProductsPage() {
     }, []);
 
     const handleCreateInventory = () => {
-        const payload = {
-            quantity: parseInt(newInventory.quantity),
-            product: {
-                name: newInventory.name,
-                description: newInventory.description,
-                price: parseFloat(newInventory.price),
-                categoryId: parseInt(newInventory.categoryId),
-                imageUrl: newInventory.imageUrl,
+        const mutation = {
+            query: `
+                mutation CreateInventory($input: CreateInventoryInput!) {
+                    createInventory(input: $input) {
+                        id
+                        quantity
+                        product {
+                            id
+                            name
+                            description
+                            price
+                            imageUrl
+                            category {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            `,
+            variables: {
+                input: {
+                    quantity: parseInt(newInventory.quantity),
+                    product: {
+                        name: newInventory.name,
+                        description: newInventory.description,
+                        price: parseFloat(newInventory.price),
+                        categoryId: newInventory.categoryId,
+                        imageUrl: newInventory.imageUrl,
+                    }
+                }
             }
         };
 
-        fetch("/api/inventories", {
+        console.log("GraphQL Mutation Request:", JSON.stringify(mutation, null, 2));
+
+        const user = auth.getUser();
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+
+        if (user?.token) {
+            headers["Authorization"] = `Bearer ${user.token}`;
+        }
+
+        fetch("/graphql", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            headers,
+            body: JSON.stringify(mutation),
         })
             .then((res) => {
-                if (!res.ok) throw new Error("Failed to create inventory");
+                console.log("Response status:", res.status, res.statusText);
+                // GraphQL always returns 200, so we can't check status codes here
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error("Response error text:", text);
+                        throw new Error("Failed to create inventory");
+                    });
+                }
                 return res.json();
             })
-            .then(() => {
+            .then((payload) => {
+                console.log("GraphQL Response:", JSON.stringify(payload, null, 2));
+                // Check for GraphQL errors with specific error types
+                if (payload.errors && payload.errors.length > 0) {
+                    const error = payload.errors[0];
+                    const errorType = error.extensions?.errorType || error.extensions?.classification;
+                    console.error("GraphQL Errors:", payload.errors);
+
+                    if (errorType === 'UNAUTHORIZED' || error.message.includes('Authorization')) {
+                        setAuthError('unauthorized');
+                        throw new Error(error.message || "Unauthorized - Please log in");
+                    }
+                    if (errorType === 'FORBIDDEN' || error.message.includes('Insufficient permissions')) {
+                        setAuthError('forbidden');
+                        throw new Error(error.message || "Forbidden - You don't have permission to perform this action");
+                    }
+                    throw new Error(error.message);
+                }
                 setIsAddDialogOpen(false);
                 setNewInventory({
                     name: "",
@@ -258,7 +351,10 @@ export default function AdminProductsPage() {
                     icon: <CircleCheck className="h-5 w-5 text-green-500" />,
                 });
             })
-            .catch((err) => toast.error(err.message));
+            .catch((err) => {
+                console.error("Error creating inventory:", err);
+                toast.error(err.message);
+            });
     };
 
     const handleEditItem = (item: InventoryItem) => {
@@ -437,19 +533,57 @@ export default function AdminProductsPage() {
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
+        onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
+        globalFilterFn: (row, _columnId, filterValue) => {
+            const searchValue = filterValue.toLowerCase();
+            const name = row.getValue<string>("name")?.toLowerCase() || "";
+            const description = row.getValue<string>("description")?.toLowerCase() || "";
+            const category = (row.getValue("category") as InventoryItem["category"])?.categoryName?.toLowerCase() || "";
+
+            return name.includes(searchValue) ||
+                description.includes(searchValue) ||
+                category.includes(searchValue);
+        },
         state: {
             sorting,
             columnFilters,
             columnVisibility,
             rowSelection,
+            globalFilter,
         },
     })
+
+    // Show error screens for auth issues
+    if (authError === 'unauthorized') {
+        const loginUrl = `/login?next=${encodeURIComponent(location.pathname)}`;
+        return (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+                <LogIn className="h-16 w-16 text-muted-foreground" />
+                <h2 className="text-2xl font-bold">Unauthorized</h2>
+                <p className="text-muted-foreground">You need to be logged in to access this page.</p>
+                <Button asChild>
+                    <Link to={loginUrl}>Go to Login</Link>
+                </Button>
+            </div>
+        );
+    }
+
+    if (authError === 'forbidden') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+                <ShieldAlert className="h-16 w-16 text-destructive" />
+                <h2 className="text-2xl font-bold">Access Forbidden</h2>
+                <p className="text-muted-foreground">You don't have permission to access this page.</p>
+                <p className="text-sm text-muted-foreground">Please contact an administrator if you believe this is an error.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full p-6">
@@ -459,8 +593,9 @@ export default function AdminProductsPage() {
                         placeholder="Filter products..."
                         value={searchTerm}
                         onChange={(event) => {
-                            setSearchTerm(event.target.value);
-                            table.getColumn("name")?.setFilterValue(event.target.value);
+                            const value = event.target.value;
+                            setSearchTerm(value);
+                            setGlobalFilter(value);
                         }}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") {
@@ -470,6 +605,10 @@ export default function AdminProductsPage() {
                     />
                     <Button type="submit" size="icon" onClick={handleSearch}>
                         <Search className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" onClick={handleShowAll}>
+                        <ListRestart className="h-4 w-4 mr-2" />
+                        Show All
                     </Button>
                 </div>
 

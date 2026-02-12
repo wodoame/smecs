@@ -23,7 +23,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
     return (
         <Card
-            className="w-full shadow-none cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+            className="w-full shadow-none cursor-pointer transition-all hover:shadow-md hover:border-blue-400/60"
             onClick={handleCardClick}
         >
             <CardHeader>

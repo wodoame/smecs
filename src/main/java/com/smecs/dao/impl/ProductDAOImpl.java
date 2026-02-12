@@ -127,7 +127,7 @@ public class ProductDAOImpl implements ProductDAO {
      *
      * @param nameQuery        Search term for product name
      * @param descriptionQuery Search term for product description
-     * @param categoryId       Optional category filter
+     * @param categoryId       Category ID filter (optional)
      * @param pageable         Contains pagination and sorting parameters
      * @return Page of products matching the search criteria
      */
@@ -167,41 +167,37 @@ public class ProductDAOImpl implements ProductDAO {
     }
 
     /**
-     * Builds the WHERE clause for filtering by name, description, and category.
-     * Category filter uses AND logic, while name/description use OR logic.
+     * Builds the WHERE clause for filtering by name and description.
      */
     private String buildWhereClause(String nameQuery, String descriptionQuery, Long categoryId, List<Object> parameters) {
-        List<String> textSearchConditions = new ArrayList<>();
-        List<String> allConditions = new ArrayList<>();
+        List<String> andConditions = new ArrayList<>();
 
-        // Text search conditions (name OR description)
+        // 1. Text Search Group (OR logic between name and description)
+        List<String> orConditions = new ArrayList<>();
         if (nameQuery != null && !nameQuery.isBlank()) {
-            textSearchConditions.add("LOWER(p.name) LIKE LOWER(?)");
+            orConditions.add("LOWER(p.name) LIKE LOWER(?)");
             parameters.add("%" + nameQuery + "%");
         }
-
         if (descriptionQuery != null && !descriptionQuery.isBlank()) {
-            textSearchConditions.add("LOWER(p.description) LIKE LOWER(?)");
+            orConditions.add("LOWER(p.description) LIKE LOWER(?)");
             parameters.add("%" + descriptionQuery + "%");
         }
 
-        // Combine text search with OR
-        if (!textSearchConditions.isEmpty()) {
-            allConditions.add("(" + String.join(" OR ", textSearchConditions) + ")");
+        if (!orConditions.isEmpty()) {
+            andConditions.add("(" + String.join(" OR ", orConditions) + ")");
         }
 
-        // Category filter uses AND logic
+        // 2. Category Filter (AND logic)
         if (categoryId != null) {
-            allConditions.add("p.category_id = ?");
+            andConditions.add("p.category_id = ?");
             parameters.add(categoryId);
         }
 
-        if (allConditions.isEmpty()) {
+        if (andConditions.isEmpty()) {
             return "";
         }
 
-        // Combine all conditions with AND
-        return " WHERE " + String.join(" AND ", allConditions);
+        return " WHERE " + String.join(" AND ", andConditions);
     }
 
     /**

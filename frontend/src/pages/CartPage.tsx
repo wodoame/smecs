@@ -2,12 +2,40 @@ import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Trash2 } from "lucide-react";
+import { Trash2, LogIn, ShieldAlert } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 export default function CartPage() {
-    const { cartItems, removeFromCart, updateQuantity, clearCart } = useCart();
+    const location = useLocation();
+    const { cartItems, authError, removeFromCart, updateQuantity, clearCart } = useCart();
 
     const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    // Show error screens for auth issues
+    if (authError === 'unauthorized') {
+        const loginUrl = `/login?next=${encodeURIComponent(location.pathname)}`;
+        return (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+                <LogIn className="h-16 w-16 text-muted-foreground" />
+                <h2 className="text-2xl font-bold">Unauthorized</h2>
+                <p className="text-muted-foreground">You need to be logged in to view your cart.</p>
+                <Button asChild>
+                    <Link to={loginUrl}>Go to Login</Link>
+                </Button>
+            </div>
+        );
+    }
+
+    if (authError === 'forbidden') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+                <ShieldAlert className="h-16 w-16 text-destructive" />
+                <h2 className="text-2xl font-bold">Access Forbidden</h2>
+                <p className="text-muted-foreground">You don't have permission to access this cart.</p>
+                <p className="text-sm text-muted-foreground">Please contact an administrator if you believe this is an error.</p>
+            </div>
+        );
+    }
 
     if (cartItems.length === 0) {
         return (
