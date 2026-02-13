@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
@@ -30,12 +31,14 @@ public class ReviewController {
     }
 
     @PostMapping
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<ReviewDTO>> createReview(@Valid @RequestBody CreateReviewRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Review submitted successfully", reviewService.createReview(request)));
     }
 
     @GetMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<ReviewDTO>>> getAllReviews(
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
@@ -64,12 +67,14 @@ public class ReviewController {
     }
 
     @PutMapping("/{reviewId}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<ReviewDTO>> updateReview(@PathVariable Long reviewId, @Valid @RequestBody UpdateReviewRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Review updated successfully",
                 reviewService.updateReview(reviewId, request)));
     }
 
     @DeleteMapping("/{reviewId}")
+    @RequireRole("customer")
     public ResponseEntity<ResponseDTO<Void>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Deleted review with id " + reviewId + "successfully", null));

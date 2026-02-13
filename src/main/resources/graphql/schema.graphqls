@@ -7,6 +7,7 @@ type Query {
     inventoryById(id: ID!): Inventory
     users: [User]
     userById(id: ID!): User
+    reviewsByProduct(productId: ID!, page: Int = 1, size: Int = 10): ReviewPage
 }
 
 input ProductInput {
@@ -83,4 +84,19 @@ type User {
     email: String!
     role: String
     createdAt: String
+}
+
+type Review {
+    id: ID!
+    userId: ID!
+    productId: ID!
+    rating: Int!
+    comment: String!
+    createdAt: String!
+    user: User
+}
+
+type ReviewPage {
+    content: [Review]
+    page: PageMetadata
 }

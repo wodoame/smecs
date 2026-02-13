@@ -11,6 +11,7 @@ import com.smecs.entity.User;
 import com.smecs.service.CategoryService;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
+import com.smecs.service.ReviewService;
 import com.smecs.service.UserService;
 import com.smecs.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class GraphQLController {
     private final CategoryService categoryService;
     private final InventoryService inventoryService;
     private final UserService userService;
+    private final ReviewService reviewService;
 
     // --- Products ---
 
@@ -126,14 +128,16 @@ public class GraphQLController {
     // --- Categories ---
 
     @QueryMapping
-    public PagedResponseDTO<GqlCategory> categories(@Argument Integer page, @Argument Integer size, @Argument String sort,
-                                        @Argument String query) {
+    public PagedResponseDTO<GqlCategory> categories(@Argument Integer page, @Argument Integer size,
+            @Argument String sort,
+            @Argument String query) {
         int pageNo = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
         String searchQuery = (query != null) ? query : "";
 
-        PagedResponseDTO<CategoryDTO> serviceResponse = categoryService.getCategories(searchQuery, pageNo, pageSize, sortStr, false);
+        PagedResponseDTO<CategoryDTO> serviceResponse = categoryService.getCategories(searchQuery, pageNo, pageSize,
+                sortStr, false);
 
         PagedResponseDTO<GqlCategory> response = new PagedResponseDTO<>();
         response.setPage(serviceResponse.getPage());
@@ -177,6 +181,34 @@ public class GraphQLController {
         return toGqlUser(userService.findById(Long.parseLong(id)));
     }
 
+    // --- Reviews ---
+
+    @QueryMapping
+    public PagedResponseDTO<GqlReview> reviewsByProduct(@Argument String productId, @Argument Integer page,
+            @Argument Integer size) {
+        int pageNo = (page != null) ? page : 1;
+        int pageSize = (size != null) ? size : 10;
+
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+        PagedResponseDTO<com.smecs.dto.ReviewDTO> serviceResponse = reviewService.getReviewsByProduct(
+                Long.parseLong(productId), pageable);
+
+        PagedResponseDTO<GqlReview> response = new PagedResponseDTO<>();
+        response.setPage(serviceResponse.getPage());
+        response.setContent(serviceResponse.getContent().stream()
+                .map(this::toGqlReview)
+                .collect(Collectors.toList()));
+
+        return response;
+    }
+
+    @SchemaMapping(typeName = "Review", field = "user")
+    public GqlUser user(GqlReview review) {
+        if (review.userId() == null)
+            return null;
+        return toGqlUser(userService.findById(Long.parseLong(review.userId())));
+    }
+
     // Helper
     private GqlCategory toGqlCategory(CategoryDTO dto) {
         if (dto == null)
@@ -199,6 +231,18 @@ public class GraphQLController {
                 user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
     }
 
+    private GqlReview toGqlReview(com.smecs.dto.ReviewDTO dto) {
+        if (dto == null)
+            return null;
+        return new GqlReview(
+                String.valueOf(dto.getId()),
+                String.valueOf(dto.getUserId()),
+                String.valueOf(dto.getProductId()),
+                dto.getRating(),
+                dto.getComment(),
+                dto.getCreatedAt() != null ? dto.getCreatedAt().toString() : null);
+    }
+
     public record GqlCategory(String id, String name, String description, String imageUrl) {
     }
 
@@ -209,5 +253,9 @@ public class GraphQLController {
     }
 
     public record CreateInventoryInput(Integer quantity, ProductInput product) {
+    }
+
+    public record GqlReview(String id, String userId, String productId, Integer rating, String comment,
+            String createdAt) {
     }
 }

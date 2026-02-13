@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { ReviewList } from "@/components/ReviewList";
+import { ReviewForm } from "@/components/ReviewForm";
+import { auth } from "@/lib/auth";
+import { Separator } from "@/components/ui/separator";
 
 interface Product {
     id: number;
@@ -13,6 +17,18 @@ interface Product {
     image: string;
 }
 
+interface Review {
+    id: number;
+    userId: number;
+    productId: number;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    user?: {
+        username: string;
+    };
+}
+
 export default function ProductDetailsPage() {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
@@ -20,8 +36,14 @@ export default function ProductDetailsPage() {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
+        // Check authentication status
+        setIsAuthenticated(auth.isAuthenticated());
+
         const fetchProduct = async () => {
             if (!productId) return;
             try {
@@ -50,8 +72,113 @@ export default function ProductDetailsPage() {
             }
         };
 
+        const fetchReviews = async () => {
+            if (!productId) return;
+            try {
+                const query = `
+                    query GetReviews($productId: ID!, $page: Int, $size: Int) {
+                        reviewsByProduct(productId: $productId, page: $page, size: $size) {
+                            content {
+                                id
+                                userId
+                                productId
+                                rating
+                                comment
+                                createdAt
+                                user {
+                                    username
+                                }
+                            }
+                            page {
+                                totalElements
+                                totalPages
+                            }
+                        }
+                    }
+                `;
+
+                const response = await fetch("/graphql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        query,
+                        variables: {
+                            productId,
+                            page: 1,
+                            size: 10
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const reviewData = data.data?.reviewsByProduct?.content || [];
+                    setReviews(reviewData);
+                } else {
+                    console.error("Failed to load reviews");
+                }
+            } catch (error) {
+                console.error("Error loading reviews", error);
+            } finally {
+                setIsLoadingReviews(false);
+            }
+        };
+
         fetchProduct();
+        fetchReviews();
     }, [productId]);
+
+    const handleReviewSubmit = async () => {
+        // Refetch reviews after successful submission
+        setIsLoadingReviews(true);
+        try {
+            const query = `
+                query GetReviews($productId: ID!, $page: Int, $size: Int) {
+                    reviewsByProduct(productId: $productId, page: $page, size: $size) {
+                        content {
+                            id
+                            userId
+                            productId
+                            rating
+                            comment
+                            createdAt
+                            user {
+                                username
+                            }
+                        }
+                    }
+                }
+            `;
+
+            const response = await fetch("/graphql", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    query,
+                    variables: {
+                        productId,
+                        page: 1,
+                        size: 10
+                    }
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const reviewData = data.data?.reviewsByProduct?.content || [];
+                setReviews(reviewData);
+                toast.success("Review submitted successfully!");
+            }
+        } catch (error) {
+            console.error("Error refreshing reviews", error);
+        } finally {
+            setIsLoadingReviews(false);
+        }
+    };
 
     if (isLoading) {
         return <div className="p-8 text-center">Loading...</div>;
@@ -109,6 +236,40 @@ export default function ProductDetailsPage() {
                         >
                             Add to Cart
                         </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Reviews Section */}
+            <Separator className="my-12" />
+
+            <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
+
+                <div className="grid md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2">
+                        <ReviewList reviews={reviews} isLoading={isLoadingReviews} />
+                    </div>
+
+                    <div className="md:col-span-1">
+                        {isAuthenticated ? (
+                            <ReviewForm
+                                productId={parseInt(productId!)}
+                                onSubmitSuccess={handleReviewSubmit}
+                            />
+                        ) : (
+                            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 text-center">
+                                <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                                    Sign in to write a review
+                                </p>
+                                <Button
+                                    onClick={() => navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`)}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                                >
+                                    Sign In
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
