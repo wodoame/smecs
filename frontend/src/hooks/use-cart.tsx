@@ -77,48 +77,11 @@ export function useCart(): CartOperations {
             return;
         }
 
-        try {
-            // Get or create cart to get the cartID
-            const response = await fetch("/api/carts", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
-                },
-                body: JSON.stringify({ userId: user.id })
-            });
-
-            if (response.status === 401) {
-                setAuthError('unauthorized');
-                setCartItems([]);
-                setCartId(null);
-                return;
-            }
-
-            if (response.status === 403) {
-                setAuthError('forbidden');
-                setCartItems([]);
-                setCartId(null);
-                return;
-            }
-
-            if (response.ok) {
-                setAuthError(null);
-                const json = await response.json();
-                const dto = json.data;
-                const newCartId = dto.cartId;
-                setCartId(newCartId);
-
-                // Fetch items from the separate endpoint
-                await fetchCartItems(newCartId);
-            } else {
-                // Non-401/403 error responses
-                setCartItems([]);
-                setCartId(null);
-                setAuthError(null);
-            }
-        } catch (error) {
-            console.error("Failed to initialize cart", error);
+        if (user.cartId) {
+            setCartId(user.cartId);
+            setAuthError(null);
+            await fetchCartItems(user.cartId);
+        } else {
             setCartItems([]);
             setCartId(null);
             setAuthError(null);
@@ -149,43 +112,14 @@ export function useCart(): CartOperations {
             return;
         }
 
-        if (!cartId) {
-            try {
-                const res = await fetch("/api/carts", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${user.token}`
-                    },
-                    body: JSON.stringify({ userId: user.id })
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    const newCartId = json.data.cartId;
-                    setCartId(newCartId);
+        const currentCartId = cartId || user.cartId;
 
-                    const response = await fetch("/api/cart-items", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${user.token}`
-                        },
-                        body: JSON.stringify({
-                            cartId: newCartId,
-                            productId: product.id,
-                            quantity: 1
-                        })
-                    });
-                    if (response.ok) {
-                        await refreshCart();
-                        toast.success(`Added ${product.name} to cart`);
-                        return;
-                    }
-                }
-            } catch (e) { }
-            toast.error("Failed to add to cart (Cart not initialized)");
+        if (!currentCartId) {
+            toast.error("Cart not available");
             return;
         }
+
+        if (!cartId) setCartId(currentCartId);
 
         try {
             const response = await fetch("/api/cart-items", {
@@ -195,7 +129,7 @@ export function useCart(): CartOperations {
                     "Authorization": `Bearer ${user.token}`
                 },
                 body: JSON.stringify({
-                    cartId: cartId,
+                    cartId: currentCartId,
                     productId: product.id,
                     quantity: 1
                 })
@@ -267,17 +201,21 @@ export function useCart(): CartOperations {
         if (!user) return;
 
         try {
-            await fetch(`/api/carts/${cartId}`, {
+            const response = await fetch(`/api/carts/${cartId}/clear`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": `Bearer ${user.token}`
                 }
             });
-            setCartItems([]);
-            setCartId(null);
-            initCart();
+            if (response.ok) {
+                setCartItems([]);
+                toast.success("Cart cleared successfully");
+            } else {
+                toast.error("Failed to clear cart");
+            }
         } catch (e) {
             console.error("Failed to clear cart", e);
+            toast.error("An error occurred while clearing the cart");
         }
     };
 

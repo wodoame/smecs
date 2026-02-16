@@ -1,6 +1,7 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireRole;
+import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.AddToCartRequest;
 import com.smecs.dto.CartItemDTO;
 import com.smecs.dto.ResponseDTO;
@@ -28,6 +29,7 @@ public class CartItemsController {
 
     @PostMapping
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody AddToCartRequest request) {
         CartItem createdItem = cartItemService.addItemToCart(request);
         return ResponseEntity.status(HttpStatus.CREATED)

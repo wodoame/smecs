@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireOwnership;
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
@@ -37,6 +38,7 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "order", idParamName = "id")
     public ResponseEntity<ResponseDTO<OrderDTO>> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order found", orderService.getOrderById(id)));
     }
@@ -70,6 +72,7 @@ public class OrderController {
 
     @GetMapping("/user/{userId}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getOrdersByUserId(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "1") int page,

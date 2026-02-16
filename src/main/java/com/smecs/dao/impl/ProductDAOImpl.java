@@ -146,7 +146,7 @@ public class ProductDAOImpl implements ProductDAO {
 
         // Step 4: Construct and execute the main SELECT query
         String dataQuery = "SELECT p.id, p.name, p.description, p.price, p.image_url, p.category_id " +
-                "FROM products p" + whereClause + orderByClause + " LIMIT ? OFFSET ?";
+                "FROM products p LEFT JOIN categories c ON p.category_id = c.id" + whereClause + orderByClause + " LIMIT ? OFFSET ?";
 
         // System.out.println("Generated SQL Query: " + dataQuery);
         // System.out.println("Pagination: LIMIT=" + limit + ", OFFSET=" + offset);
@@ -172,14 +172,20 @@ public class ProductDAOImpl implements ProductDAO {
     private String buildWhereClause(String nameQuery, String descriptionQuery, Long categoryId, List<Object> parameters) {
         List<String> andConditions = new ArrayList<>();
 
-        // 1. Text Search Group (OR logic between name and description)
+        // 1. Text Search Group (OR logic between product and category name/description)
         List<String> orConditions = new ArrayList<>();
         if (nameQuery != null && !nameQuery.isBlank()) {
+            // Search product name and category name
             orConditions.add("LOWER(p.name) LIKE LOWER(?)");
+            parameters.add("%" + nameQuery + "%");
+            orConditions.add("LOWER(c.name) LIKE LOWER(?)");
             parameters.add("%" + nameQuery + "%");
         }
         if (descriptionQuery != null && !descriptionQuery.isBlank()) {
+            // Search product description and category description
             orConditions.add("LOWER(p.description) LIKE LOWER(?)");
+            parameters.add("%" + descriptionQuery + "%");
+            orConditions.add("LOWER(c.description) LIKE LOWER(?)");
             parameters.add("%" + descriptionQuery + "%");
         }
 
@@ -215,7 +221,7 @@ public class ProductDAOImpl implements ProductDAO {
      * Executes the COUNT query to get total matching records.
      */
     private long executeCountQuery(String whereClause, List<Object> parameters) {
-        String countQuery = "SELECT COUNT(*) FROM products p" + whereClause;
+        String countQuery = "SELECT COUNT(*) FROM products p LEFT JOIN categories c ON p.category_id = c.id" + whereClause;
         Query countQ = entityManager.createNativeQuery(countQuery);
 
         for (int i = 0; i < parameters.size(); i++) {

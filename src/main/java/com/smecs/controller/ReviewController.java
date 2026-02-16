@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireOwnership;
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -75,6 +76,7 @@ public class ReviewController {
 
     @DeleteMapping("/{reviewId}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<Void>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Deleted review with id " + reviewId + "successfully", null));

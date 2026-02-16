@@ -1,8 +1,11 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireOwnership;
+import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CartDTO;
 import com.smecs.dto.CreateCartRequest;
 import com.smecs.dto.ResponseDTO;
+import com.smecs.service.CartItemService;
 import com.smecs.entity.Cart;
 import com.smecs.service.CartService;
 import jakarta.validation.Valid;
@@ -19,20 +22,35 @@ import java.util.stream.Collectors;
 public class CartController {
 
     private final CartService cartService;
+    private final CartItemService cartItemService;
 
     @Autowired
-    public CartController(CartService cartService) {
+    public CartController(CartService cartService, CartItemService cartItemService) {
         this.cartService = cartService;
+        this.cartItemService = cartItemService;
     }
 
     @PostMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<CartDTO>> createCart(@Valid @RequestBody CreateCartRequest request) {
         Cart cart = cartService.createCart(request.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Cart created successfully", mapToCartDTO(cart)));
     }
 
+    @DeleteMapping("/{cartId}/clear")
+    @RequireRole("customer")
+    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
+    public ResponseEntity<ResponseDTO<Void>> clearCartItems(@PathVariable Long cartId) {
+        int deleted = cartItemService.deleteAllItems(cartId);
+        if (deleted == 0) {
+            return ResponseEntity.ok(new ResponseDTO<>("success", "No cart items to delete", null));
+        }
+        return ResponseEntity.ok(new ResponseDTO<>("success", deleted + " cart items deleted", null));
+    }
+
     @GetMapping
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<List<CartDTO>>> getAllCarts() {
         List<Cart> carts = cartService.getAllCarts();
         List<CartDTO> dtos = carts.stream().map(this::mapToCartDTO).collect(Collectors.toList());
@@ -40,6 +58,8 @@ public class CartController {
     }
 
     @GetMapping("/{cartId}")
+    @RequireRole("customer")
+    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartDTO>> getCartById(@PathVariable Long cartId) {
         return cartService.getCartById(cartId)
                 .map(cart -> ResponseEntity
@@ -49,6 +69,7 @@ public class CartController {
     }
 
     @DeleteMapping("/{cartId}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> deleteCart(@PathVariable Long cartId) {
         cartService.deleteCart(cartId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Cart deleted successfully", null));

@@ -51,11 +51,6 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     @Override
-    public CartItem saveCartItem(CartItem cartItem) {
-        return cartItemDAO.save(cartItem);
-    }
-
-    @Override
     public CartItem updateCartItem(Long id, int quantity) {
         CartItem item = getCartItemById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart Item not found with id " + id));
@@ -89,5 +84,20 @@ public class CartItemServiceImpl implements CartItemService {
         for (Long productId : productIds) {
             cartItemDAO.deleteByCartIdAndProductId(cartId, productId);
         }
+    }
+    @Override
+    public int deleteAllItems(Long cartId) {
+        List<CartItem> items = cartItemDAO.findByCartId(cartId);
+        if (items == null || items.isEmpty()) {
+            return 0;
+        }
+        int deleted = 0;
+        for (CartItem item : items) {
+            if (item.getCartItemId() != null) {
+                cartItemDAO.deleteById(item.getCartItemId());
+                deleted++;
+            }
+        }
+        return deleted;
     }
 }

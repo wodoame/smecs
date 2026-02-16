@@ -41,6 +41,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ResponseDTO<>("error", ex.getMessage(), null), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseEntity<ResponseDTO<String>> handleUnauthorizedException(UnauthorizedException ex) {
+        return new ResponseEntity<>(new ResponseDTO<>("error", ex.getMessage(), null), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ResponseDTO<String>> handleForbiddenException(ForbiddenException ex) {
+        return new ResponseEntity<>(new ResponseDTO<>("error", ex.getMessage(), null), HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(CategoryInUseException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ResponseDTO<String>> handleCategoryInUseException(CategoryInUseException ex) {
