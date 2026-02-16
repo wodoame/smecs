@@ -67,6 +67,12 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("username", jwtUtil.extractUsername(token));
         request.setAttribute("role", userRole);
 
+        // Add cartId to request attributes if present in token
+        Long cartId = jwtUtil.extractCartId(token);
+        if (cartId != null) {
+            request.setAttribute("cartId", cartId);
+        }
+
         return true;
     }
 }

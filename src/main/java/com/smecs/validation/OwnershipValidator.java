@@ -1,5 +1,8 @@
 package com.smecs.validation;
 
+import com.smecs.exception.ForbiddenException;
+import com.smecs.exception.ResourceNotFoundException;
+
 /**
  * Interface for validating resource ownership.
  * Each resource type (Review, Order, etc.) should have its own implementation.
@@ -10,9 +13,10 @@ public interface OwnershipValidator {
      *
      * @param resourceId The ID of the resource to check
      * @param userId The ID of the user claiming ownership
-     * @return true if the user owns the resource, false otherwise
+     * @throws ResourceNotFoundException if the resource does not exist (404)
+     * @throws ForbiddenException if the resource exists but user doesn't own it (403)
      */
-    boolean validateOwnership(Long resourceId, Long userId);
+    void validateOwnership(Long resourceId, Long userId);
 
     /**
      * Returns the resource type this validator handles (e.g., "review", "order")

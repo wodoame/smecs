@@ -38,8 +38,8 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new ResponseDTO<>("error", "Registration failed", null));
         }
         User user = userService.findByUsername(dto.getUsername());
-        String token = jwtUtil.generateToken(user);
         Cart cart = cartService.createCart(user.getId());
+        String token = jwtUtil.generateToken(user, cart.getCartId());
         UserResponseDTO response = mapToDTO(user);
         response.setToken(token);
         response.setCartId(cart.getCartId());
@@ -54,9 +54,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO<>("error", "Invalid credentials", null));
         }
-        UserResponseDTO response = mapToDTO(user);
-        String token = jwtUtil.generateToken(user);
         Cart cart = cartService.createCart(user.getId());
+        String token = jwtUtil.generateToken(user, cart.getCartId());
+        UserResponseDTO response = mapToDTO(user);
         response.setToken(token);
         response.setCartId(cart.getCartId());
         return ResponseEntity.ok(new ResponseDTO<>("success", "Login successful", response));

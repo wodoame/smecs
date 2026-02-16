@@ -114,11 +114,8 @@ public class OwnershipAspect {
             throw new IllegalArgumentException("Could not find parameter or request body property '" + idParamName + "'");
         }
 
-        // Validate ownership
-        boolean isOwner = validator.validateOwnership(resourceId, userId);
-        if (!isOwner) {
-            throw new ForbiddenException("You do not have permission to access this " + resourceType);
-        }
+        // Validate ownership - validator will throw ResourceNotFoundException or ForbiddenException
+        validator.validateOwnership(resourceId, userId);
     }
 
     private Long extractResourceIdFromParameters(Method method, Object[] args, String paramName) {

@@ -1,5 +1,6 @@
 package com.smecs.validation;
 
+import com.smecs.exception.ForbiddenException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 public class UserIdOwnershipValidator implements OwnershipValidator {
 
     @Override
-    public boolean validateOwnership(Long requestedUserId, Long authenticatedUserId) {
+    public void validateOwnership(Long requestedUserId, Long authenticatedUserId) {
         // Simply check if the requested userId matches the authenticated user's ID
-        return requestedUserId.equals(authenticatedUserId);
+        if (!requestedUserId.equals(authenticatedUserId)) {
+            throw new ForbiddenException("You do not have permission to access this user's data");
+        }
     }
 
     @Override
