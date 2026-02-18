@@ -36,8 +36,10 @@ public class CartItemsController {
                 .body(new ResponseDTO<>("success", "Item added to cart", mapToDTO(createdItem)));
     }
 
+
     @GetMapping("/{id}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> getCartItem(@PathVariable Long id) {
         return cartItemService.getCartItemById(id)
                 .map(item -> ResponseEntity.ok(new ResponseDTO<>("success", "Cart item found", mapToDTO(item))))
@@ -47,6 +49,7 @@ public class CartItemsController {
 
     @GetMapping("/cart/{cartId}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<List<CartItemDTO>>> getCartItemsByCart(@PathVariable Long cartId) {
         List<CartItem> items = cartItemService.getCartItemsByCartId(cartId);
         List<CartItemDTO> dtos = items.stream()
@@ -57,6 +60,7 @@ public class CartItemsController {
 
     @PutMapping("/{id}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id,
             @RequestBody CartItemDTO dto) {
         CartItem updated = cartItemService.updateCartItem(id, dto.getQuantity());
@@ -65,6 +69,7 @@ public class CartItemsController {
 
     @DeleteMapping("/{id}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<Void>> deleteCartItem(@PathVariable Long id) {
         if (cartItemService.getCartItemById(id).isPresent()) {
             cartItemService.deleteCartItem(id);

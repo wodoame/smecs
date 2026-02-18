@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
 import { useCart } from "@/hooks/use-cart";
-import { Input } from "@/components/ui/input";
+import { useSearchParams } from "react-router-dom";
 import {
   Pagination,
   PaginationContent,
@@ -26,25 +26,15 @@ export function ProductList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // searchTerm is the input value, query is what we send to the API
-  const [searchTerm, setSearchTerm] = useState("");
-  const [query, setQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get("query") || "";
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchTrigger, setSearchTrigger] = useState(0);
   const { addToCart } = useCart();
 
-  const handleSearch = () => {
-    setQuery(searchTerm);
-    setPage(1); // Reset to first page on new search
-    setSearchTrigger((prev) => prev + 1);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     setLoading(true);
@@ -74,7 +64,7 @@ export function ProductList() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, query, searchTrigger]);
+  }, [page, query]);
 
   const renderPaginationItems = () => {
     const items = [];
@@ -180,24 +170,7 @@ export function ProductList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex w-full max-w-2xl gap-2">
-          <Input
-            type="search"
-            placeholder="Search products..."
-            className="flex-1"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Search
-          </button>
-        </div>
-      </div>
+
 
       {loading ? (
         <div className="text-center">Loading...</div>

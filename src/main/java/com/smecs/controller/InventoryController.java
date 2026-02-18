@@ -48,17 +48,20 @@ public class InventoryController {
     }
 
     @GetMapping("/product/{productId}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryByProductId(@PathVariable Long productId) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId)));
     }
 
     @GetMapping("/{id}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryById(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", inventoryService.getInventoryById(id)));
     }
 
 
     @PutMapping("/{inventoryId}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<InventoryDTO>> updateInventory(
             @PathVariable Long inventoryId,
             @Valid @RequestBody UpdateInventoryRequestDTO request) {
@@ -67,6 +70,7 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{inventoryId}")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfuly", null));

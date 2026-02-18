@@ -69,6 +69,7 @@ public class ReviewController {
 
     @PutMapping("/{reviewId}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<ReviewDTO>> updateReview(@PathVariable Long reviewId, @Valid @RequestBody UpdateReviewRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Review updated successfully",
                 reviewService.updateReview(reviewId, request)));

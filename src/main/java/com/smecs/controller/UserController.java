@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.UserResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.entity.User;
@@ -34,7 +35,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @RequireRole("customer")
+    @RequireRole("admin")
     public ResponseEntity<ResponseDTO<UserResponseDTO>> getUserById(@PathVariable Long id) {
         User user = userService.findById(id);
         if (user == null) {

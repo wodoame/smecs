@@ -31,6 +31,7 @@ public class OrderController {
 
     @PostMapping
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<ResponseDTO<OrderDTO>> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Order created", orderService.createOrder(request)));

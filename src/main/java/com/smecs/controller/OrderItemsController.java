@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.annotation.RequireOwnership;
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderItemsRequestDTO;
 import com.smecs.dto.OrderItemDTO;
@@ -28,6 +29,7 @@ public class OrderItemsController {
 
     @GetMapping("/{id}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "orderItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> getOrderItem(@PathVariable Long id) {
         return orderItemService.getOrderItemById(id)
                 .map(item -> ResponseEntity.ok(new ResponseDTO<>("success", "Order item found", mapToDTO(item))))
@@ -37,6 +39,7 @@ public class OrderItemsController {
 
     @GetMapping("/order/{orderId}")
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "order", idParamName = "orderId")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> getOrderItemsByOrder(@PathVariable Long orderId) {
         List<OrderItem> items = orderItemService.getOrderItemsByOrderId(orderId);
         List<OrderItemDTO> dtos = items.stream().map(this::mapToDTO).collect(Collectors.toList());
@@ -45,6 +48,7 @@ public class OrderItemsController {
 
     @PostMapping
     @RequireRole("customer")
+    @RequireOwnership(resourceType = "order", idParamName = "orderId")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems(@RequestBody CreateOrderItemsRequestDTO request) {
         List<OrderItem> savedItems = orderItemService.createOrderItems(request.getOrderId(), request.getItems());
         List<OrderItemDTO> dtos = savedItems.stream().map(this::mapToDTO).collect(Collectors.toList());
