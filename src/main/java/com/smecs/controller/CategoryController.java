@@ -2,6 +2,7 @@ package com.smecs.controller;
 
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CategoryDTO;
+import com.smecs.dto.CategoryQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.service.CategoryService;
@@ -33,7 +34,15 @@ public class CategoryController {
             @RequestParam(defaultValue = "name,asc") String sort,
             @RequestParam(required = false, defaultValue = "false") boolean relatedImages) {
 
-        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(query, page, size, sort, relatedImages);
+        CategoryQuery categoryQuery = CategoryQuery.builder()
+                .name(query)
+                .description(query)
+                .page(page)
+                .size(size)
+                .sort(sort)
+                .includeRelatedImages(relatedImages)
+                .build();
+        PagedResponseDTO<CategoryDTO> data = categoryService.getCategories(categoryQuery);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Categories retrieved", data));
     }
 

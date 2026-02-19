@@ -1,6 +1,6 @@
 package com.smecs.validation;
 
-import com.smecs.dao.OrderDAO;
+import com.smecs.repository.OrderRepository;
 import com.smecs.entity.Order;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
@@ -15,16 +15,16 @@ import java.util.Optional;
 @Component
 public class OrderOwnershipValidator implements OwnershipValidator {
 
-    private final OrderDAO orderDAO;
+    private final OrderRepository orderRepository;
 
     @Autowired
-    public OrderOwnershipValidator(OrderDAO orderDAO) {
-        this.orderDAO = orderDAO;
+    public OrderOwnershipValidator(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
     }
 
     @Override
     public void validateOwnership(Long resourceId, Long userId) {
-        Optional<Order> orderOpt = orderDAO.findById(resourceId);
+        Optional<Order> orderOpt = orderRepository.findById(resourceId);
 
         if (orderOpt.isEmpty()) {
             throw new ResourceNotFoundException("Order not found with id: " + resourceId);
@@ -41,5 +41,3 @@ public class OrderOwnershipValidator implements OwnershipValidator {
         return "order";
     }
 }
-
-

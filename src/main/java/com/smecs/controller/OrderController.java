@@ -4,14 +4,12 @@ import com.smecs.annotation.RequireOwnership;
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
+import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -57,18 +55,13 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
-        // Convert 1-based page number to 0-based index
-        int pageIndex = Math.max(0, page - 1);
+        OrderQuery query = OrderQuery.builder()
+                .page(page)
+                .size(size)
+                .sort(sort)
+                .build();
 
-        // Parse sort parameter
-        String[] sortParams = sort.split(",");
-        String sortBy = sortParams.length > 0 ? sortParams[0] : "createdAt";
-        String sortDirection = sortParams.length > 1 ? sortParams[1] : "desc";
-
-        Sort.Direction direction = sortDirection.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(direction, sortBy));
-
-        return ResponseEntity.ok(orderService.getAllOrders(pageable));
+        return ResponseEntity.ok(orderService.getAllOrders(query));
     }
 
     @GetMapping("/user/{userId}")
@@ -80,18 +73,13 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
-        // Convert 1-based page number to 0-based index
-        int pageIndex = Math.max(0, page - 1);
+        OrderQuery query = OrderQuery.builder()
+                .page(page)
+                .size(size)
+                .sort(sort)
+                .build();
 
-        // Parse sort parameter
-        String[] sortParams = sort.split(",");
-        String sortBy = sortParams.length > 0 ? sortParams[0] : "createdAt";
-        String sortDirection = sortParams.length > 1 ? sortParams[1] : "desc";
-
-        Sort.Direction direction = sortDirection.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(direction, sortBy));
-
-        return ResponseEntity.ok(orderService.getOrdersByUserId(userId, pageable));
+        return ResponseEntity.ok(orderService.getOrdersByUserId(userId, query));
     }
 
     @DeleteMapping("/{id}")

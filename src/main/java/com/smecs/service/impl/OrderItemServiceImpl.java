@@ -2,7 +2,6 @@ package com.smecs.service.impl;
 
 import com.smecs.entity.OrderItem;
 import com.smecs.dao.OrderItemDAO;
-import com.smecs.dao.OrderDAO;
 import com.smecs.dao.ProductDAO;
 import com.smecs.dao.CartDAO;
 import com.smecs.dto.OrderItemDTO;
@@ -13,29 +12,30 @@ import com.smecs.service.OrderItemService;
 import com.smecs.service.OrderService;
 import com.smecs.service.CartItemService;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.Optional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderItemServiceImpl implements OrderItemService {
     private final OrderItemDAO orderItemDAO;
     private final ProductDAO productDAO;
-    private final OrderDAO orderDAO;
+    private final OrderRepository orderRepository;
     private final OrderService orderService;
     private final CartDAO cartDAO;
     private final CartItemService cartItemService;
 
     @Autowired
-    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderDAO orderDAO,
+    public OrderItemServiceImpl(OrderItemDAO orderItemDAO, ProductDAO productDAO, OrderRepository orderRepository,
                                 OrderService orderService, CartDAO cartDAO, CartItemService cartItemService) {
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
-        this.orderDAO = orderDAO;
+        this.orderRepository = orderRepository;
         this.orderService = orderService;
         this.cartDAO = cartDAO;
         this.cartItemService = cartItemService;
@@ -43,7 +43,7 @@ public class OrderItemServiceImpl implements OrderItemService {
 
     @Override
     public List<OrderItem> createOrderItems(Long orderId, List<OrderItemDTO> orderItemDTOs) {
-        Order order = orderDAO.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         List<OrderItem> orderItems = new ArrayList<>();

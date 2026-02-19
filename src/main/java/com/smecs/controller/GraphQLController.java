@@ -1,23 +1,16 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireRole;
-import com.smecs.dto.CategoryDTO;
-import com.smecs.dto.CreateInventoryRequestDTO;
-import com.smecs.dto.CreateProductRequestDTO;
-import com.smecs.dto.InventoryDTO;
-import com.smecs.dto.PagedResponseDTO;
-import com.smecs.dto.ProductDTO;
+import com.smecs.dto.*;
 import com.smecs.entity.User;
 import com.smecs.service.CategoryService;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
 import com.smecs.service.ReviewService;
 import com.smecs.service.UserService;
-import com.smecs.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -47,11 +40,14 @@ public class GraphQLController {
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
 
-        Sort sortSpec = PaginationUtils.parseSort(sortStr, "id");
-        Pageable pageable = PageRequest.of(pageNo - 1, pageSize, sortSpec);
-
-        Long catId = (categoryId != null) ? Long.parseLong(categoryId) : null;
-        return productService.getProducts(null, null, catId, pageable);
+         Long catId = (categoryId != null) ? Long.parseLong(categoryId) : null;
+         ProductQuery productQuery = ProductQuery.builder()
+                 .categoryId(catId)
+                 .page(pageNo)
+                 .size(pageSize)
+                 .sort(sortStr)
+                 .build();
+        return productService.getProducts(productQuery);
     }
 
     @QueryMapping
@@ -90,7 +86,14 @@ public class GraphQLController {
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
 
-        return inventoryService.searchInventory(query, pageNo, pageSize, sortStr);
+        InventoryQuery inventoryQuery = InventoryQuery.builder()
+                .query(query)
+                .page(pageNo)
+                .size(pageSize)
+                .sort(sortStr)
+                .build();
+
+        return inventoryService.searchInventory(inventoryQuery);
     }
 
     @QueryMapping
@@ -136,8 +139,15 @@ public class GraphQLController {
         String sortStr = (sort != null) ? sort : "id,asc";
         String searchQuery = (query != null) ? query : "";
 
-        PagedResponseDTO<CategoryDTO> serviceResponse = categoryService.getCategories(searchQuery, pageNo, pageSize,
-                sortStr, false);
+        CategoryQuery categoryQuery = CategoryQuery.builder()
+                .name(searchQuery)
+                .description(searchQuery)
+                .page(pageNo)
+                .size(pageSize)
+                .sort(sortStr)
+                .includeRelatedImages(false)
+                .build();
+        PagedResponseDTO<CategoryDTO> serviceResponse = categoryService.getCategories(categoryQuery);
 
         PagedResponseDTO<GqlCategory> response = new PagedResponseDTO<>();
         response.setPage(serviceResponse.getPage());

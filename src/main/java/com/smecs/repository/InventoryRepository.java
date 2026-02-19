@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Optional;
 
-public interface InventoryRepository extends JpaRepository<Inventory, Long>, JpaSpecificationExecutor<Inventory> {
+public interface InventoryRepository extends JpaRepository<Inventory, Long>, JpaSpecificationExecutor<Inventory>, InventoryRepositoryCustom {
     Optional<Inventory> findByProductId(Long productId);
-
-    Page<Inventory> findByProductIdIn(java.util.List<Long> productIds, Pageable pageable);
 }

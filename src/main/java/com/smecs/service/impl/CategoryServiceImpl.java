@@ -1,15 +1,15 @@
 package com.smecs.service.impl;
 
-import com.smecs.dao.CategoryDAO;
-import com.smecs.dao.ProductDAO;
 import com.smecs.dto.CategoryDTO;
+import com.smecs.dto.CategoryQuery;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.entity.Category;
-import com.smecs.entity.Product;
 import com.smecs.exception.CategoryInUseException;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.service.CategoryService;
+import com.smecs.repository.CategoryRepository;
+import com.smecs.repository.CategorySpecification;
 import com.smecs.util.PaginationUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,15 +26,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
-    private final CategoryDAO categoryDAO;
-    private final ProductDAO productDAO;
+    private final CategoryRepository categoryRepository;
     private final CategoryCacheService categoryCacheService;
 
     @Autowired
-    public CategoryServiceImpl(CategoryDAO categoryDAO, ProductDAO productDAO,
+    public CategoryServiceImpl(CategoryRepository categoryRepository,
             CategoryCacheService categoryCacheService) {
-        this.categoryDAO = categoryDAO;
-        this.productDAO = productDAO;
+        this.categoryRepository = categoryRepository;
         this.categoryCacheService = categoryCacheService;
     }
 
@@ -45,7 +44,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDTO getCategoryById(Long id, boolean includeRelatedImages) {
-        Category category = categoryDAO.findById(id).orElseThrow();
+        Category category = categoryRepository.findById(id).orElseThrow();
         CategoryDTO dto = new CategoryDTO();
         dto.setCategoryId(category.getId().intValue());
         dto.setCategoryName(category.getName());
@@ -53,19 +52,20 @@ public class CategoryServiceImpl implements CategoryService {
         dto.setImageUrl(category.getImageUrl());
 
         if (includeRelatedImages) {
-            dto.setRelatedImageUrls(
-                    productDAO.findTop5ByCategory(id).stream()
-                            .map(com.smecs.entity.Product::getImageUrl)
-                            .collect(Collectors.toList()));
+            dto.setRelatedImageUrls(categoryRepository.findTop5ProductImageUrlsByCategoryId(id));
         }
 
         return dto;
     }
 
     @Override
-    public PagedResponseDTO<CategoryDTO> getCategories(String name, String description, Pageable pageable, boolean includeRelatedImages) {
-        // Use native SQL implementation from DAO for low-level database operations
-        Page<Category> categoryPage = categoryDAO.searchCategories(name, description, pageable);
+    public PagedResponseDTO<CategoryDTO> getCategories(CategoryQuery query, Pageable pageable) {
+        String name = query != null ? query.getName() : null;
+        String description = query != null ? query.getDescription() : null;
+        boolean includeRelatedImages = query != null && query.isIncludeRelatedImages();
+
+        Specification<Category> specification = buildSpecification(name, description);
+        Page<Category> categoryPage = categoryRepository.findAll(specification, pageable);
 
         List<CategoryDTO> content = categoryPage.getContent().stream().map(category -> {
             CategoryDTO dto = new CategoryDTO();
@@ -76,9 +76,7 @@ public class CategoryServiceImpl implements CategoryService {
             
             if (includeRelatedImages) {
                 dto.setRelatedImageUrls(
-                    productDAO.findTop5ByCategory(category.getId()).stream()
-                        .map(Product::getImageUrl)
-                        .collect(Collectors.toList())
+                    categoryRepository.findTop5ProductImageUrlsByCategoryId(category.getId())
                 );
             }
             
@@ -93,26 +91,39 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public PagedResponseDTO<CategoryDTO> getCategories(String query, int page, int size, String sort, boolean relatedImages) {
-        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(query, page, size, sort, relatedImages);
+    public PagedResponseDTO<CategoryDTO> getCategories(CategoryQuery query) {
+        CategoryQuery normalized = normalize(query);
+        int page = normalized.currentPage();
+        int size = normalized.currentSize();
+        String sort = normalized.sortOrDefault();
+        String searchTerm = normalized.searchTerm();
+
+        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(searchTerm, page, size, sort,
+                normalized.isIncludeRelatedImages());
         if (cached.isPresent()) {
             return cached.get();
         }
 
         Sort sortSpec = PaginationUtils.parseSort(sort);
-        // Use 0-based page index for Spring Data
         Pageable pageRequest = PageRequest.of(page - 1, size, sortSpec);
 
-        PagedResponseDTO<CategoryDTO> data = getCategories(query, query, pageRequest, relatedImages);
+        PagedResponseDTO<CategoryDTO> data = getCategories(
+                normalized,
+                pageRequest);
 
-        categoryCacheService.putSearchResults(query, page, size, sort, relatedImages, data);
+        categoryCacheService.putSearchResults(searchTerm, page, size, sort,
+                normalized.isIncludeRelatedImages(), data);
 
         return data;
     }
 
+    private CategoryQuery normalize(CategoryQuery query) {
+        return query != null ? query : CategoryQuery.builder().build();
+    }
+
     @Override
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
-        Category category = categoryDAO.findById(id).orElseThrow();
+        Category category = categoryRepository.findById(id).orElseThrow();
         return getCategoryDTO(categoryDTO, category);
     }
 
@@ -121,7 +132,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setName(categoryDTO.getCategoryName());
         category.setDescription(categoryDTO.getDescription());
         category.setImageUrl(categoryDTO.getImageUrl());
-        category = categoryDAO.save(category);
+        category = categoryRepository.save(category);
         CategoryDTO result = new CategoryDTO();
         result.setCategoryId(category.getId().intValue());
         result.setCategoryName(category.getName());
@@ -134,12 +145,11 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long id) {
-        if (!categoryDAO.existsById(id)) {
+        if (!categoryRepository.existsById(id)) {
             throw new ResourceNotFoundException("Category not found with id: " + id);
         }
 
-        // Check if category has any products
-        long productCount = productDAO.countByCategoryId(id);
+        long productCount = categoryRepository.countProductsByCategoryId(id);
         if (productCount > 0) {
             throw new CategoryInUseException(
                 "Cannot delete category because it contains " + productCount +
@@ -147,8 +157,12 @@ public class CategoryServiceImpl implements CategoryService {
             );
         }
 
-        categoryDAO.deleteById(id);
+        categoryRepository.deleteById(id);
         categoryCacheService.invalidateById(id);
         categoryCacheService.invalidateAllList();
+    }
+
+    private Specification<Category> buildSpecification(String name, String description) {
+        return CategorySpecification.filterByCriteria(name, description);
     }
 }

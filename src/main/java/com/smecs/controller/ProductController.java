@@ -5,6 +5,7 @@ import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.PagedResponseDTO;
+import com.smecs.dto.ProductQuery;
 import com.smecs.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,7 +47,15 @@ public class ProductController {
             @RequestParam(defaultValue = "8") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "id,asc") String sort
     ) {
-        PagedResponseDTO<ProductDTO> results = productService.getProducts(query, query, categoryId, page, size, sort);
+        ProductQuery productQuery = ProductQuery.builder()
+                .name(query)
+                .description(query)
+                .categoryId(categoryId)
+                .page(page)
+                .size(size)
+                .sort(sort)
+                .build();
+        PagedResponseDTO<ProductDTO> results = productService.getProducts(productQuery);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Products retrieved", results));
     }
 

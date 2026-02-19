@@ -1,11 +1,11 @@
 package com.smecs.validation;
 
-import com.smecs.dao.OrderDAO;
 import com.smecs.dao.OrderItemDAO;
 import com.smecs.entity.Order;
 import com.smecs.entity.OrderItem;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,12 +18,12 @@ import java.util.Optional;
 public class OrderItemOwnershipValidator implements OwnershipValidator {
 
     private final OrderItemDAO orderItemDAO;
-    private final OrderDAO orderDAO;
+    private final OrderRepository orderRepository;
 
     @Autowired
-    public OrderItemOwnershipValidator(OrderItemDAO orderItemDAO, OrderDAO orderDAO) {
+    public OrderItemOwnershipValidator(OrderItemDAO orderItemDAO, OrderRepository orderRepository) {
         this.orderItemDAO = orderItemDAO;
-        this.orderDAO = orderDAO;
+        this.orderRepository = orderRepository;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class OrderItemOwnershipValidator implements OwnershipValidator {
 
         // Find the associated order
         Long orderId = item.getOrderId();
-        Optional<Order> orderOpt = orderDAO.findById(orderId);
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
         if (orderOpt.isEmpty()) {
             throw new ResourceNotFoundException("Order not found with id: " + orderId);
         }
@@ -54,4 +54,3 @@ public class OrderItemOwnershipValidator implements OwnershipValidator {
         return "orderItem";
     }
 }
-

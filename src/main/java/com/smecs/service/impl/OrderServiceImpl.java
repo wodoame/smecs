@@ -2,19 +2,22 @@ package com.smecs.service.impl;
 
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
+import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.entity.Order;
 import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
-import com.smecs.dao.OrderDAO;
 import com.smecs.dao.UserDAO;
 import com.smecs.dao.OrderItemDAO;
 import com.smecs.entity.OrderItem;
+import com.smecs.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import com.smecs.service.OrderService;
 import java.time.LocalDateTime;
@@ -24,13 +27,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    private final OrderDAO orderDAO;
+    private final OrderRepository orderRepository;
     private final UserDAO userDAO;
     private final OrderItemDAO orderItemDAO;
 
     @Autowired
-    public OrderServiceImpl(OrderDAO orderDAO, UserDAO userDAO, OrderItemDAO orderItemDAO) {
-        this.orderDAO = orderDAO;
+    public OrderServiceImpl(OrderRepository orderRepository, UserDAO userDAO, OrderItemDAO orderItemDAO) {
+        this.orderRepository = orderRepository;
         this.userDAO = userDAO;
         this.orderItemDAO = orderItemDAO;
     }
@@ -44,18 +47,18 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(0.0); // Placeholder, should be calculated
         order.setStatus(Order.Status.PENDING);
         order.setCreatedAt(LocalDateTime.now());
-        order = orderDAO.save(order);
+        order = orderRepository.save(order);
         return toDTO(order);
     }
 
     @Override
     public OrderDTO getOrderById(Long id) {
-        return orderDAO.findById(id).map(this::toDTO).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        return orderRepository.findById(id).map(this::toDTO).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
     }
 
     @Override
     public OrderDTO updateOrderStatus(Long id, UpdateOrderStatusRequestDTO request) {
-        Order order = orderDAO.findById(id)
+        Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         try {
@@ -65,42 +68,32 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Invalid order status: " + request.getStatus());
         }
 
-        return toDTO(orderDAO.save(order));
+        return toDTO(orderRepository.save(order));
     }
 
     @Override
-    public List<OrderDTO> getAllOrders() {
-        return orderDAO.findAll().stream().map(this::toDTO).collect(Collectors.toList());
-    }
-
-    @Override
-    public PagedResponseDTO<OrderDTO> getAllOrders(Pageable pageable) {
-        Page<Order> orderPage = orderDAO.findAll(pageable);
+    public PagedResponseDTO<OrderDTO> getAllOrders(OrderQuery query) {
+        Page<Order> orderPage = orderRepository.findAll(buildPageable(query));
         return getPagedResponse(orderPage);
     }
 
     @Override
-    public List<OrderDTO> getOrdersByUserId(Long userId) {
-        return orderDAO.findByUserId(userId).stream().map(this::toDTO).collect(Collectors.toList());
-    }
-
-    @Override
-    public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, Pageable pageable) {
-        Page<Order> orderPage = orderDAO.findByUserId(userId, pageable);
+    public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, OrderQuery query) {
+        Page<Order> orderPage = orderRepository.findByUserId(userId, buildPageable(query));
         return getPagedResponse(orderPage);
     }
 
     @Override
     public void deleteOrder(Long id) {
-        if (!orderDAO.existsById(id)) {
+        if (!orderRepository.existsById(id)) {
              throw new ResourceNotFoundException("Order not found with id: " + id);
         }
-        orderDAO.deleteById(id);
+        orderRepository.deleteById(id);
     }
 
     @Override
     public void updateOrderTotalOrThrow(Long orderId) {
-        Order order = orderDAO.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
@@ -109,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
                 .sum();
 
         order.setTotalAmount(total);
-        orderDAO.save(order);
+        orderRepository.save(order);
     }
 
     private OrderDTO toDTO(Order order) {
@@ -132,5 +125,26 @@ public class OrderServiceImpl implements OrderService {
         pagedResponse.setPage(PageMetadataDTO.from(orderPage));
 
         return pagedResponse;
+    }
+
+    private Pageable buildPageable(OrderQuery query) {
+        int pageIndex = Math.max(0, Optional.ofNullable(query).map(OrderQuery::getPage).orElse(1) - 1);
+        int pageSize = Math.max(1, Optional.ofNullable(query).map(OrderQuery::getSize).orElse(10));
+        String sortClause = Optional.ofNullable(query).map(OrderQuery::getSort).orElse("createdAt,desc");
+
+        String sortField = "createdAt";
+        Sort.Direction direction = Sort.Direction.DESC;
+
+        if (!sortClause.isBlank()) {
+            String[] sortParams = sortClause.split(",");
+            if (sortParams.length > 0 && !sortParams[0].isBlank()) {
+                sortField = sortParams[0];
+            }
+            if (sortParams.length > 1 && !sortParams[1].isBlank()) {
+                direction = sortParams[1].equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+            }
+        }
+
+        return PageRequest.of(pageIndex, pageSize, Sort.by(direction, sortField));
     }
 }

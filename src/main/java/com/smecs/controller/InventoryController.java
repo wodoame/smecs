@@ -3,6 +3,7 @@ package com.smecs.controller;
 import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
+import com.smecs.dto.InventoryQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.UpdateInventoryRequestDTO;
@@ -43,7 +44,14 @@ public class InventoryController {
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(defaultValue = "id,asc") String sort
     ) {
-        PagedResponseDTO<InventoryDTO> result = inventoryService.searchInventory(query, page, size, sort);
+        InventoryQuery inventoryQuery = InventoryQuery.builder()
+                .query(query)
+                .page(page)
+                .size(size)
+                .sort(sort)
+                .build();
+
+        PagedResponseDTO<InventoryDTO> result = inventoryService.searchInventory(inventoryQuery);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", result));
     }
 
