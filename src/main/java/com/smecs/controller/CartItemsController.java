@@ -8,6 +8,8 @@ import com.smecs.dto.ResponseDTO;
 import com.smecs.entity.CartItem;
 import com.smecs.entity.Product;
 import com.smecs.service.CartItemService;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,21 +18,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @RestController
 @RequestMapping("/api/cart-items")
 public class CartItemsController {
-
     private final CartItemService cartItemService;
-
-    @Autowired
-    public CartItemsController(CartItemService cartItemService) {
-        this.cartItemService = cartItemService;
-    }
 
     @PostMapping
     @RequireRole("customer")
     @RequireOwnership(resourceType = "cart", idParamName = "cartId")
-    public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody AddToCartRequest request) {
+    public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody @Valid AddToCartRequest request) {
         CartItem createdItem = cartItemService.addItemToCart(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Item added to cart", mapToDTO(createdItem)));

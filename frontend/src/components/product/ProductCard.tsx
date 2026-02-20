@@ -36,7 +36,7 @@ export function ProductCard({
   };
 
   return (
-    <Card className="relative mx-auto w-full max-w-sm pt-0 flex flex-col h-full shadow-none border-zinc-200 dark:border-zinc-800">
+    <Card className="relative mx-auto w-full max-w-sm pt-0 flex flex-col h-full shadow-none border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <div onClick={handleNavigate} className="cursor-pointer">
         <img
           src={image}

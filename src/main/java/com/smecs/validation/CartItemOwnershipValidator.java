@@ -1,11 +1,11 @@
 package com.smecs.validation;
 
 import com.smecs.dao.CartDAO;
-import com.smecs.dao.CartItemDAO;
 import com.smecs.entity.Cart;
 import com.smecs.entity.CartItem;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.repository.CartItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -20,12 +20,12 @@ import java.util.Optional;
 @Component
 public class CartItemOwnershipValidator implements OwnershipValidator {
 
-    private final CartItemDAO cartItemDAO;
+    private final CartItemRepository cartItemRepository;
     private final CartDAO cartDAO;
 
     @Autowired
-    public CartItemOwnershipValidator(CartItemDAO cartItemDAO, CartDAO cartDAO) {
-        this.cartItemDAO = cartItemDAO;
+    public CartItemOwnershipValidator(CartItemRepository cartItemRepository, CartDAO cartDAO) {
+        this.cartItemRepository = cartItemRepository;
         this.cartDAO = cartDAO;
     }
 
@@ -50,7 +50,7 @@ public class CartItemOwnershipValidator implements OwnershipValidator {
         }
 
         // Find the cart item
-        Optional<CartItem> itemOpt = cartItemDAO.findById(resourceId);
+        Optional<CartItem> itemOpt = cartItemRepository.findById(resourceId);
         if (itemOpt.isEmpty()) {
             throw new ResourceNotFoundException("CartItem not found with id: " + resourceId);
         }
@@ -80,4 +80,3 @@ public class CartItemOwnershipValidator implements OwnershipValidator {
         return "cartItem";
     }
 }
-
