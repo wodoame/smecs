@@ -15,21 +15,21 @@ public class AdminFrontendController {
         this.resourceLoader = resourceLoader;
     }
 
-    @GetMapping(value = {"/admin/inventories", "/admin/inventories/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/admin/inventories", "/admin/inventories/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource inventoriesPage() {
         // Serve index.html for /admin/inventories and /admin/inventories/{id}
         return resourceLoader.getResource("classpath:/static/index.html");
     }
 
-    @GetMapping(value = {"/admin/categories", "/admin/categories/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/admin/categories", "/admin/categories/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource categoriesPage() {
         // Serve index.html for /admin/categories and /admin/categories/{id}
         return resourceLoader.getResource("classpath:/static/index.html");
     }
 
-    @GetMapping(value = {"/admin/orders", "/admin/orders/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/admin/orders", "/admin/orders/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource ordersPage() {
         // Serve index.html for /admin/categories and /admin/categories/{id}

@@ -15,6 +15,7 @@ import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderItemsPage from "./pages/OrderItemsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 
@@ -61,6 +62,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "admin/orders/:orderId",
+        element: (
+          <AdminRoute>
+            <OrderItemsPage />
+          </AdminRoute>
+        ),
+      },
+      {
         path: "categories",
         element: <CategoriesPage />,
       },
@@ -85,6 +94,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <OrdersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "orders/:orderId",
+        element: (
+          <ProtectedRoute>
+            <OrderItemsPage />
           </ProtectedRoute>
         ),
       },

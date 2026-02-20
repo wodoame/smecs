@@ -15,14 +15,14 @@ public class UserFrontendController {
         this.resourceLoader = resourceLoader;
     }
 
-    @GetMapping(value = {"/categories", "/categories/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/categories", "/categories/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource categoriesPage() {
         // Serve index.html for /categories and /categories/{id}
         return resourceLoader.getResource("classpath:/static/index.html");
     }
 
-    @GetMapping(value = {"/products", "/products/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/products", "/products/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource productsPage() {
         // Serve index.html for /products and /products/{id}
@@ -64,7 +64,7 @@ public class UserFrontendController {
         return resourceLoader.getResource("classpath:/static/index.html");
     }
 
-    @GetMapping(value = "/orders", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = { "/orders", "/orders/{id}" }, produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
     public Resource ordersPage() {
         // Serve index.html for /contact

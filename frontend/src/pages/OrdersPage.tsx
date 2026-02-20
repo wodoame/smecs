@@ -334,7 +334,23 @@ export default function OrdersPage() {
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-medium">Status</label>
-                                <div className="text-sm text-muted-foreground">{viewingOrder?.status}</div>
+                                <div className="text-sm text-muted-foreground">
+                                    {viewingOrder?.status && (() => {
+                                        const statusColors: Record<string, string> = {
+                                            pending: "bg-yellow-100 text-yellow-800",
+                                            processing: "bg-blue-100 text-blue-800",
+                                            shipped: "bg-purple-100 text-purple-800",
+                                            delivered: "bg-green-100 text-green-800",
+                                            cancelled: "bg-red-100 text-red-800",
+                                        };
+                                        const colorClass = statusColors[viewingOrder.status.toLowerCase()] || "bg-gray-100 text-gray-800";
+                                        return (
+                                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+                                                {viewingOrder.status}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-medium">Order Date</label>
@@ -342,6 +358,11 @@ export default function OrdersPage() {
                                     {viewingOrder?.createdAt && new Date(viewingOrder.createdAt).toLocaleString()}
                                 </div>
                             </div>
+                        </div>
+                        <div className="pt-4 mt-2 border-t">
+                            <Button asChild className="w-full">
+                                <Link to={`/orders/${viewingOrder?.id}`}>View order items</Link>
+                            </Button>
                         </div>
                     </DialogContent>
                 </Dialog>
