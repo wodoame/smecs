@@ -18,7 +18,6 @@ public class ServiceLoggingAspect {
     private static final Logger logger = LoggerFactory.getLogger(ServiceLoggingAspect.class);
 
     @Pointcut("execution(* com.smecs.service.ProductService.getProducts(..)) || " +
-            "execution(* com.smecs.service.impl.ProductCacheService.getSearchResults(..)) || " +
             "execution(* com.smecs.service.InventoryService.searchInventory(..)) || " +
             "execution(* com.smecs.service.impl.InventoryCacheService.getSearchResults(..)) || " +
             "execution(* com.smecs.service.CategoryService.getCategories(..)) || " +
@@ -26,16 +25,6 @@ public class ServiceLoggingAspect {
     public void serviceLayer() {
         // Pointcut for specific service layer methods.
     }
-
-//    @Before("serviceLayer()")
-//    public void logBefore(JoinPoint joinPoint) {
-//        logger.info("Entering {}", joinPoint.getSignature());
-//    }
-//
-//    @After("serviceLayer()")
-//    public void logAfter(JoinPoint joinPoint) {
-//        logger.info("Exiting {}", joinPoint.getSignature());
-//    }
 
     @Around("serviceLayer()")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -48,8 +37,7 @@ public class ServiceLoggingAspect {
         }
     }
 
-    @AfterReturning(pointcut = "execution(* com.smecs.service.impl.ProductCacheService.getSearchResults(..)) || " +
-            "execution(* com.smecs.service.impl.InventoryCacheService.getSearchResults(..)) || " +
+    @AfterReturning(pointcut = "execution(* com.smecs.service.impl.InventoryCacheService.getSearchResults(..)) || " +
             "execution(* com.smecs.service.impl.CategoryCacheService.getSearchResults(..))", returning = "result")
     public void logCacheHit(JoinPoint joinPoint, Object result) {
         if (result instanceof Optional) {

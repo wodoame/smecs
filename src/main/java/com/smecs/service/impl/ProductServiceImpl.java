@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.config.CacheConfig;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.ProductDTO;
@@ -9,13 +10,15 @@ import com.smecs.entity.Product;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.ProductRepository;
 import com.smecs.repository.ProductSpecification;
-import com.smecs.service.CacheService;
 import com.smecs.service.ProductService;
-import com.smecs.service.SearchCacheService;
 import com.smecs.util.PaginationUtils;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,46 +27,36 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
-    private final CacheService<ProductDTO, Long> productCacheService;
-    private final SearchCacheService<ProductDTO> searchCacheService;
 
     @Override
+    @CachePut(value = CacheConfig.PRODUCTS_BY_ID, key = "#result.id")
+    @CacheEvict(value = CacheConfig.PRODUCT_SEARCH, allEntries = true)
     public ProductDTO createProduct(CreateProductRequestDTO request) {
         Product product = new Product();
         return persistProduct(request, product);
     }
 
     @Override
+    @Cacheable(value = CacheConfig.PRODUCTS_BY_ID, key = "#id")
     public ProductDTO getProductById(Long id) {
-        return productCacheService.getById(id)
-                .orElseGet(() -> loadProduct(id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+        return mapToDto(product);
     }
 
     @Override
+    @Cacheable(value = CacheConfig.PRODUCT_SEARCH, key = "T(com.smecs.service.impl.ProductServiceImpl).searchCacheKey(#query)")
     public PagedResponseDTO<ProductDTO> getProducts(ProductQuery query) {
         ProductQuery normalized = normalize(query);
-        String queryKey = buildCacheKey(normalized);
-        int page = normalized.currentPage();
-        int size = normalized.currentSize();
-        String sort = normalized.sortOrDefault();
-
-        Optional<PagedResponseDTO<ProductDTO>> cached = searchCacheService.getSearchResults(queryKey, page, size, sort);
-        if (cached.isPresent()) {
-            return cached.get();
-        }
-
-        Sort sortSpec = PaginationUtils.parseSort(sort, "id");
-        Pageable pageable = PageRequest.of(page - 1, size, sortSpec);
-        PagedResponseDTO<ProductDTO> results = getProducts(normalized, pageable);
-        searchCacheService.putSearchResults(queryKey, page, size, sort, results);
-        return results;
+        Sort sortSpec = PaginationUtils.parseSort(normalized.sortOrDefault(), "id");
+        Pageable pageable = PageRequest.of(normalized.currentPage() - 1, normalized.currentSize(), sortSpec);
+        return getProducts(normalized, pageable);
     }
 
     @Override
@@ -95,24 +88,29 @@ public class ProductServiceImpl implements ProductService {
         return specification;
     }
 
-    private String buildCacheKey(ProductQuery query) {
-        String baseKey = query != null && query.getName() != null ? query.getName() : "";
-        Long categoryId = query != null ? query.getCategoryId() : null;
-        if (categoryId != null) {
-            return baseKey + "|cat:" + categoryId;
-        }
-        return baseKey;
-    }
-
     private ProductQuery normalize(ProductQuery query) {
         return query != null ? query : ProductQuery.builder().build();
     }
 
     @Override
+    @CachePut(value = CacheConfig.PRODUCTS_BY_ID, key = "#id")
+    @CacheEvict(value = CacheConfig.PRODUCT_SEARCH, allEntries = true)
     public ProductDTO updateProduct(Long id, CreateProductRequestDTO productDTO) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return persistProduct(productDTO, product);
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.PRODUCTS_BY_ID, key = "#id"),
+            @CacheEvict(value = CacheConfig.PRODUCT_SEARCH, allEntries = true)
+    })
+    public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product not found with id: " + id);
+        }
+        productRepository.deleteById(id);
     }
 
     @NonNull
@@ -124,28 +122,7 @@ public class ProductServiceImpl implements ProductService {
         product.setCategoryId(productDTO.getCategoryId());
 
         Product saved = productRepository.save(product);
-        ProductDTO result = mapToDto(saved);
-        productCacheService.put(result);
-        productCacheService.invalidateAllList();
-        return result;
-    }
-
-    @Override
-    public void deleteProduct(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Product not found with id: " + id);
-        }
-        productRepository.deleteById(id);
-        productCacheService.invalidateById(id);
-        productCacheService.invalidateAllList();
-    }
-
-    private ProductDTO loadProduct(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        ProductDTO dto = mapToDto(product);
-        productCacheService.put(dto);
-        return dto;
+        return mapToDto(saved);
     }
 
     private ProductDTO mapToDto(Product product) {
@@ -157,5 +134,20 @@ public class ProductServiceImpl implements ProductService {
         dto.setImageUrl(product.getImageUrl());
         dto.setCategoryId(product.getCategoryId());
         return dto;
+    }
+
+    public static String searchCacheKey(ProductQuery query) {
+        ProductQuery normalized = query != null ? query : ProductQuery.builder().build();
+        String nameKey = normalized.getName() != null ? normalized.getName() : "";
+        String descriptionKey = normalized.getDescription() != null ? normalized.getDescription() : "";
+        String categoryKey = normalized.getCategoryId() != null ? normalized.getCategoryId().toString() : "";
+
+        return String.format("name:%s|desc:%s|cat:%s|page:%d|size:%d|sort:%s",
+                nameKey,
+                descriptionKey,
+                categoryKey,
+                normalized.currentPage(),
+                normalized.currentSize(),
+                normalized.sortOrDefault());
     }
 }
