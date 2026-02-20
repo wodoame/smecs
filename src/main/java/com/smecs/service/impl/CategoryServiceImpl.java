@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.config.CacheConfig;
 import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.CategoryQuery;
 import com.smecs.dto.PageMetadataDTO;
@@ -14,6 +15,10 @@ import com.smecs.util.PaginationUtils;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,22 +27,23 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
-    private final CategoryCacheService categoryCacheService;
 
     @Override
+    @CachePut(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#result.categoryId, false)")
+    @CacheEvict(value = CacheConfig.CATEGORY_SEARCH, allEntries = true)
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         Category category = new Category();
         return getCategoryDTO(categoryDTO, category);
     }
 
     @Override
+    @Cacheable(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#id, #includeRelatedImages)")
     public CategoryDTO getCategoryById(Long id, boolean includeRelatedImages) {
         Category category = categoryRepository.findById(id).orElseThrow();
         CategoryDTO dto = new CategoryDTO();
@@ -51,6 +57,15 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         return dto;
+    }
+
+    @Override
+    @Cacheable(value = CacheConfig.CATEGORY_SEARCH, key = "T(com.smecs.service.impl.CategoryServiceImpl).searchCacheKey(#query)")
+    public PagedResponseDTO<CategoryDTO> getCategories(CategoryQuery query) {
+        CategoryQuery normalized = normalize(query);
+        Sort sortSpec = PaginationUtils.parseSort(normalized.sortOrDefault());
+        Pageable pageRequest = PageRequest.of(normalized.currentPage() - 1, normalized.currentSize(), sortSpec);
+        return getCategories(normalized, pageRequest);
     }
 
     @Override
@@ -85,38 +100,17 @@ public class CategoryServiceImpl implements CategoryService {
         return pagedResponse;
     }
 
-    @Override
-    public PagedResponseDTO<CategoryDTO> getCategories(CategoryQuery query) {
-        CategoryQuery normalized = normalize(query);
-        int page = normalized.currentPage();
-        int size = normalized.currentSize();
-        String sort = normalized.sortOrDefault();
-        String searchTerm = normalized.searchTerm();
-
-        Optional<PagedResponseDTO<CategoryDTO>> cached = categoryCacheService.getSearchResults(searchTerm, page, size, sort,
-                normalized.isIncludeRelatedImages());
-        if (cached.isPresent()) {
-            return cached.get();
-        }
-
-        Sort sortSpec = PaginationUtils.parseSort(sort);
-        Pageable pageRequest = PageRequest.of(page - 1, size, sortSpec);
-
-        PagedResponseDTO<CategoryDTO> data = getCategories(
-                normalized,
-                pageRequest);
-
-        categoryCacheService.putSearchResults(searchTerm, page, size, sort,
-                normalized.isIncludeRelatedImages(), data);
-
-        return data;
-    }
-
     private CategoryQuery normalize(CategoryQuery query) {
         return query != null ? query : CategoryQuery.builder().build();
     }
 
     @Override
+    @Caching(put = {
+            @CachePut(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#id, false)")
+    }, evict = {
+            @CacheEvict(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#id, true)"),
+            @CacheEvict(value = CacheConfig.CATEGORY_SEARCH, allEntries = true)
+    })
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = categoryRepository.findById(id).orElseThrow();
         return getCategoryDTO(categoryDTO, category);
@@ -133,12 +127,15 @@ public class CategoryServiceImpl implements CategoryService {
         result.setCategoryName(category.getName());
         result.setDescription(category.getDescription());
         result.setImageUrl(category.getImageUrl());
-        categoryCacheService.put(result);
-        categoryCacheService.invalidateAllList();
         return result;
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#id, false)"),
+            @CacheEvict(value = CacheConfig.CATEGORIES_BY_ID, key = "T(com.smecs.service.impl.CategoryServiceImpl).categoryByIdKey(#id, true)"),
+            @CacheEvict(value = CacheConfig.CATEGORY_SEARCH, allEntries = true)
+    })
     public void deleteCategory(Long id) {
         if (!categoryRepository.existsById(id)) {
             throw new ResourceNotFoundException("Category not found with id: " + id);
@@ -153,8 +150,24 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryRepository.deleteById(id);
-        categoryCacheService.invalidateById(id);
-        categoryCacheService.invalidateAllList();
+    }
+
+    public static String categoryByIdKey(Number id, boolean includeRelatedImages) {
+        Long normalizedId = id != null ? id.longValue() : null;
+        return String.format("id:%s|images:%b", normalizedId, includeRelatedImages);
+    }
+
+    public static String searchCacheKey(CategoryQuery query) {
+        CategoryQuery normalized = query != null ? query : CategoryQuery.builder().build();
+        String nameKey = normalized.getName() != null ? normalized.getName() : "";
+        String descriptionKey = normalized.getDescription() != null ? normalized.getDescription() : "";
+        return String.format("name:%s|desc:%s|page:%d|size:%d|sort:%s|images:%b",
+                nameKey,
+                descriptionKey,
+                normalized.currentPage(),
+                normalized.currentSize(),
+                normalized.sortOrDefault(),
+                normalized.isIncludeRelatedImages());
     }
 
     private Specification<Category> buildSpecification(String name, String description) {
