@@ -6,6 +6,7 @@ import App from "./App.tsx";
 import { ProductList } from "./components/product/ProductList";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CategoryProductsPage from "./pages/CategoryProductsPage";
 import ComboboxTestPage from "./pages/ComboboxTestPage";
@@ -48,6 +49,14 @@ const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminCategoriesPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/orders",
+        element: (
+          <AdminRoute>
+            <AdminOrdersPage />
           </AdminRoute>
         ),
       },

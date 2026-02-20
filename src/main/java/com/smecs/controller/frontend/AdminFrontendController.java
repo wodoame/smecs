@@ -28,4 +28,11 @@ public class AdminFrontendController {
         // Serve index.html for /admin/categories and /admin/categories/{id}
         return resourceLoader.getResource("classpath:/static/index.html");
     }
+
+    @GetMapping(value = {"/admin/orders", "/admin/orders/{id}"}, produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Resource ordersPage() {
+        // Serve index.html for /admin/categories and /admin/categories/{id}
+        return resourceLoader.getResource("classpath:/static/index.html");
+    }
 }
