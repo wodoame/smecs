@@ -7,12 +7,12 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.entity.Order;
+import com.smecs.entity.OrderItem;
 import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
-import com.smecs.dao.UserDAO;
-import com.smecs.dao.OrderItemDAO;
-import com.smecs.entity.OrderItem;
 import com.smecs.repository.OrderRepository;
+import com.smecs.repository.UserRepository;
+import com.smecs.repository.OrderItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,22 +28,23 @@ import java.util.stream.Collectors;
 @Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final UserDAO userDAO;
-    private final OrderItemDAO orderItemDAO;
+    private final UserRepository userRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository, UserDAO userDAO, OrderItemDAO orderItemDAO) {
+    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository, OrderItemRepository orderItemRepository) {
         this.orderRepository = orderRepository;
-        this.userDAO = userDAO;
-        this.orderItemDAO = orderItemDAO;
+        this.userRepository = userRepository;
+        this.orderItemRepository = orderItemRepository;
     }
 
     @Override
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
         Long userId = request.getUserId();
-        Optional<User> user = Optional.of(userDAO.findById(userId).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + userId)));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Order order = new Order();
-        order.setUserId(user.get().getId());
+        order.setUserId(user.getId());
         order.setTotalAmount(0.0); // Placeholder, should be calculated
         order.setStatus(Order.Status.PENDING);
         order.setCreatedAt(LocalDateTime.now());
@@ -96,7 +97,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
         double total = items.stream()
                 .mapToDouble(item -> item.getPriceAtPurchase() * item.getQuantity())
                 .sum();

@@ -1,8 +1,8 @@
 package com.smecs.service.impl;
 
-import com.smecs.dao.ReviewDAO;
-import com.smecs.dao.UserDAO;
-import com.smecs.dao.ProductDAO;
+import com.smecs.repository.ReviewRepository;
+import com.smecs.repository.UserRepository;
+import com.smecs.repository.ProductRepository;
 import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PageMetadataDTO;
 import com.smecs.dto.PagedResponseDTO;
@@ -25,22 +25,22 @@ import java.util.stream.Collectors;
 @Service
 public class ReviewServiceImpl implements ReviewService {
 
-    private final ReviewDAO reviewDAO;
-    private final UserDAO userDAO;
-    private final ProductDAO productDAO;
+    private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
     @Autowired
-    public ReviewServiceImpl(ReviewDAO reviewDAO, UserDAO userDAO, ProductDAO productDAO) {
-        this.reviewDAO = reviewDAO;
-        this.userDAO = userDAO;
-        this.productDAO = productDAO;
+    public ReviewServiceImpl(ReviewRepository reviewRepository, UserRepository userRepository, ProductRepository productRepository) {
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
     }
 
     @Override
     public ReviewDTO createReview(CreateReviewRequestDTO request) {
-        User user = userDAO.findById(request.getUserId())
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
-        Product product = productDAO.findById(request.getProductId())
+        Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
         Review review = new Review();
@@ -49,13 +49,13 @@ public class ReviewServiceImpl implements ReviewService {
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
-        review = reviewDAO.save(review);
+        review = reviewRepository.save(review);
         return mapToDTO(review);
     }
 
     @Override
     public ReviewDTO updateReview(Long reviewId, UpdateReviewRequestDTO request) {
-        Review review = reviewDAO.findById(reviewId)
+        Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
 
         if (request.getRating() != null) {
@@ -66,13 +66,13 @@ public class ReviewServiceImpl implements ReviewService {
             review.setComment(request.getComment());
         }
 
-        review = reviewDAO.save(review);
+        review = reviewRepository.save(review);
         return mapToDTO(review);
     }
 
     @Override
     public PagedResponseDTO<ReviewDTO> getAllReviews(Pageable pageable) {
-        Page<Review> reviewPage = reviewDAO.findAll(pageable);
+        Page<Review> reviewPage = reviewRepository.findAll(pageable);
         return getPagedResponse(reviewPage);
     }
 
@@ -91,28 +91,28 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public PagedResponseDTO<ReviewDTO> getReviewsByProduct(Long productId, Pageable pageable) {
-        if (!productDAO.existsById(productId)) {
+        if (!productRepository.existsById(productId)) {
            throw new ResourceNotFoundException("Product not found with id: " + productId);
         }
 
-        Page<Review> reviewPage = reviewDAO.findByProductId(productId, pageable);
+        Page<Review> reviewPage = reviewRepository.findByProductId(productId, pageable);
 
         return getPagedResponse(reviewPage);
     }
 
     @Override
     public ReviewDTO getReviewById(Long reviewId) {
-        Review review = reviewDAO.findById(reviewId)
+        Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
         return mapToDTO(review);
     }
 
     @Override
     public void deleteReview(Long reviewId) {
-        if (!reviewDAO.existsById(reviewId)) {
+        if (!reviewRepository.existsById(reviewId)) {
             throw new ResourceNotFoundException("Review not found with id: " + reviewId);
         }
-        reviewDAO.deleteById(reviewId);
+        reviewRepository.deleteById(reviewId);
     }
 
     private ReviewDTO mapToDTO(Review review) {

@@ -13,6 +13,7 @@ import com.smecs.service.CacheService;
 import com.smecs.service.ProductService;
 import com.smecs.service.SearchCacheService;
 import com.smecs.util.PaginationUtils;
+import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,20 +27,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CacheService<ProductDTO, Long> productCacheService;
     private final SearchCacheService<ProductDTO> searchCacheService;
-
-    @Autowired
-    public ProductServiceImpl(ProductRepository productRepository,
-                              CacheService<ProductDTO, Long> productCacheService,
-                              SearchCacheService<ProductDTO> searchCacheService) {
-        this.productRepository = productRepository;
-        this.productCacheService = productCacheService;
-        this.searchCacheService = searchCacheService;
-    }
 
     @Override
     public ProductDTO createProduct(CreateProductRequestDTO request) {

@@ -2,7 +2,7 @@ package com.smecs.service.impl;
 
 import com.smecs.dto.UserRegisterDTO;
 import com.smecs.entity.User;
-import com.smecs.dao.UserDAO;
+import com.smecs.repository.UserRepository;
 import com.smecs.service.UserService;
 import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +16,11 @@ import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private final UserDAO userDAO;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserServiceImpl(UserDAO userDAO) {
-        this.userDAO = userDAO;
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(hashPassword(password));
         user.setRole(role != null ? role : "customer");
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        userDAO.save(user);
+        userRepository.save(user);
         return true;
     }
 
@@ -72,32 +72,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        return userDAO.findAll();
+        return userRepository.findAll();
     }
 
     @Override
     public User findByUsername(String username) {
-        return userDAO.findByUsername(username).orElse(null);
+        return userRepository.findByUsername(username).orElse(null);
     }
 
     @Override
     public User findById(Long id) {
-        return userDAO.findById(id).orElse(null);
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
     public User findByEmail(String email) {
-        return userDAO.findByEmail(email).orElse(null);
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     @Override
     public boolean usernameExists(String username) {
-        return findByUsername(username) != null;
+        return userRepository.existsByUsername(username);
     }
 
     @Override
     public boolean emailExists(String email) {
-        return findByEmail(email) != null;
+        return userRepository.existsByEmail(email);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class UserServiceImpl implements UserService {
         if (user == null || user.getId() == null || user.getId() <= 0) {
             throw new IllegalArgumentException("Invalid user");
         }
-        userDAO.update(user);
+        userRepository.save(user);
         return true;
     }
 
@@ -114,10 +114,10 @@ public class UserServiceImpl implements UserService {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("Invalid user ID");
         }
-        if (userDAO.findById(userId).isEmpty()) {
+        if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
-        userDAO.deleteById(userId);
+        userRepository.deleteById(userId);
     }
 
     @Override

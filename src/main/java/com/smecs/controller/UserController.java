@@ -1,10 +1,10 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.UserResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.entity.User;
 import com.smecs.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
@@ -14,15 +14,11 @@ import com.smecs.annotation.RequireRole;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
-
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     @GetMapping
     @RequireRole("admin")

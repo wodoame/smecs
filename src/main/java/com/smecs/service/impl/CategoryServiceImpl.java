@@ -11,6 +11,7 @@ import com.smecs.service.CategoryService;
 import com.smecs.repository.CategoryRepository;
 import com.smecs.repository.CategorySpecification;
 import com.smecs.util.PaginationUtils;
+import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,17 +25,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryCacheService categoryCacheService;
-
-    @Autowired
-    public CategoryServiceImpl(CategoryRepository categoryRepository,
-            CategoryCacheService categoryCacheService) {
-        this.categoryRepository = categoryRepository;
-        this.categoryCacheService = categoryCacheService;
-    }
 
     @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {

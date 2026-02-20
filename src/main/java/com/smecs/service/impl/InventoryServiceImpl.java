@@ -15,6 +15,7 @@ import com.smecs.repository.InventoryRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
@@ -34,19 +36,6 @@ public class InventoryServiceImpl implements InventoryService {
     private final ProductService productService;
     private final CategoryRepository categoryRepository;
     private final InventoryCacheService inventoryCacheService;
-
-    @Autowired
-    public InventoryServiceImpl(InventoryRepository inventoryRepository,
-                                ProductRepository productRepository,
-                                ProductService productService,
-                                CategoryRepository categoryRepository,
-                                InventoryCacheService inventoryCacheService) {
-        this.inventoryRepository = inventoryRepository;
-        this.productRepository = productRepository;
-        this.productService = productService;
-        this.categoryRepository = categoryRepository;
-        this.inventoryCacheService = inventoryCacheService;
-    }
 
     @Override
     public InventoryDTO getInventoryById(Long id) {
