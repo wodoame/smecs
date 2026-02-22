@@ -1,6 +1,9 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type Category, CategoryCard } from "@/components/category/CategoryCard";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ListRestart, Search } from "lucide-react";
 import {
     Pagination,
     PaginationContent,
@@ -15,10 +18,12 @@ export default function CategoriesPage() {
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [activeQuery, setActiveQuery] = useState("");
 
     useEffect(() => {
         setLoading(true);
-        fetch(`/api/categories?relatedImages=true&page=${page}`)
+        fetch(`/api/categories?relatedImages=true&page=${page}&query=${encodeURIComponent(activeQuery)}`)
             .then((res) => {
                 if (!res.ok) throw new Error("Failed to fetch categories");
                 return res.json();
@@ -31,7 +36,29 @@ export default function CategoriesPage() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
-    }, [page]);
+    }, [page, activeQuery]);
+
+    const filteredCategories = useMemo(() => {
+        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+        if (!normalizedSearchTerm) return categories;
+
+        return categories.filter((category) => {
+            const name = category.categoryName?.toLowerCase() || "";
+            const description = category.description?.toLowerCase() || "";
+            return name.includes(normalizedSearchTerm) || description.includes(normalizedSearchTerm);
+        });
+    }, [categories, searchTerm]);
+
+    const handleSearch = () => {
+        setPage(1);
+        setActiveQuery(searchTerm.trim());
+    };
+
+    const handleShowAll = () => {
+        setSearchTerm("");
+        setActiveQuery("");
+        setPage(1);
+    };
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
@@ -45,8 +72,29 @@ export default function CategoriesPage() {
     return (
         <div className="space-y-6 container mx-auto p-4">
             <h1 className="text-3xl font-bold mb-6">Categories</h1>
+
+            <div className="flex w-full max-w-xl items-center gap-2">
+                <Input
+                    placeholder="Filter categories..."
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                            handleSearch();
+                        }
+                    }}
+                />
+                <Button type="button" size="icon" onClick={handleSearch}>
+                    <Search className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" onClick={handleShowAll}>
+                    <ListRestart className="h-4 w-4 mr-2" />
+                    Show All
+                </Button>
+            </div>
+
             <div className="grid grid-cols-1 gap-6">
-                {categories.map((category) => (
+                {filteredCategories.map((category) => (
                     <CategoryCard key={category.categoryId} category={category} />
                 ))}
             </div>

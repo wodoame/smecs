@@ -2,8 +2,16 @@ import { useState } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, LogIn, ShieldAlert, CircleCheck } from "lucide-react";
+import { Trash2, LogIn, ShieldAlert, CircleCheck, ShoppingCart } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { auth } from "@/lib/auth";
@@ -123,10 +131,23 @@ export default function CartPage() {
 
     if (cartItems.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-                <h2 className="text-2xl font-bold">Your Cart is Empty</h2>
-                <p className="text-muted-foreground">Looks like you haven't added anything yet.</p>
-                <Button onClick={() => window.location.href = '/products'}>Browse Products</Button>
+            <div className="container mx-auto max-w-3xl py-10">
+                <Empty className="min-h-[50vh] border">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <ShoppingCart />
+                        </EmptyMedia>
+                        <EmptyTitle>Your Cart is Empty</EmptyTitle>
+                        <EmptyDescription>
+                            Looks like you haven&apos;t added anything yet.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent className="flex-row justify-center">
+                        <Button asChild>
+                            <Link to="/products">Browse Products</Link>
+                        </Button>
+                    </EmptyContent>
+                </Empty>
             </div>
         );
     }

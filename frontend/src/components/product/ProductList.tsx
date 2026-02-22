@@ -28,6 +28,7 @@ export function ProductList() {
 
   const [searchParams] = useSearchParams();
   const query = searchParams.get("query") || "";
+  const heading = query.trim() || "Featured";
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const { addToCart } = useCart();
@@ -170,7 +171,7 @@ export function ProductList() {
 
   return (
     <div className="space-y-6">
-
+      <h2 className="text-2xl font-semibold tracking-tight">{heading}</h2>
 
       {loading ? (
         <div className="text-center">Loading...</div>
