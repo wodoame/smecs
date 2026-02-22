@@ -1,7 +1,7 @@
 reports/
 config/
 target/
-
+!src/main/java/com/smecs/config
 # Environment variables and secrets (NEVER commit these!)
 .env
 .env.local
