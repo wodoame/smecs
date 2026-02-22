@@ -8,6 +8,7 @@ import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
+import com.smecs.entity.Order;
 import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -53,12 +54,14 @@ public class OrderController {
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getAllOrders(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+            @RequestParam(defaultValue = "createdAt,desc") String sort,
+            @RequestParam(required = false) Order.Status status) {
 
         OrderQuery query = OrderQuery.builder()
                 .page(page)
                 .size(size)
                 .sort(sort)
+                .status(status)
                 .build();
 
         return ResponseEntity.ok(orderService.getAllOrders(query));

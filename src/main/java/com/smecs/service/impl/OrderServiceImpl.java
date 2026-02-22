@@ -74,7 +74,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PagedResponseDTO<OrderDTO> getAllOrders(OrderQuery query) {
-        Page<Order> orderPage = orderRepository.findAll(buildPageable(query));
+        Pageable pageable = buildPageable(query);
+        Order.Status status = Optional.ofNullable(query).map(OrderQuery::getStatus).orElse(null);
+        Page<Order> orderPage = status == null
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findByStatus(status, pageable);
         return getPagedResponse(orderPage);
     }
 
