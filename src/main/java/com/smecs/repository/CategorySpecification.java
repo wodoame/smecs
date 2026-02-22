@@ -21,7 +21,11 @@ public class CategorySpecification {
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), "%" + description.toLowerCase() + "%"));
             }
 
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            if (predicates.isEmpty()) {
+                return criteriaBuilder.conjunction();
+            }
+
+            return criteriaBuilder.or(predicates.toArray(new Predicate[0]));
         };
     }
 }
