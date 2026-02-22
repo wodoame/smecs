@@ -109,7 +109,7 @@ export function ReviewForm({ productId, onSubmitSuccess }: ReviewFormProps) {
                             onChange={(e) => setComment(e.target.value)}
                             placeholder="Share your experience with this product..."
                             rows={4}
-                            className="resize-none"
+                            className="resize-none focus-visible:border-blue-600 focus-visible:ring-1 focus-visible:ring-blue-600"
                         />
                     </div>
 

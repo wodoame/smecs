@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogIn, MessageSquareText, Sparkles, Star } from "lucide-react";
 import { ReviewList } from "@/components/ReviewList";
 import { ReviewForm } from "@/components/ReviewForm";
 import { auth } from "@/lib/auth";
@@ -39,6 +39,11 @@ export default function ProductDetailsPage() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [isLoadingReviews, setIsLoadingReviews] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    const totalReviews = reviews.length;
+    const averageRating = totalReviews > 0
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+        : 0;
 
     useEffect(() => {
         // Check authentication status
@@ -243,36 +248,70 @@ export default function ProductDetailsPage() {
             {/* Reviews Section */}
             <Separator className="my-12" />
 
-            <div className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
+            <section className="max-w-6xl mx-auto rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 p-6 md:p-8 space-y-8">
+                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-700 px-3 py-1 text-xs font-medium uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
+                            <MessageSquareText className="h-3.5 w-3.5" />
+                            Community Feedback
+                        </div>
+                        <h2 className="text-3xl font-bold tracking-tight">Customer Reviews</h2>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            See what shoppers are saying and share your own experience.
+                        </p>
+                    </div>
 
-                <div className="grid md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2">
+                    <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/60 px-4 py-3">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Average</p>
+                            <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                                {totalReviews > 0 ? averageRating.toFixed(1) : "N/A"}
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/60 px-4 py-3">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Reviews</p>
+                            <p className="mt-1 text-xl font-semibold">{totalReviews}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 p-4 md:p-5">
                         <ReviewList reviews={reviews} isLoading={isLoadingReviews} />
                     </div>
 
-                    <div className="md:col-span-1">
+                    <div className="lg:col-span-4">
                         {isAuthenticated ? (
-                            <ReviewForm
-                                productId={parseInt(productId!)}
-                                onSubmitSuccess={handleReviewSubmit}
-                            />
+                            <div className="md:sticky md:top-20">
+                                <ReviewForm
+                                    productId={parseInt(productId!)}
+                                    onSubmitSuccess={handleReviewSubmit}
+                                />
+                            </div>
                         ) : (
-                            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 text-center">
-                                <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                                    Sign in to write a review
-                                </p>
+                            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 text-center space-y-4">
+                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
+                                    <Sparkles className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold">Share your thoughts</p>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                                        Sign in to rate this product and leave a detailed review.
+                                    </p>
+                                </div>
                                 <Button
                                     onClick={() => navigate(`/login?next=${encodeURIComponent(window.location.pathname)}`)}
                                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
                                 >
+                                    <LogIn className="mr-2 h-4 w-4" />
                                     Sign In
                                 </Button>
                             </div>
                         )}
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
