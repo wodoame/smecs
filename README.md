@@ -1,13 +1,6 @@
 # Smart E-Commerce System (SMECS)
 
-## Project Overview
-
-A comprehensive e-commerce system built with JavaFX and Java, featuring:
-- **Relational Database (PostgreSQL)** for structured transactional data
-- **NoSQL Database (MongoDB)** for unstructured data (reviews, logs)
-- **Advanced Caching** for optimal performance
-- **Full-Text Search** capabilities
-- **Performance Benchmarking** tools
+Backend for an e-commerce platform built with Spring Boot, Spring Data JPA, PostgreSQL, GraphQL (dev), and Caffeine-based caching.
 
 ---
 
@@ -16,337 +9,111 @@ A comprehensive e-commerce system built with JavaFX and Java, featuring:
 2. [Project Setup](#project-setup)
 3. [Database Configuration](#database-configuration)
 4. [How to Run](#how-to-run)
-5. [Dependencies](#dependencies)
-6. [Epic 4: Performance Features](#epic-4-performance-features)
-7. [Project Structure](#project-structure)
-8. [Features](#features)
-9. [Performance Highlights](#performance-highlights)
-10. [Troubleshooting](#troubleshooting)
-11. [Testing](#testing)
+5. [Caching](#caching)
+6. [Project Structure](#project-structure)
+7. [Features](#features)
+8. [Troubleshooting](#troubleshooting)
+9. [Testing](#testing)
+10. [Documentation](#documentation)
 
 ---
 
 ## Prerequisites
-
-### Essential
-- **Java 11 or higher**
-- **Maven 3.6+**
-- **PostgreSQL 12+** running on localhost:5432
-
-### Optional (for Epic 4 NoSQL features)
-- **MongoDB 4.4+** running on localhost:27017
+- Java 21+ (pom sets `java.version` to 25)
+- Maven 3.9+
+- PostgreSQL running locally (`localhost:5432`)
 
 ---
 
 ## Project Setup
-
-This is a JavaFX application with Maven dependencies supporting both PostgreSQL and MongoDB.
+1. Install Java and Maven.
+2. Configure PostgreSQL and create the `smecs` database (see below).
+3. Ensure `application-dev.properties` matches your local credentials.
 
 ---
 
 ## Database Configuration
-
-### PostgreSQL Setup (Required)
-
-1. **Install PostgreSQL:**
+1. Create the database and user if needed:
    ```bash
-   # Ubuntu/Debian
-   sudo apt-get install postgresql postgresql-contrib
-   
-   # macOS
-   brew install postgresql
-   
-   # Windows: Download from https://www.postgresql.org/download/
+   psql -U postgres -c "CREATE DATABASE smecs;"
    ```
-
-2. **Create Database:**
-   ```bash
-   psql -U postgres
-   CREATE DATABASE smecs;
-   \q
-   ```
-
-3. **Run Schema Script:**
+2. Apply schema and indexes:
    ```bash
    psql -U postgres -d smecs -f src/main/resources/sql/schema.sql
-   psql -U postgres -d smecs -f src/main/resources/sql/indexes.sql
+   psql -U postgres -d smecs -f src/main/resources/sql/add_product_indexes.sql
    ```
-
-4. **Update Credentials:**
-   Edit `src/main/java/com/smecs/util/DatabaseConnection.java` if needed:
-   ```java
-   private static final String URL = "jdbc:postgresql://localhost:5432/smecs";
-   private static final String USER = "postgres";
-   private static final String PASSWORD = "your_password";
-   ```
-
-### MongoDB Setup (Optional - for Epic 4 features)
-
-1. **Install MongoDB:**
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install mongodb
-   
-   # macOS
-   brew tap mongodb/brew
-   brew install mongodb-community
-   
-   # Windows: Download from https://www.mongodb.com/try/download/community
-   ```
-
-2. **Start MongoDB:**
-   ```bash
-   # Ubuntu/Debian/macOS
-   sudo systemctl start mongod
-   # or
-   brew services start mongodb-community
-   
-   # Windows: Run MongoDB as a service
-   ```
-
-3. **Verify MongoDB Connection:**
-   ```bash
-   mongosh
-   # Should connect to mongodb://localhost:27017
-   ```
-
-4. **Initialize Collections (Optional):**
-   Run the MongoDB connection test:
-   ```bash
-   mvn compile exec:java -Dexec.mainClass="com.smecs.util.MongoDBConnection"
-   ```
+3. Update credentials in `src/main/resources/application-dev.properties` if they differ from the defaults.
 
 ---
 
 ## How to Run
-
-### Method 1: Using Maven (Recommended)
 ```bash
 mvn spring-boot:run
 ```
-
-### Method 2: Using IntelliJ IDEA
-1. Make sure Maven is reloaded (right-click pom.xml → Maven → Reload Project)
-2. Use the "SmeCSApplication" run configuration
-3. Or right-click on SmeCSApplication.java → Run 'SmeCSApplication.main()'
+- GraphiQL (dev): `http://localhost:8080/graphiql`
 
 ---
 
-## Dependencies
-
-### Databases
-- PostgreSQL JDBC Driver (version 42.7.7)
-- MongoDB Java Driver (version 4.11.0) - **Epic 4**
-
-### Utilities
-- JSON Processing Library (version 20231013) - **Epic 4**
-
----
-
-## Epic 4: Performance Features
-
-### Running Performance Benchmarks
-
-1. **Comprehensive Performance Report:**
-   ```bash
-   mvn compile exec:java -Dexec.mainClass="com.smecs.util.PerformanceReportGenerator"
-   ```
-   
-   This generates:
-   - Text report: `reports/performance_report_[timestamp].txt`
-   - HTML report: `reports/performance_report_[timestamp].html`
-   - CSV report: `reports/performance_metrics_[timestamp].csv`
-
-2. **Query Performance Analysis:**
-   ```bash
-   mvn compile exec:java -Dexec.mainClass="com.smecs.util.QueryPerformanceAnalyzer"
-   ```
-
-3. **NoSQL Demo (requires MongoDB):**
-   ```bash
-   mvn compile exec:java -Dexec.mainClass="com.smecs.test.NoSQLDemo"
-   ```
-
-4. **Standard Benchmarks:**
-   ```bash
-   mvn compile exec:java -Dexec.mainClass="com.smecs.util.PerformanceBenchmark"
-   ```
+## Caching
+Caching is enabled via `@EnableCaching` in `SmeCSApplication` and configured in `com.smecs.config.CacheConfig` using Caffeine.
+- Cache names: `productsById`, `productSearch`, `categoriesById`, `categorySearch`
+- Defaults: 5-minute TTL, max 1,000 entries
+- Product and category services annotate read paths with `@Cacheable` and evict/refresh on writes.
+- To add a cache: register a name in `CacheConfig`, annotate the service method, and evict affected caches on writes.
+- See `docs/CACHING.md` for details.
 
 ---
 
 ## Project Structure
-
 ```
 smecs/
-├── docs/
-│   ├── NOSQL_DESIGN.md          # NoSQL schema and design (Epic 4)
-│   └── PERFORMANCE_REPORT.md    # Comprehensive performance analysis (Epic 4)
-├── src/main/
-│   ├── java/com/smecs/
-│   │   ├── cache/               # Caching infrastructure (Epic 3)
-│   │   ├── controller/          # JavaFX controllers
-│   │   ├── dao/                 # Data Access Objects (SQL)
-│   │   ├── model/               # Domain models
-│   │   ├── nosql/               # NoSQL DAOs (MongoDB) - Epic 4
-│   │   ├── service/             # Business logic layer
-│   │   ├── test/                # Test and demo classes
-│   │   └── util/                # Utility classes
-│   └── resources/
-│       ├── css/                 # Stylesheets
-│       ├── sql/                 # Database scripts
-│       │   ├── schema.sql
-│       │   ├── indexes.sql
-│       │   └── query_optimization.sql  # Epic 4
-│       └── view/                # FXML files
-├── reports/                     # Generated performance reports
-├── ARCHITECTURE.md              # System architecture
-├── DESIGN_SYSTEM.md            # UI design system
-├── instructions.md              # Project requirements
-├── pom.xml                      # Maven configuration
-└── README.md                    # This file
+├── docs/                     # Architecture and operational docs
+│   ├── ARCHITECTURE.md
+│   ├── CACHING.md
+│   ├── PERFORMANCE_REPORT_TEMPLATE.md
+│   ├── REPOSITORY_STRUCTURE.md
+│   └── TRANSACTION_HANDLING.md
+├── src/main/java/com/smecs/
+│   ├── SmeCSApplication.java  # Spring Boot entrypoint (@EnableCaching)
+│   ├── config/                # Cache config, other settings
+│   ├── repository/            # Spring Data JPA repositories
+│   ├── service/               # Business logic and transaction boundaries
+│   ├── controller/            # Web/API controllers
+│   └── util/                  # Utilities and helpers
+├── src/main/resources/
+│   ├── sql/                   # schema.sql, add_product_indexes.sql
+│   └── application-dev.properties
+└── frontend/                  # React/Vite frontend
 ```
 
 ---
 
 ## Features
-
-### Core Features (Epic 1-3)
-- ✅ User authentication (Admin/Customer roles)
-- ✅ Product catalog management
-- ✅ Category management
-- ✅ Inventory tracking
-- ✅ Shopping cart functionality
-- ✅ Product search and filtering
-- ✅ In-memory caching (ProductCache, CategoryCache)
-- ✅ Database indexing for performance
-- ✅ Advanced search algorithms (hash-based)
-- ✅ Multiple sorting algorithms
-
-### Epic 4: Performance & NoSQL Features
-- ✅ **Query Performance Analyzer** - Measures and compares SQL query execution times
-- ✅ **Performance Report Generator** - Creates comprehensive reports (TXT, HTML, CSV)
-- ✅ **MongoDB Integration** - NoSQL database for unstructured data
-- ✅ **Review System** - Customer reviews stored in MongoDB
-- ✅ **Activity Logging** - User activity tracking with MongoDB
-- ✅ **Full-Text Search** - Advanced text search in reviews
-- ✅ **Performance Benchmarking** - Before/after optimization comparison
-- ✅ **Database Connection Monitoring** - Connection pool statistics
-- ✅ **Hybrid Database Architecture** - Best of SQL and NoSQL
-
----
-
-## Performance Highlights
-
-Based on comprehensive testing (see `docs/PERFORMANCE_REPORT.md`):
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Product Search | 150ms | 15ms | **10x faster** |
-| Cache Hit Rate | N/A | 87.5% | **87.5% hits** |
-| Query Execution | 200ms | 25ms | **8x faster** |
-| Write Throughput | 1K/sec | 10K/sec | **10x increase** |
+- CRUD for products, categories, inventory, orders, and carts via Spring Data repositories
+- Pagination and filtering support through specifications and pageable queries
+- Caffeine caching for product/category lookups and searches
+- GraphQL enabled for development
 
 ---
 
 ## Troubleshooting
-
-### "JavaFX runtime components are missing" error
-**Solution:** Use `mvn javafx:run` instead of running directly from IntelliJ.
-
-### "No suitable driver found for jdbc:postgresql" error
-**Solution:** The PostgreSQL driver has been added to pom.xml. Run `mvn clean install` to download it.
-
-### MongoDB Connection Issues
-**Symptoms:** "MongoDB is not connected" messages
-
-**Solutions:**
-1. Verify MongoDB is running:
-   ```bash
-   # Check if MongoDB is running
-   mongosh --eval "db.adminCommand('ping')"
-   ```
-
-2. Check MongoDB port:
-   ```bash
-   sudo netstat -tlnp | grep 27017
-   ```
-
-3. Start MongoDB service:
-   ```bash
-   sudo systemctl start mongod  # Linux
-   brew services start mongodb-community  # macOS
-   ```
-
-4. **Note:** MongoDB is optional. The application works without it, but Epic 4 NoSQL features will be disabled.
-
-### Out of Memory Errors
-**Solution:** Increase JVM heap size:
-```bash
-export MAVEN_OPTS="-Xmx2g"
-mvn javafx:run
-```
-
-### Slow Performance
-**Solutions:**
-1. Run performance benchmarks to identify bottlenecks
-2. Clear cache: Delete `target/` and run `mvn clean compile`
-3. Rebuild indexes: Re-run `indexes.sql`
-4. Check database statistics: Run `ANALYZE` on tables
+- **Database connection issues:** Verify `spring.datasource.*` in `application-dev.properties` and that PostgreSQL is running.
+- **Schema errors on startup:** Reapply `schema.sql` and `add_product_indexes.sql` to ensure the database matches the expected structure.
+- **Stale data after updates:** Confirm cache eviction in the relevant service; see `docs/CACHING.md`.
 
 ---
 
 ## Testing
-
-### Run All Tests
+Run the test suite:
 ```bash
-# Performance benchmarks
-mvn compile exec:java -Dexec.mainClass="com.smecs.util.PerformanceBenchmark"
-
-# Query optimization tests
-mvn compile exec:java -Dexec.mainClass="com.smecs.util.QueryPerformanceAnalyzer"
-
-# NoSQL features demo
-mvn compile exec:java -Dexec.mainClass="com.smecs.test.NoSQLDemo"
-
-# Verification test
-mvn compile exec:java -Dexec.mainClass="com.smecs.test.VerificationTest"
+mvn test
 ```
 
 ---
 
 ## Documentation
-
-- **`ARCHITECTURE.md`** - System architecture and design patterns
-- **`DESIGN_SYSTEM.md`** - UI/UX design guidelines
-- **`docs/NOSQL_DESIGN.md`** - NoSQL schema and MongoDB integration
-- **`docs/PERFORMANCE_REPORT.md`** - Comprehensive performance analysis
-- **`instructions.md`** - Original project requirements
-
----
-
-## Development Team
-
-**Project:** Smart E-Commerce System (SMECS)  
-**Course:** Database Fundamentals  
-**Status:** Epic 4 Complete ✅
-
----
-
-## License
-
-This project is developed for educational purposes as part of a Database Fundamentals course.
-
----
-
-## Contact & Support
-
-For questions or issues:
-1. Check the troubleshooting section above
-2. Review the documentation in `docs/`
-3. Run diagnostic tests to identify issues
-4. Check database connections (PostgreSQL and MongoDB)
-
----
-
-**Last Updated:** January 15, 2026  
-**Version:** 1.0 (Epic 4 Complete)
+- `docs/ARCHITECTURE.md` — system architecture and layering
+- `docs/REPOSITORY_STRUCTURE.md` — repository conventions and usage
+- `docs/TRANSACTION_HANDLING.md` — transaction boundaries and rollback guidance
+- `docs/CACHING.md` — cache names, defaults, and extension steps
+- `docs/PERFORMANCE_REPORT_TEMPLATE.md` — template for performance benchmarking
