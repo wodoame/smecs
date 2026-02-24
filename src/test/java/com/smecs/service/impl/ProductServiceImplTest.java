@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -116,13 +116,13 @@ class ProductServiceImplTest {
 
         PageRequest pageRequest = PageRequest.of(1, 5, Sort.by(Sort.Direction.DESC, "price"));
         // totalElements = 6 makes sense for page 2 (first page had 5 items, second page has 1)
-        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(productRepository.findAll(org.mockito.ArgumentMatchers.<Specification<Product>>any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(product), pageRequest, 6));
 
         PagedResponseDTO<ProductDTO> result = productService.getProducts(query);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(productRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        verify(productRepository).findAll(org.mockito.ArgumentMatchers.<Specification<Product>>any(), pageableCaptor.capture());
         Pageable usedPageable = pageableCaptor.getValue();
 
         assertThat(usedPageable.getPageNumber()).isEqualTo(1);
@@ -130,7 +130,7 @@ class ProductServiceImplTest {
         assertThat(usedPageable.getSort()).isEqualTo(Sort.by(Sort.Direction.DESC, "price"));
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().getFirst().getName()).isEqualTo("Phone");
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Phone");
         assertThat(result.getPage().getPage()).isEqualTo(2);
         assertThat(result.getPage().getSize()).isEqualTo(5);
         assertThat(result.getPage().getTotalElements()).isEqualTo(6);
@@ -184,6 +184,16 @@ class ProductServiceImplTest {
     }
 
     @Test
+    void deleteProduct_shouldThrow_whenReferencedByDbConstraint() {
+        when(productRepository.existsById(8L)).thenReturn(true);
+        // simulate DB foreign key violation on delete (void method)
+        org.mockito.Mockito.doThrow(new DataIntegrityViolationException("FK violation"))
+                .when(productRepository).deleteById(8L);
+
+        assertThrows(IllegalStateException.class, () -> productService.deleteProduct(8L));
+    }
+
+    @Test
     void searchCacheKey_shouldIncludeDefaultsAndFields() {
         String defaultKey = ProductServiceImpl.searchCacheKey(null);
         assertThat(defaultKey).isEqualTo("name:|desc:|cat:|page:1|size:8|sort:id,asc");
@@ -201,4 +211,3 @@ class ProductServiceImplTest {
         assertThat(key).isEqualTo("name:Laptop|desc:fast|cat:4|page:3|size:15|sort:price,desc");
     }
 }
-

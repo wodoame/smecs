@@ -19,6 +19,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -110,7 +111,13 @@ public class ProductServiceImpl implements ProductService {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Product not found with id: " + id);
         }
-        productRepository.deleteById(id);
+
+        try {
+            productRepository.deleteById(id);
+        } catch (DataIntegrityViolationException ex) {
+            // Database-level foreign key prevented deletion; return a generic business error without counts
+            throw new IllegalStateException("Cannot delete product with id: " + id + " — it is referenced by other records.");
+        }
     }
 
     @NonNull

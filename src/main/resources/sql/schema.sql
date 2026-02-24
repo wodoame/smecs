@@ -71,7 +71,7 @@ CREATE TABLE Orders (
 CREATE TABLE OrderItems (
     order_item_id SERIAL PRIMARY KEY,
     order_id INTEGER REFERENCES Orders(order_id) ON DELETE CASCADE,
-    product_id INTEGER REFERENCES Products(product_id) ON DELETE SET NULL,
+    product_id INTEGER REFERENCES Products(product_id) ON DELETE RESTRICT,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     price DECIMAL(10, 2) NOT NULL CHECK (price >= 0)
 );
@@ -101,7 +101,7 @@ CREATE TABLE Carts (
 CREATE TABLE CartItems (
     cart_item_id SERIAL PRIMARY KEY,
     cart_id INTEGER REFERENCES Carts(cart_id) ON DELETE CASCADE,
-    product_id INTEGER REFERENCES Products(product_id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES Products(product_id) ON DELETE RESTRICT,
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(cart_id, product_id)
