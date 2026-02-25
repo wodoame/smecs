@@ -1,11 +1,12 @@
 package com.smecs.validation;
 
-import com.smecs.dao.CartDAO;
 import com.smecs.entity.Cart;
 import com.smecs.entity.CartItem;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.CartItemRepository;
+import com.smecs.repository.CartRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -17,17 +18,12 @@ import java.util.Optional;
 /**
  * Validates ownership for CartItem resources.
  */
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Component
 public class CartItemOwnershipValidator implements OwnershipValidator {
 
     private final CartItemRepository cartItemRepository;
-    private final CartDAO cartDAO;
-
-    @Autowired
-    public CartItemOwnershipValidator(CartItemRepository cartItemRepository, CartDAO cartDAO) {
-        this.cartItemRepository = cartItemRepository;
-        this.cartDAO = cartDAO;
-    }
+    private final CartRepository cartRepository;
 
     @Override
     public void validateOwnership(Long resourceId, Long userId) {
@@ -64,7 +60,7 @@ public class CartItemOwnershipValidator implements OwnershipValidator {
 
         // Otherwise verify via cart existence and ownership
         Long cartId = item.getCartId();
-        Optional<Cart> cartOpt = cartDAO.findById(cartId);
+        Optional<Cart> cartOpt = cartRepository.findById(cartId);
         if (cartOpt.isEmpty()) {
             throw new ResourceNotFoundException("Cart not found with id: " + cartId);
         }

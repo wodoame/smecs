@@ -4,6 +4,7 @@ import com.smecs.repository.OrderRepository;
 import com.smecs.entity.Order;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,15 +13,11 @@ import java.util.Optional;
 /**
  * Validates ownership for Order resources.
  */
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Component
 public class OrderOwnershipValidator implements OwnershipValidator {
 
     private final OrderRepository orderRepository;
-
-    @Autowired
-    public OrderOwnershipValidator(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
 
     @Override
     public void validateOwnership(Long resourceId, Long userId) {

@@ -1,11 +1,12 @@
 package com.smecs.validation;
 
-import com.smecs.dao.OrderItemDAO;
 import com.smecs.entity.Order;
 import com.smecs.entity.OrderItem;
+import com.smecs.repository.OrderItemRepository;
 import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.OrderRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,22 +15,17 @@ import java.util.Optional;
 /**
  * Validates ownership for OrderItem resources.
  */
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Component
 public class OrderItemOwnershipValidator implements OwnershipValidator {
 
-    private final OrderItemDAO orderItemDAO;
+    private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
-
-    @Autowired
-    public OrderItemOwnershipValidator(OrderItemDAO orderItemDAO, OrderRepository orderRepository) {
-        this.orderItemDAO = orderItemDAO;
-        this.orderRepository = orderRepository;
-    }
 
     @Override
     public void validateOwnership(Long resourceId, Long userId) {
         // Find the order item
-        Optional<OrderItem> itemOpt = orderItemDAO.findById(resourceId);
+        Optional<OrderItem> itemOpt = orderItemRepository.findById(resourceId);
         if (itemOpt.isEmpty()) {
             throw new ResourceNotFoundException("OrderItem not found with id: " + resourceId);
         }
