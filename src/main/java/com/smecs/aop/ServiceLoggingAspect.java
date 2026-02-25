@@ -2,8 +2,10 @@ package com.smecs.aop;
 
 import com.smecs.config.CacheConfig;
 import com.smecs.dto.CategoryQuery;
+import com.smecs.dto.OrderQuery;
 import com.smecs.dto.ProductQuery;
 import com.smecs.service.impl.CategoryServiceImpl;
+import com.smecs.service.impl.OrderServiceImpl;
 import com.smecs.service.impl.ProductServiceImpl;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -33,7 +35,10 @@ public class ServiceLoggingAspect {
             "execution(* com.smecs.service.InventoryService.searchInventory(..)) || " +
             "execution(* com.smecs.service.impl.InventoryCacheService.getSearchResults(..)) || " +
             "execution(* com.smecs.service.CategoryService.getCategories(..)) || " +
-            "execution(* com.smecs.service.impl.CategoryCacheService.getSearchResults(..))")
+            "execution(* com.smecs.service.impl.CategoryCacheService.getSearchResults(..)) || " +
+            "execution(* com.smecs.service.OrderService.getOrderById(..)) || " +
+            "execution(* com.smecs.service.OrderService.getAllOrders(..)) || " +
+            "execution(* com.smecs.service.OrderService.getOrdersByUserId(..))")
     public void serviceLayer() {
         // Pointcut for specific service layer methods.
     }
@@ -52,7 +57,10 @@ public class ServiceLoggingAspect {
     @Pointcut("execution(* com.smecs.service.impl.ProductServiceImpl.getProductById(..)) || " +
             "execution(* com.smecs.service.impl.ProductServiceImpl.getProducts(com.smecs.dto.ProductQuery)) || " +
             "execution(* com.smecs.service.impl.CategoryServiceImpl.getCategoryById(..)) || " +
-            "execution(* com.smecs.service.impl.CategoryServiceImpl.getCategories(com.smecs.dto.CategoryQuery))")
+            "execution(* com.smecs.service.impl.CategoryServiceImpl.getCategories(com.smecs.dto.CategoryQuery)) || " +
+            "execution(* com.smecs.service.impl.OrderServiceImpl.getOrderById(..)) || " +
+            "execution(* com.smecs.service.impl.OrderServiceImpl.getAllOrders(com.smecs.dto.OrderQuery)) || " +
+            "execution(* com.smecs.service.impl.OrderServiceImpl.getOrdersByUserId(..))")
     public void cacheableLookups() {
         // Pointcut for cacheable lookups with explicit key behavior.
     }
@@ -92,6 +100,22 @@ public class ServiceLoggingAspect {
             if ("getCategories".equals(methodName) && args.length == 1 && args[0] instanceof CategoryQuery) {
                 String key = CategoryServiceImpl.searchCacheKey((CategoryQuery) args[0]);
                 return CacheTarget.of(CacheConfig.CATEGORY_SEARCH, key, key);
+            }
+        }
+
+        if (target instanceof OrderServiceImpl) {
+            if ("getOrderById".equals(methodName) && args.length >= 1) {
+                Object id = args[0];
+                return CacheTarget.of(CacheConfig.ORDERS_BY_ID, id, String.valueOf(id));
+            }
+            if ("getAllOrders".equals(methodName) && args.length == 1 && args[0] instanceof OrderQuery) {
+                String key = OrderServiceImpl.searchCacheKey((OrderQuery) args[0]);
+                return CacheTarget.of(CacheConfig.ORDER_SEARCH, key, key);
+            }
+            if ("getOrdersByUserId".equals(methodName) && args.length >= 2 && args[1] instanceof OrderQuery) {
+                Long userId = args[0] instanceof Long ? (Long) args[0] : null;
+                String key = OrderServiceImpl.userSearchCacheKey(userId, (OrderQuery) args[1]);
+                return CacheTarget.of(CacheConfig.USER_ORDER_SEARCH, key, key);
             }
         }
 

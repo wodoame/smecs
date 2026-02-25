@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.config.CacheConfig;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.OrderQuery;
@@ -20,6 +21,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import com.smecs.service.OrderService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +45,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
+    @CacheEvict(value = {CacheConfig.ORDER_SEARCH, CacheConfig.USER_ORDER_SEARCH}, allEntries = true)
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
         Long userId = request.getUserId();
         User user = userRepository.findById(userId)
@@ -53,11 +61,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = CacheConfig.ORDERS_BY_ID, key = "#id")
     public OrderDTO getOrderById(Long id) {
         return orderRepository.findById(id).map(this::toDTO).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
     }
 
     @Override
+    @Caching(put = {
+            @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
+    }, evict = {
+            @CacheEvict(value = CacheConfig.ORDER_SEARCH, allEntries = true),
+            @CacheEvict(value = CacheConfig.USER_ORDER_SEARCH, allEntries = true)
+    })
     public OrderDTO updateOrderStatus(Long id, UpdateOrderStatusRequestDTO request) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
@@ -73,6 +88,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = CacheConfig.ORDER_SEARCH, key = "T(com.smecs.service.impl.OrderServiceImpl).searchCacheKey(#query)")
     public PagedResponseDTO<OrderDTO> getAllOrders(OrderQuery query) {
         Pageable pageable = buildPageable(query);
         Order.Status status = Optional.ofNullable(query).map(OrderQuery::getStatus).orElse(null);
@@ -83,12 +99,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = CacheConfig.USER_ORDER_SEARCH, key = "T(com.smecs.service.impl.OrderServiceImpl).userSearchCacheKey(#userId, #query)")
     public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, OrderQuery query) {
         Page<Order> orderPage = orderRepository.findByUserId(userId, buildPageable(query));
         return getPagedResponse(orderPage);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.ORDERS_BY_ID, key = "#id"),
+            @CacheEvict(value = CacheConfig.ORDER_SEARCH, allEntries = true),
+            @CacheEvict(value = CacheConfig.USER_ORDER_SEARCH, allEntries = true)
+    })
     public void deleteOrder(Long id) {
         if (!orderRepository.existsById(id)) {
              throw new ResourceNotFoundException("Order not found with id: " + id);
@@ -97,6 +119,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.ORDERS_BY_ID, key = "#orderId"),
+            @CacheEvict(value = CacheConfig.ORDER_SEARCH, allEntries = true),
+            @CacheEvict(value = CacheConfig.USER_ORDER_SEARCH, allEntries = true)
+    })
     public void updateOrderTotalOrThrow(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -151,5 +178,20 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return PageRequest.of(pageIndex, pageSize, Sort.by(direction, sortField));
+    }
+
+    public static String searchCacheKey(OrderQuery query) {
+        OrderQuery normalized = query != null ? query : OrderQuery.builder().build();
+        int page = normalized.getPage() != null ? normalized.getPage() : 1;
+        int size = normalized.getSize() != null ? normalized.getSize() : 10;
+        String sort = normalized.getSort() != null ? normalized.getSort() : "createdAt,desc";
+        String statusKey = normalized.getStatus() != null ? normalized.getStatus().name() : "";
+
+        return String.format("status:%s|page:%d|size:%d|sort:%s", statusKey, page, size, sort);
+    }
+
+    public static String userSearchCacheKey(Long userId, OrderQuery query) {
+        Long normalizedUserId = userId != null ? userId : -1L;
+        return String.format("user:%d|%s", normalizedUserId, searchCacheKey(query));
     }
 }
