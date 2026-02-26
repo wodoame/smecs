@@ -32,15 +32,19 @@ public class OrderItemOwnershipValidator implements OwnershipValidator {
 
         OrderItem item = itemOpt.get();
 
-        // Find the associated order
-        Long orderId = item.getOrderId();
+        Long orderId = item.getOrder() != null ? item.getOrder().getId() : null;
+        if (orderId == null) {
+            throw new ResourceNotFoundException("Order not found for order item id: " + resourceId);
+        }
+
         Optional<Order> orderOpt = orderRepository.findById(orderId);
         if (orderOpt.isEmpty()) {
             throw new ResourceNotFoundException("Order not found with id: " + orderId);
         }
 
         Order order = orderOpt.get();
-        if (order.getUserId() == null || !order.getUserId().equals(userId)) {
+        Long orderUserId = order.getUser() != null ? order.getUser().getId() : null;
+        if (orderUserId == null || !orderUserId.equals(userId)) {
             throw new ForbiddenException("You do not have permission to access this order item");
         }
     }

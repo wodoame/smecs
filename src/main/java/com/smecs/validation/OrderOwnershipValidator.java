@@ -28,7 +28,8 @@ public class OrderOwnershipValidator implements OwnershipValidator {
         }
 
         Order order = orderOpt.get();
-        if (!order.getUserId().equals(userId)) {
+        Long orderUserId = order.getUser() != null ? order.getUser().getId() : null;
+        if (orderUserId == null || !orderUserId.equals(userId)) {
             throw new ForbiddenException("You do not have permission to access this order");
         }
     }

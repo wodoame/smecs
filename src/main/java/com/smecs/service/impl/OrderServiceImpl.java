@@ -52,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Order order = new Order();
-        order.setUserId(user.getId());
+        order.setUser(user);
         order.setTotalAmount(0.0); // Placeholder, should be calculated
         order.setStatus(Order.Status.PENDING);
         order.setCreatedAt(LocalDateTime.now());
@@ -101,7 +101,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Cacheable(value = CacheConfig.USER_ORDER_SEARCH, key = "T(com.smecs.service.impl.OrderServiceImpl).userSearchCacheKey(#userId, #query)")
     public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, OrderQuery query) {
-        Page<Order> orderPage = orderRepository.findByUserId(userId, buildPageable(query));
+        Page<Order> orderPage = orderRepository.findByUser_Id(userId, buildPageable(query));
         return getPagedResponse(orderPage);
     }
 
@@ -128,7 +128,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        List<OrderItem> items = orderItemRepository.findByOrder_Id(orderId);
         double total = items.stream()
                 .mapToDouble(item -> item.getPriceAtPurchase() * item.getQuantity())
                 .sum();
@@ -140,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
     private OrderDTO toDTO(Order order) {
         OrderDTO dto = new OrderDTO();
         dto.setId(order.getId());
-        dto.setUserId(order.getUserId());
+        dto.setUserId(order.getUser() != null ? order.getUser().getId() : null);
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus().toString());
         dto.setCreatedAt(order.getCreatedAt());

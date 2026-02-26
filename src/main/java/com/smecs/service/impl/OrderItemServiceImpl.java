@@ -42,8 +42,8 @@ public class OrderItemServiceImpl implements OrderItemService {
             OrderItem item = new OrderItem();
             Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId()));
-            item.setProductId(product.getId());
-            item.setOrderId(order.getId());
+            item.setProduct(product);
+            item.setOrder(order);
 
             item.setQuantity(dto.getQuantity());
 
@@ -59,11 +59,12 @@ public class OrderItemServiceImpl implements OrderItemService {
         orderService.updateOrderTotalOrThrow(orderId);
 
         // Delete cart items for the user after successfully creating order items
-        Long userId = order.getUserId();
-        Cart userCart = cartRepository.findByUserId(userId);
+        Long userId = order.getUser() != null ? order.getUser().getId() : null;
+        Cart userCart = userId != null ? cartRepository.findByUserId(userId) : null;
         if (userCart != null) {
             List<Long> productIds = savedItems.stream()
-                    .map(OrderItem::getProductId)
+                    .map(item -> item.getProduct() != null ? item.getProduct().getId() : null)
+                    .filter(productId -> productId != null)
                     .collect(Collectors.toList());
             cartItemService.deleteCartItemsByCartIdAndProductIds(userCart.getCartId(), productIds);
         }
@@ -74,7 +75,10 @@ public class OrderItemServiceImpl implements OrderItemService {
     @Override
     public OrderItem saveOrderItem(OrderItem orderItem) {
         OrderItem savedItem = orderItemRepository.save(orderItem);
-        orderService.updateOrderTotalOrThrow(savedItem.getOrderId());
+        Long orderId = savedItem.getOrder() != null ? savedItem.getOrder().getId() : null;
+        if (orderId != null) {
+            orderService.updateOrderTotalOrThrow(orderId);
+        }
         return savedItem;
     }
 
@@ -85,7 +89,7 @@ public class OrderItemServiceImpl implements OrderItemService {
 
     @Override
     public List<OrderItem> getOrderItemsByOrderId(Long orderId) {
-        return orderItemRepository.findByOrderId(orderId);
+        return orderItemRepository.findByOrder_Id(orderId);
     }
 
     @Override
@@ -93,10 +97,11 @@ public class OrderItemServiceImpl implements OrderItemService {
         OrderItem item = orderItemRepository.findById(orderItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("OrderItem not found with id: " + orderItemId));
 
-        if (orderItemDTO.getProductId() != null && !orderItemDTO.getProductId().equals(item.getProductId())) {
+        Long currentProductId = item.getProduct() != null ? item.getProduct().getId() : null;
+        if (orderItemDTO.getProductId() != null && !orderItemDTO.getProductId().equals(currentProductId)) {
             Product product = productRepository.findById(orderItemDTO.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + orderItemDTO.getProductId()));
-            item.setProductId(product.getId());
+            item.setProduct(product);
 
             if (orderItemDTO.getPrice() <= 0) {
                 Double productPrice = product.getPrice();
@@ -113,7 +118,10 @@ public class OrderItemServiceImpl implements OrderItemService {
         }
 
         OrderItem savedItem = orderItemRepository.save(item);
-        orderService.updateOrderTotalOrThrow(savedItem.getOrderId());
+        Long orderId = savedItem.getOrder() != null ? savedItem.getOrder().getId() : null;
+        if (orderId != null) {
+            orderService.updateOrderTotalOrThrow(orderId);
+        }
         return savedItem;
     }
 
@@ -121,8 +129,10 @@ public class OrderItemServiceImpl implements OrderItemService {
     public void deleteOrderItem(Long orderItemId) {
         OrderItem item = orderItemRepository.findById(orderItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("OrderItem not found with id: " + orderItemId));
-        Long orderId = item.getOrderId();
+        Long orderId = item.getOrder() != null ? item.getOrder().getId() : null;
         orderItemRepository.deleteById(orderItemId);
-        orderService.updateOrderTotalOrThrow(orderId);
+        if (orderId != null) {
+            orderService.updateOrderTotalOrThrow(orderId);
+        }
     }
 }
