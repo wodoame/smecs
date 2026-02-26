@@ -114,6 +114,10 @@ export default function AdminProductsPage() {
     const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
     const [editingItem, setEditingItem] = React.useState<InventoryItem | null>(null);
 
+    // Edit Product State
+    const [isEditProductDialogOpen, setIsEditProductDialogOpen] = React.useState(false);
+    const [editingProductItem, setEditingProductItem] = React.useState<InventoryItem | null>(null);
+
     // View Inventory State
     const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
     const [viewingItem, setViewingItem] = React.useState<InventoryItem | null>(null);
@@ -370,7 +374,6 @@ export default function AdminProductsPage() {
 
     const handleEditItem = (item: InventoryItem) => {
         setEditingItem(item);
-        setCategorySearchTerm(item.category?.categoryName || "");
         setIsEditDialogOpen(true);
     };
 
@@ -417,6 +420,52 @@ export default function AdminProductsPage() {
             .catch((err) => toast.error(err.message));
     };
 
+    const handleEditProductItem = (item: InventoryItem) => {
+        setEditingProductItem(item);
+        setCategorySearchTerm(item.category?.categoryName || "");
+        setIsEditProductDialogOpen(true);
+    };
+
+    const handleUpdateProduct = () => {
+        if (!editingProductItem) return;
+
+        const payload = {
+            name: editingProductItem.name,
+            description: editingProductItem.description,
+            price: editingProductItem.price,
+            categoryId: editingProductItem.category.categoryId,
+            imageUrl: editingProductItem.image,
+        };
+
+        const user = auth.getUser();
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+
+        if (user?.token) {
+            headers["Authorization"] = `Bearer ${user.token}`;
+        }
+
+        fetch(`/api/products/${editingProductItem.productId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(payload),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to update product");
+                return res.json();
+            })
+            .then(() => {
+                setIsEditProductDialogOpen(false);
+                setEditingProductItem(null);
+                fetchInventory();
+                toast.success("Product updated successfully", {
+                    icon: <CircleCheck className="h-5 w-5 text-green-500" />,
+                });
+            })
+            .catch((err) => toast.error(err.message));
+    };
+
     const handleViewItem = (item: InventoryItem) => {
         setViewingItem(item);
         setIsViewDialogOpen(true);
@@ -439,7 +488,16 @@ export default function AdminProductsPage() {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to delete product");
+                let errorMessage = "Failed to delete product";
+                try {
+                    const errorData = await response.json();
+                    if (errorData && errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    // Ignore parse error, use default message
+                }
+                throw new Error(errorMessage);
             }
 
             toast.success("Product deleted successfully", {
@@ -450,7 +508,11 @@ export default function AdminProductsPage() {
             fetchInventory(searchTerm, page);
         } catch (error) {
             console.error("Error deleting product:", error);
-            toast.error("Failed to delete product");
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("Failed to delete product");
+            }
         }
     };
 
@@ -569,8 +631,11 @@ export default function AdminProductsPage() {
                                         <DropdownMenuItem onClick={() => handleViewItem(item)}>
                                             View details
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditProductItem(item)}>
+                                            Edit product details
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                                            Edit
+                                            Edit inventory
                                         </DropdownMenuItem>
                                         <AlertDialogTrigger asChild>
                                             <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
@@ -803,53 +868,10 @@ export default function AdminProductsPage() {
                         <DialogHeader>
                             <DialogTitle>Edit Inventory</DialogTitle>
                             <DialogDescription>
-                                Update product and inventory details.
+                                Update inventory quantity.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="editName" className="text-sm font-medium">
-                                    Name
-                                </label>
-                                <Input
-                                    id="editName"
-                                    value={editingItem?.name || ""}
-                                    onChange={(e) =>
-                                        setEditingItem((prev) =>
-                                            prev ? { ...prev, name: e.target.value } : null
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="editDescription" className="text-sm font-medium">
-                                    Description
-                                </label>
-                                <Input
-                                    id="editDescription"
-                                    value={editingItem?.description || ""}
-                                    onChange={(e) =>
-                                        setEditingItem((prev) =>
-                                            prev ? { ...prev, description: e.target.value } : null
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="editPrice" className="text-sm font-medium">
-                                    Price
-                                </label>
-                                <Input
-                                    id="editPrice"
-                                    type="number"
-                                    value={editingItem?.price || ""}
-                                    onChange={(e) =>
-                                        setEditingItem((prev) =>
-                                            prev ? { ...prev, price: parseFloat(e.target.value) } : null
-                                        )
-                                    }
-                                />
-                            </div>
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="editQuantity" className="text-sm font-medium">
                                     Quantity
@@ -865,17 +887,78 @@ export default function AdminProductsPage() {
                                     }
                                 />
                             </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full" onClick={handleUpdateItem}>
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={isEditProductDialogOpen} onOpenChange={setIsEditProductDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                        <DialogHeader>
+                            <DialogTitle>Edit Product Details</DialogTitle>
+                            <DialogDescription>
+                                Update product details.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
                             <div className="flex flex-col gap-2">
-                                <label htmlFor="editCategory" className="text-sm font-medium">
+                                <label htmlFor="editProductName" className="text-sm font-medium">
+                                    Name
+                                </label>
+                                <Input
+                                    id="editProductName"
+                                    value={editingProductItem?.name || ""}
+                                    onChange={(e) =>
+                                        setEditingProductItem((prev) =>
+                                            prev ? { ...prev, name: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editProductDescription" className="text-sm font-medium">
+                                    Description
+                                </label>
+                                <Input
+                                    id="editProductDescription"
+                                    value={editingProductItem?.description || ""}
+                                    onChange={(e) =>
+                                        setEditingProductItem((prev) =>
+                                            prev ? { ...prev, description: e.target.value } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editProductPrice" className="text-sm font-medium">
+                                    Price
+                                </label>
+                                <Input
+                                    id="editProductPrice"
+                                    type="number"
+                                    value={editingProductItem?.price || ""}
+                                    onChange={(e) =>
+                                        setEditingProductItem((prev) =>
+                                            prev ? { ...prev, price: parseFloat(e.target.value) } : null
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="editProductCategory" className="text-sm font-medium">
                                     Category
                                 </label>
                                 <Combobox
                                     items={categoryList.map(c => c.categoryName)}
-                                    defaultValue={editingItem?.category?.categoryName}
+                                    defaultValue={editingProductItem?.category?.categoryName}
                                     onValueChange={(val) => {
                                         const selectedCategory = categoryList.find(c => c.categoryName === val);
                                         if (selectedCategory) {
-                                            setEditingItem((prev) =>
+                                            setEditingProductItem((prev) =>
                                                 prev ? { ...prev, category: { ...prev.category, categoryId: selectedCategory.categoryId, categoryName: selectedCategory.categoryName } } : null
                                             )
                                         }
@@ -898,14 +981,14 @@ export default function AdminProductsPage() {
                                 </Combobox>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <label htmlFor="editImage" className="text-sm font-medium">
+                                <label htmlFor="editProductImage" className="text-sm font-medium">
                                     Image URL
                                 </label>
                                 <Input
-                                    id="editImage"
-                                    value={editingItem?.image || ""}
+                                    id="editProductImage"
+                                    value={editingProductItem?.image || ""}
                                     onChange={(e) =>
-                                        setEditingItem((prev) =>
+                                        setEditingProductItem((prev) =>
                                             prev ? { ...prev, image: e.target.value } : null
                                         )
                                     }
@@ -913,7 +996,7 @@ export default function AdminProductsPage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" className="w-full" onClick={handleUpdateItem}>
+                            <Button type="submit" className="w-full" onClick={handleUpdateProduct}>
                                 Save Changes
                             </Button>
                         </DialogFooter>

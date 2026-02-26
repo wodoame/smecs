@@ -132,7 +132,7 @@ export default function CartPage() {
     if (cartItems.length === 0) {
         return (
             <div className="container mx-auto max-w-3xl py-10">
-                <Empty className="min-h-[50vh] border">
+                <Empty className="min-h-[50vh] border-none">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
                             <ShoppingCart />

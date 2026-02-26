@@ -81,6 +81,6 @@ public class InventoryController {
     @RequireRole("admin")
     public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfuly", null));
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfully", null));
     }
 }
