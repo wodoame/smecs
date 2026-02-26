@@ -388,9 +388,18 @@ export default function AdminProductsPage() {
             }
         };
 
+        const user = auth.getUser();
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+
+        if (user?.token) {
+            headers["Authorization"] = `Bearer ${user.token}`;
+        }
+
         fetch(`/api/inventories/${editingItem.id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify(payload),
         })
             .then((res) => {
@@ -561,12 +570,12 @@ export default function AdminProductsPage() {
                                             View details
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                                            Edit product
+                                            Edit
                                         </DropdownMenuItem>
                                         <AlertDialogTrigger asChild>
                                             <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
                                                 <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete product
+                                                Delete
                                             </DropdownMenuItem>
                                         </AlertDialogTrigger>
                                     </DropdownMenuGroup>

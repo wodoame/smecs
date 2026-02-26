@@ -1,5 +1,6 @@
 package com.smecs.service.impl;
 
+import com.smecs.config.CacheConfig;
 import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.InventoryDTO;
@@ -17,6 +18,10 @@ import com.smecs.service.InventoryService;
 import com.smecs.service.ProductService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,9 +40,9 @@ public class InventoryServiceImpl implements InventoryService {
     private final ProductRepository productRepository;
     private final ProductService productService;
     private final CategoryRepository categoryRepository;
-    private final InventoryCacheService inventoryCacheService;
 
     @Override
+    @Cacheable(value = CacheConfig.INVENTORIES_BY_ID, key = "#id")
     public InventoryDTO getInventoryById(Long id) {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
@@ -45,6 +50,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Cacheable(value = CacheConfig.INVENTORIES_BY_PRODUCT_ID, key = "#productId")
     public InventoryDTO getInventoryByProductId(Long productId) {
         Inventory inventory = inventoryRepository.findByProductId(productId)
                 .orElse(createEmptyInventoryForProduct(productId));
@@ -63,27 +69,27 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Cacheable(value = CacheConfig.INVENTORY_SEARCH,
+            key = "T(com.smecs.service.impl.InventoryServiceImpl).searchCacheKey(#query)")
     public PagedResponseDTO<InventoryDTO> searchInventory(InventoryQuery query) {
         String searchTerm = Optional.ofNullable(query).map(InventoryQuery::getQuery).orElse("");
         int page = Optional.ofNullable(query).map(InventoryQuery::getPage).orElse(1);
         int size = Optional.ofNullable(query).map(InventoryQuery::getSize).orElse(10);
         String sort = Optional.ofNullable(query).map(InventoryQuery::getSort).orElse("id,asc");
 
-        Optional<PagedResponseDTO<InventoryDTO>> cached = inventoryCacheService.getSearchResults(searchTerm, page, size, sort);
-        if (cached.isPresent()) {
-            return cached.get();
-        }
-
         Pageable pageable = buildPageable(sort, page, size);
         Page<Inventory> inventoryPage = inventoryRepository.searchInventory(searchTerm, pageable);
-        PagedResponseDTO<InventoryDTO> result = getInventoryDTOPagedResponseDTO(inventoryPage);
-
-        inventoryCacheService.putSearchResults(searchTerm, page, size, sort, result);
-        return result;
+        return getInventoryDTOPagedResponseDTO(inventoryPage);
     }
 
     @Override
     @Transactional
+    @Caching(put = {
+            @CachePut(value = CacheConfig.INVENTORIES_BY_ID, key = "#result.id"),
+            @CachePut(value = CacheConfig.INVENTORIES_BY_PRODUCT_ID, key = "#result.productId")
+    }, evict = {
+            @CacheEvict(value = CacheConfig.INVENTORY_SEARCH, allEntries = true)
+    })
     public InventoryDTO createInventory(CreateInventoryRequestDTO request) {
         Inventory inventory = new Inventory();
 
@@ -112,8 +118,6 @@ public class InventoryServiceImpl implements InventoryService {
 
         inventory.setQuantity(request.getQuantity());
         Inventory savedInventory = inventoryRepository.save(inventory);
-        inventoryCacheService.invalidateById(savedInventory.getId());
-        inventoryCacheService.invalidateAllList();
         return mapToDTO(savedInventory);
     }
 
@@ -129,26 +133,33 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
+    @Caching(put = {
+            @CachePut(value = CacheConfig.INVENTORIES_BY_ID, key = "#result.id"),
+            @CachePut(value = CacheConfig.INVENTORIES_BY_PRODUCT_ID, key = "#result.productId")
+    }, evict = {
+            @CacheEvict(value = CacheConfig.INVENTORY_SEARCH, allEntries = true)
+    })
     public InventoryDTO updateInventory(Long inventoryId, UpdateInventoryRequestDTO request) {
         Inventory inventory = inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with id: " + inventoryId));
 
         inventory.setQuantity(request.getQuantity());
         Inventory savedInventory = inventoryRepository.save(inventory);
-        inventoryCacheService.invalidateById(savedInventory.getId());
-        inventoryCacheService.invalidateAllList();
         return mapToDTO(savedInventory);
     }
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.INVENTORIES_BY_ID, key = "#inventoryId"),
+            @CacheEvict(value = CacheConfig.INVENTORIES_BY_PRODUCT_ID, allEntries = true),
+            @CacheEvict(value = CacheConfig.INVENTORY_SEARCH, allEntries = true)
+    })
     public void deleteInventory(Long inventoryId) {
         if (!inventoryRepository.existsById(inventoryId)) {
             throw new ResourceNotFoundException("Inventory not found with id: " + inventoryId);
         }
         inventoryRepository.deleteById(inventoryId);
-        inventoryCacheService.invalidateById(inventoryId);
-        inventoryCacheService.invalidateAllList();
     }
 
     private InventoryDTO mapToDTO(Inventory inventory) {
@@ -187,5 +198,13 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         return PageRequest.of(pageIndex, pageSize, Sort.by(direction, sortField));
+    }
+
+    public static String searchCacheKey(InventoryQuery query) {
+        String searchTerm = Optional.ofNullable(query).map(InventoryQuery::getQuery).orElse("");
+        int page = Optional.ofNullable(query).map(InventoryQuery::getPage).orElse(1);
+        int size = Optional.ofNullable(query).map(InventoryQuery::getSize).orElse(10);
+        String sort = Optional.ofNullable(query).map(InventoryQuery::getSort).orElse("id,asc");
+        return String.format("%s|%d|%d|%s", searchTerm, page, size, sort);
     }
 }

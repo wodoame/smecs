@@ -17,6 +17,9 @@ public class CacheConfig {
     public static final String ORDERS_BY_ID = "ordersById";
     public static final String ORDER_SEARCH = "orderSearch";
     public static final String USER_ORDER_SEARCH = "userOrderSearch";
+    public static final String INVENTORIES_BY_ID = "inventoriesById";
+    public static final String INVENTORIES_BY_PRODUCT_ID = "inventoriesByProductId";
+    public static final String INVENTORY_SEARCH = "inventorySearch";
 
     private static final long DEFAULT_TTL_MINUTES = 5;
     private static final long DEFAULT_MAX_SIZE = 1_000;
@@ -30,7 +33,10 @@ public class CacheConfig {
                 CATEGORY_SEARCH,
                 ORDERS_BY_ID,
                 ORDER_SEARCH,
-                USER_ORDER_SEARCH
+                USER_ORDER_SEARCH,
+                INVENTORIES_BY_ID,
+                INVENTORIES_BY_PRODUCT_ID,
+                INVENTORY_SEARCH
         );
         manager.setCaffeine(
                 Caffeine.newBuilder()
