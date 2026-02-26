@@ -25,6 +25,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
     @CacheEvict(value = {CacheConfig.ORDER_SEARCH, CacheConfig.USER_ORDER_SEARCH}, allEntries = true)
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
@@ -67,6 +69,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     @Caching(put = {
             @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
     }, evict = {
@@ -106,6 +109,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     @Caching(evict = {
             @CacheEvict(value = CacheConfig.ORDERS_BY_ID, key = "#id"),
             @CacheEvict(value = CacheConfig.ORDER_SEARCH, allEntries = true),
@@ -124,6 +128,7 @@ public class OrderServiceImpl implements OrderService {
             @CacheEvict(value = CacheConfig.ORDER_SEARCH, allEntries = true),
             @CacheEvict(value = CacheConfig.USER_ORDER_SEARCH, allEntries = true)
     })
+    @Transactional
     public void updateOrderTotalOrThrow(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
