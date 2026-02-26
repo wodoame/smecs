@@ -83,8 +83,8 @@ public class OrderItemsController {
     private OrderItemDTO mapToDTO(OrderItem item) {
         OrderItemDTO dto = new OrderItemDTO();
         dto.setId(item.getOrderItemId());
-        dto.setOrderId(item.getOrderId());
-        dto.setProductId(item.getProductId());
+        dto.setOrderId(item.getOrder() != null ? item.getOrder().getId() : null);
+        dto.setProductId(item.getProduct() != null ? item.getProduct().getId() : null);
         dto.setQuantity(item.getQuantity());
         dto.setPrice(item.getPriceAtPurchase());
         return dto;

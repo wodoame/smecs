@@ -55,7 +55,7 @@ public class CartItemServiceImpl implements CartItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + request.getCartId()));
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
-        Inventory inventory = inventoryRepository.findByProductId(product.getId())
+        Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
 
         if(inventory.getQuantity() < request.getQuantity()) {
@@ -64,7 +64,7 @@ public class CartItemServiceImpl implements CartItemService {
         CartItem cartItem = cartItemRepository.findByCartIdAndProductId(cart.getCartId(), product.getId());
         if (cartItem == null) {
             cartItem = new CartItem();
-            cartItem.setCartId(cart.getCartId());
+            cartItem.setCart(cart);
             cartItem.setProduct(product);
             cartItem.setQuantity(0);
             cartItem.setAddedAt(LocalDateTime.now());
@@ -97,7 +97,7 @@ public class CartItemServiceImpl implements CartItemService {
             throw new ResourceNotFoundException("Product not found for cart item id: " + id);
         }
 
-        Inventory inventory = inventoryRepository.findByProductId(product.getId())
+        Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
 
         int diff = quantity - oldQuantity; // positive if cart quantity increases
@@ -131,7 +131,7 @@ public class CartItemServiceImpl implements CartItemService {
             throw new ResourceNotFoundException("Product not found for cart item id: " + cartItemId);
         }
 
-        Inventory inventory = inventoryRepository.findByProductId(product.getId())
+        Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
 
         updateInventoryQuantity(inventory, cartItem.getQuantity());
@@ -144,7 +144,7 @@ public class CartItemServiceImpl implements CartItemService {
             return;
         }
         productIds.forEach(productId -> {
-            Inventory inventory = inventoryRepository.findByProductId(productId)
+            Inventory inventory = inventoryRepository.findByProduct_Id(productId)
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + productId));
             CartItem item = cartItemRepository.findByCartIdAndProductId(cartId, productId);
             if (item != null) {
@@ -166,7 +166,7 @@ public class CartItemServiceImpl implements CartItemService {
             if (product == null || product.getId() == null) {
                 throw new ResourceNotFoundException("Product not found for cart item id: " + item.getCartItemId());
             }
-            Inventory inventory = inventoryRepository.findByProductId(product.getId())
+            Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
             updateInventoryQuantity(inventory, item.getQuantity());
             if (item.getCartItemId() != null) {
