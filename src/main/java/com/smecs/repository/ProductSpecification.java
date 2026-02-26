@@ -54,7 +54,7 @@ public class ProductSpecification {
 
             categoryMatchSubquery.select(categoryRoot.get("id")).where(
                     criteriaBuilder.and(
-                            criteriaBuilder.equal(categoryRoot.get("id"), root.get("categoryId")),
+                            criteriaBuilder.equal(categoryRoot.get("id"), root.get("category").get("id")),
                             criteriaBuilder.or(categoryTextPredicates.toArray(new Predicate[0]))
                     )
             );

@@ -4,8 +4,10 @@ import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ProductQuery;
+import com.smecs.entity.Category;
 import com.smecs.entity.Product;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.repository.CategoryRepository;
 import com.smecs.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +38,9 @@ class ProductServiceImplTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private CategoryRepository categoryRepository;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -47,6 +52,10 @@ class ProductServiceImplTest {
         request.setPrice(1200.0);
         request.setImageUrl("image.png");
         request.setCategoryId(3L);
+
+        Category category = new Category();
+        category.setId(3L);
+        when(categoryRepository.findById(3L)).thenReturn(Optional.of(category));
 
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
             Product product = invocation.getArgument(0);
@@ -65,7 +74,7 @@ class ProductServiceImplTest {
         assertThat(saved.getDescription()).isEqualTo("Fast");
         assertThat(saved.getPrice()).isEqualTo(1200.0);
         assertThat(saved.getImageUrl()).isEqualTo("image.png");
-        assertThat(saved.getCategoryId()).isEqualTo(3L);
+        assertThat(saved.getCategory().getId()).isEqualTo(3L);
     }
 
     @Test
@@ -76,7 +85,9 @@ class ProductServiceImplTest {
         product.setDescription("Smart");
         product.setPrice(699.0);
         product.setImageUrl("phone.png");
-        product.setCategoryId(2L);
+        Category category = new Category();
+        category.setId(2L);
+        product.setCategory(category);
         when(productRepository.findById(5L)).thenReturn(Optional.of(product));
 
         ProductDTO result = productService.getProductById(5L);
@@ -112,7 +123,9 @@ class ProductServiceImplTest {
         product.setName("Phone");
         product.setDescription("nice phone");
         product.setPrice(500.0);
-        product.setCategoryId(2L);
+        Category category = new Category();
+        category.setId(2L);
+        product.setCategory(category);
 
         PageRequest pageRequest = PageRequest.of(1, 5, Sort.by(Sort.Direction.DESC, "price"));
         // totalElements = 6 makes sense for page 2 (first page had 5 items, second page has 1)
@@ -145,6 +158,10 @@ class ProductServiceImplTest {
         request.setImageUrl("new.png");
         request.setCategoryId(9L);
 
+        Category category = new Category();
+        category.setId(9L);
+        when(categoryRepository.findById(9L)).thenReturn(Optional.of(category));
+
         Product existing = new Product();
         existing.setId(7L);
         existing.setName("Old");
@@ -162,7 +179,7 @@ class ProductServiceImplTest {
         assertThat(saved.getDescription()).isEqualTo("New desc");
         assertThat(saved.getPrice()).isEqualTo(1500.0);
         assertThat(saved.getImageUrl()).isEqualTo("new.png");
-        assertThat(saved.getCategoryId()).isEqualTo(9L);
+        assertThat(saved.getCategory().getId()).isEqualTo(9L);
         assertThat(result.getName()).isEqualTo("Updated");
     }
 

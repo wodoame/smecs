@@ -8,6 +8,7 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ProductQuery;
 import com.smecs.entity.Product;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.repository.CategoryRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.repository.ProductSpecification;
 import com.smecs.service.ProductService;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     @CachePut(value = CacheConfig.PRODUCTS_BY_ID, key = "#result.id")
@@ -84,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
         Specification<Product> specification = ProductSpecification.filterByCriteria(name, description);
         if (categoryId != null) {
             specification = specification.and((root, criteriaQuery, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("categoryId"), categoryId));
+                    criteriaBuilder.equal(root.get("category").get("id"), categoryId));
         }
         return specification;
     }
@@ -126,7 +128,14 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(productDTO.getDescription());
         product.setPrice(productDTO.getPrice());
         product.setImageUrl(productDTO.getImageUrl());
-        product.setCategoryId(productDTO.getCategoryId());
+
+        if (productDTO.getCategoryId() != null) {
+            product.setCategory(categoryRepository.findById(productDTO.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Category not found with id: " + productDTO.getCategoryId())));
+        } else {
+            product.setCategory(null);
+        }
 
         Product saved = productRepository.save(product);
         return mapToDto(saved);
@@ -139,7 +148,7 @@ public class ProductServiceImpl implements ProductService {
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setImageUrl(product.getImageUrl());
-        dto.setCategoryId(product.getCategoryId());
+        dto.setCategoryId(product.getCategory() != null ? product.getCategory().getId() : null);
         return dto;
     }
 

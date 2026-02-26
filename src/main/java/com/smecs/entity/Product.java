@@ -19,6 +19,7 @@ public class Product {
     private Double price;
     @Column(name = "image_url", length = 512)
     private String imageUrl;
-    @Column(name = "category_id")
-    private Long categoryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 }
