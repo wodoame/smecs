@@ -53,13 +53,17 @@ public class CartItemOwnershipValidator implements OwnershipValidator {
 
         CartItem item = itemOpt.get();
 
+        Long cartId = item.getCart() != null ? item.getCart().getCartId() : null;
+
         // If token contained a cartId and it matches the cartItem's cartId, allow
-        if (cartIdFromToken != null && cartIdFromToken.equals(item.getCartId())) {
+        if (cartIdFromToken != null && cartIdFromToken.equals(cartId)) {
             return;
         }
 
         // Otherwise verify via cart existence and ownership
-        Long cartId = item.getCartId();
+        if (cartId == null) {
+            throw new ResourceNotFoundException("Cart not found for cart item id: " + resourceId);
+        }
         Optional<Cart> cartOpt = cartRepository.findById(cartId);
         if (cartOpt.isEmpty()) {
             throw new ResourceNotFoundException("Cart not found with id: " + cartId);

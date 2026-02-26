@@ -28,7 +28,8 @@ public class ReviewOwnershipValidator implements OwnershipValidator {
         }
 
         Review review = reviewOpt.get();
-        if (!review.getUserId().equals(userId)) {
+        Long reviewUserId = review.getUser() != null ? review.getUser().getId() : null;
+        if (reviewUserId == null || !reviewUserId.equals(userId)) {
             throw new ForbiddenException("You do not have permission to access this review");
         }
     }

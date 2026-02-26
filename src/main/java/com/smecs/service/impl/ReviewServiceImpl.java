@@ -44,8 +44,8 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
         Review review = new Review();
-        review.setUserId(user.getId());
-        review.setProductId(product.getId());
+        review.setUser(user);
+        review.setProduct(product);
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
@@ -95,7 +95,7 @@ public class ReviewServiceImpl implements ReviewService {
            throw new ResourceNotFoundException("Product not found with id: " + productId);
         }
 
-        Page<Review> reviewPage = reviewRepository.findByProductId(productId, pageable);
+        Page<Review> reviewPage = reviewRepository.findByProduct_Id(productId, pageable);
 
         return getPagedResponse(reviewPage);
     }
@@ -118,8 +118,8 @@ public class ReviewServiceImpl implements ReviewService {
     private ReviewDTO mapToDTO(Review review) {
         ReviewDTO dto = new ReviewDTO();
         dto.setId(review.getId());
-        dto.setUserId(review.getUserId());
-        dto.setProductId(review.getProductId());
+        dto.setUserId(review.getUser() != null ? review.getUser().getId() : null);
+        dto.setProductId(review.getProduct() != null ? review.getProduct().getId() : null);
         dto.setRating(review.getRating());
         dto.setComment(review.getComment());
         dto.setCreatedAt(review.getCreatedAt());
