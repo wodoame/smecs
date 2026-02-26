@@ -10,6 +10,7 @@ import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.UpdateInventoryRequestDTO;
 import com.smecs.entity.Inventory;
+import com.smecs.entity.Product;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.CategoryRepository;
 import com.smecs.repository.InventoryRepository;
@@ -52,18 +53,17 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Cacheable(value = CacheConfig.INVENTORIES_BY_PRODUCT_ID, key = "#productId")
     public InventoryDTO getInventoryByProductId(Long productId) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
+        Inventory inventory = inventoryRepository.findByProduct_Id(productId)
                 .orElse(createEmptyInventoryForProduct(productId));
         return mapToDTO(inventory);
     }
 
     private Inventory createEmptyInventoryForProduct(Long productId) {
-        if (!productRepository.existsById(productId)) {
-            throw new ResourceNotFoundException("Product not found with id: " + productId);
-        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
         Inventory inventory = new Inventory();
-        inventory.setProductId(productId);
+        inventory.setProduct(product);
         inventory.setQuantity(0);
         return inventory;
     }
@@ -94,15 +94,15 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = new Inventory();
 
         if (request.getProductId() != null) {
-            if (!productRepository.existsById(request.getProductId())) {
-                throw new ResourceNotFoundException("Product not found with id: " + request.getProductId());
-            }
+            Product product = productRepository.findById(request.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + request.getProductId()));
 
-            if (inventoryRepository.findByProductId(request.getProductId()).isPresent()) {
+            if (inventoryRepository.findByProduct_Id(request.getProductId()).isPresent()) {
                 throw new RuntimeException("Inventory already exists for product id: " + request.getProductId());
             }
 
-            inventory.setProductId(request.getProductId());
+            inventory.setProduct(product);
         } else if (request.getProduct() != null) {
             Long categoryId = request.getProduct().getCategoryId();
             if (categoryId != null && !categoryRepository.existsById(categoryId)) {
@@ -111,7 +111,10 @@ public class InventoryServiceImpl implements InventoryService {
 
             CreateProductRequestDTO createProductRequest = buildCreateProductRequestDTO(request, categoryId);
             ProductDTO createdProduct = productService.createProduct(createProductRequest);
-            inventory.setProductId(createdProduct.getId());
+            Product product = productRepository.findById(createdProduct.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + createdProduct.getId()));
+            inventory.setProduct(product);
         } else {
             throw new RuntimeException("Either productId or product details must be provided");
         }
@@ -165,7 +168,7 @@ public class InventoryServiceImpl implements InventoryService {
     private InventoryDTO mapToDTO(Inventory inventory) {
         InventoryDTO dto = new InventoryDTO();
         dto.setId(inventory.getId());
-        dto.setProductId(inventory.getProductId());
+        dto.setProductId(inventory.getProduct() != null ? inventory.getProduct().getId() : null);
         dto.setQuantity(inventory.getQuantity());
         return dto;
     }

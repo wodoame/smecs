@@ -9,5 +9,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.Optional;
 
 public interface InventoryRepository extends JpaRepository<Inventory, Long>, JpaSpecificationExecutor<Inventory>, InventoryRepositoryCustom {
-    Optional<Inventory> findByProductId(Long productId);
+    Optional<Inventory> findByProduct_Id(Long productId);
 }

@@ -1,6 +1,7 @@
 package com.smecs.repository;
 
 import com.smecs.entity.Inventory;
+import com.smecs.entity.Product;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -113,7 +114,14 @@ public class InventoryRepositoryCustomImpl implements InventoryRepositoryCustom 
         for (Object[] row : results) {
             Inventory inventory = new Inventory();
             inventory.setId(toLong(row[0]));
-            inventory.setProductId(toLong(row[1]));
+
+            Long productId = toLong(row[1]);
+            if (productId != null) {
+                Product product = new Product();
+                product.setId(productId);
+                inventory.setProduct(product);
+            }
+
             inventory.setQuantity(row[2] != null ? ((Number) row[2]).intValue() : null);
             inventories.add(inventory);
         }
