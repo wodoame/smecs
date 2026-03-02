@@ -3,6 +3,7 @@ package com.smecs.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.security.JwtAuthenticationFilter;
+import com.smecs.security.OAuth2AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,8 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -25,16 +24,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
     @Autowired
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     //noinspection RedundantThrows — throws Exception is required by the HttpSecurity builder API
@@ -46,14 +44,19 @@ public class SecurityConfig {
             // Stateless JWT — no CSRF needed
             .csrf(AbstractHttpConfigurer::disable)
 
-            // No HTTP session
+            // IF_REQUIRED: OAuth2 login needs a short-lived session to store the
+            // PKCE state/nonce between the authorization request and the callback.
+            // All regular API requests remain stateless (no session cookie is sent
+            // by the React frontend, so they fall through to the JWT filter as before).
             .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
                     // Public auth endpoints
                     .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                    // OAuth2 authorization + callback endpoints
+                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                     // Public read-only product, category, and review endpoints
                     .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
@@ -65,8 +68,26 @@ public class SecurityConfig {
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     // Static assets and Thymeleaf views
                     .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.svg").permitAll()
+                    .requestMatchers("/products", "/products/{id}", "/categories", "/categories/{id}", "/login", "/signup").permitAll()
                     // Everything else requires a valid token
                     .anyRequest().authenticated()
+            )
+
+            // Google OAuth2 login
+            .oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(endpoint ->
+                            endpoint.baseUri("/oauth2/authorization"))
+                    .redirectionEndpoint(endpoint ->
+                            endpoint.baseUri("/login/oauth2/code/*"))
+                    .successHandler(oAuth2SuccessHandler)
+                    .failureHandler((_req, response, exception) -> {
+                        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                        response.getWriter().write(
+                                mapper.writeValueAsString(
+                                        new ResponseDTO<>("error",
+                                                "Google login failed: " + exception.getMessage(), null)));
+                    })
             )
 
             // Return JSON error bodies (matching our ResponseDTO shape) instead of HTML pages
