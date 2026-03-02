@@ -18,6 +18,7 @@ import OrdersPage from "./pages/OrdersPage";
 import OrderItemsPage from "./pages/OrderItemsPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
+import OAuth2CallbackPage from "./pages/OAuth2CallbackPage";
 
 
 const router = createBrowserRouter([
@@ -115,6 +116,11 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    // Landing page for the Google OAuth2 redirect from Spring Security
+    path: "/oauth2/callback",
+    element: <OAuth2CallbackPage />,
   },
 ]);
 

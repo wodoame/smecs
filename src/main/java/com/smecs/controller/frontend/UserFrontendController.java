@@ -70,4 +70,11 @@ public class UserFrontendController {
         // Serve index.html for /contact
         return resourceLoader.getResource("classpath:/static/index.html");
     }
+
+    @GetMapping(value = "/oauth2/callback", produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public Resource oauth2CallbackPage() {
+        // Serve index.html so React Router can handle the OAuth2 callback
+        return resourceLoader.getResource("classpath:/static/index.html");
+    }
 }
