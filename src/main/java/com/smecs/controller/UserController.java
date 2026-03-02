@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.smecs.annotation.RequireRole;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,7 +21,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<List<UserResponseDTO>>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         List<UserResponseDTO> userDTOs = users.stream()
@@ -31,7 +31,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<UserResponseDTO>> getUserById(@PathVariable Long id) {
         User user = userService.findById(id);
         if (user == null) {
@@ -42,7 +42,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "User deleted successfully", null));

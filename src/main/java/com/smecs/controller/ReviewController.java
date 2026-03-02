@@ -1,7 +1,6 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireOwnership;
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
@@ -16,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,14 +32,14 @@ public class ReviewController {
     }
 
     @PostMapping
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ResponseDTO<ReviewDTO>> createReview(@Valid @RequestBody CreateReviewRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Review submitted successfully", reviewService.createReview(request)));
     }
 
     @GetMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<ReviewDTO>>> getAllReviews(
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
@@ -68,7 +68,7 @@ public class ReviewController {
     }
 
     @PutMapping("/{reviewId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<ReviewDTO>> updateReview(@PathVariable Long reviewId, @Valid @RequestBody UpdateReviewRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Review updated successfully",
@@ -76,7 +76,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<Void>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);

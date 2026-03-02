@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CategoryDTO;
 import com.smecs.dto.CategoryQuery;
 import com.smecs.dto.PagedResponseDTO;
@@ -8,6 +7,7 @@ import com.smecs.dto.ResponseDTO;
 import com.smecs.service.CategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,21 +54,21 @@ public class CategoryController {
     }
 
     @PostMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<CategoryDTO>> create(@Valid @RequestBody CategoryDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Category created", categoryService.createCategory(dto)));
     }
 
     @PutMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<CategoryDTO>> update(@PathVariable Long id, @Valid @RequestBody CategoryDTO dto) {
         return ResponseEntity
                 .ok(new ResponseDTO<>("success", "Category updated", categoryService.updateCategory(id, dto)));
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> delete(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Category deleted", null));

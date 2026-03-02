@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateInventoryRequestDTO;
 import com.smecs.dto.InventoryDTO;
 import com.smecs.dto.InventoryQuery;
@@ -14,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,14 +30,14 @@ public class InventoryController {
     }
 
     @PostMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request)));
     }
 
     @GetMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<InventoryDTO>>> searchInventory(
             @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
@@ -56,20 +56,20 @@ public class InventoryController {
     }
 
     @GetMapping("/product/{productId}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryByProductId(@PathVariable Long productId) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId)));
     }
 
     @GetMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryById(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", inventoryService.getInventoryById(id)));
     }
 
 
     @PutMapping("/{inventoryId}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> updateInventory(
             @PathVariable Long inventoryId,
             @Valid @RequestBody UpdateInventoryRequestDTO request) {
@@ -78,7 +78,7 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{inventoryId}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfully", null));

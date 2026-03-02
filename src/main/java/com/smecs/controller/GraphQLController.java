@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.*;
 import com.smecs.entity.User;
 import com.smecs.service.CategoryService;
@@ -15,6 +14,7 @@ import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
+@SuppressWarnings("unused") // GraphQL handler methods are invoked reflectively by Spring for GraphQL
 public class GraphQLController {
 
     private final ProductService productService;
@@ -64,7 +65,7 @@ public class GraphQLController {
     }
 
     @MutationMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ProductDTO createProduct(@Argument String name, @Argument String description, @Argument Double price,
             @Argument String categoryId) {
         CreateProductRequestDTO request = new CreateProductRequestDTO();
@@ -78,10 +79,9 @@ public class GraphQLController {
     // --- Inventories ---
 
     @QueryMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public PagedResponseDTO<InventoryDTO> inventories(@Argument Integer page, @Argument Integer size,
-            @Argument String sort,
-            @Argument String query) {
+            @Argument String sort, @Argument String query) {
         int pageNo = (page != null) ? page : 1;
         int pageSize = (size != null) ? size : 10;
         String sortStr = (sort != null) ? sort : "id,asc";
@@ -97,7 +97,7 @@ public class GraphQLController {
     }
 
     @QueryMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public InventoryDTO inventoryById(@Argument String id) {
         return inventoryService.getInventoryById(Long.parseLong(id));
     }
@@ -110,7 +110,7 @@ public class GraphQLController {
     }
 
     @MutationMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public InventoryDTO createInventory(@Argument CreateInventoryInput input) {
         CreateInventoryRequestDTO request = new CreateInventoryRequestDTO();
         request.setQuantity(input.quantity());
@@ -164,7 +164,7 @@ public class GraphQLController {
     }
 
     @MutationMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public GqlCategory createCategory(@Argument String name, @Argument String description, @Argument String imageUrl) {
         CategoryDTO dto = new CategoryDTO();
         dto.setCategoryName(name);
@@ -178,7 +178,7 @@ public class GraphQLController {
     // --- Users ---
 
     @QueryMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<GqlUser> users() {
         return userService.getAllUsers().stream()
                 .map(this::toGqlUser)
@@ -186,7 +186,7 @@ public class GraphQLController {
     }
 
     @QueryMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public GqlUser userById(@Argument String id) {
         return toGqlUser(userService.findById(Long.parseLong(id)));
     }
