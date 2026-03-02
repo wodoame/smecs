@@ -18,12 +18,14 @@ public class SmecsUserPrincipal implements Serializable {
 
     private final Long userId;
     private final String username;
+    private final String email;
     private final String role;
     private final Long cartId;
 
-    public SmecsUserPrincipal(Long userId, String username, String role, Long cartId) {
+    public SmecsUserPrincipal(Long userId, String username, String email, String role, Long cartId) {
         this.userId = userId;
         this.username = username;
+        this.email = email;
         this.role = role;
         this.cartId = cartId;
     }
@@ -33,5 +35,3 @@ public class SmecsUserPrincipal implements Serializable {
         return "SmecsUserPrincipal{userId=" + userId + ", username='" + username + "', role='" + role + "'}";
     }
 }
-
-

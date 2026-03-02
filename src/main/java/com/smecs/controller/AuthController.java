@@ -64,17 +64,20 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ResponseDTO<UserResponseDTO>> verify(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof SmecsUserPrincipal principal)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO<>("error", "Not authenticated", null));
         }
 
+        // All claims are already in the principal — no DB round-trip needed
         UserResponseDTO response = new UserResponseDTO();
         response.setId(principal.getUserId());
         response.setUsername(principal.getUsername());
+        response.setEmail(principal.getEmail());
         response.setRole(principal.getRole());
+        response.setCartId(principal.getCartId());
 
         return ResponseEntity.ok(new ResponseDTO<>("success", "Authenticated", response));
     }

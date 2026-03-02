@@ -47,16 +47,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 String username = jwtUtil.extractUsername(token);
-                String role = jwtUtil.extractRole(token);
-                Long userId = jwtUtil.extractUserId(token);
-                Long cartId = jwtUtil.extractCartId(token);
+                String role     = jwtUtil.extractRole(token);
+                String email    = jwtUtil.extractEmail(token);
+                Long userId     = jwtUtil.extractUserId(token);
+                Long cartId     = jwtUtil.extractCartId(token);
 
                 // Spring Security roles must be prefixed with ROLE_
                 String springRole = "ROLE_" + role.toUpperCase();
                 List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(springRole));
 
-                // Build an Authentication principal that also carries userId & cartId
-                SmecsUserPrincipal principal = new SmecsUserPrincipal(userId, username, role, cartId);
+                SmecsUserPrincipal principal = new SmecsUserPrincipal(userId, username, email, role, cartId);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(principal, null, authorities);
