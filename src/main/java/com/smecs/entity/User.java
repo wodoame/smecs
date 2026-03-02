@@ -9,7 +9,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "users")
 public class User {
-    // Getters and setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,4 +19,10 @@ public class User {
     private String role;
     private java.sql.Timestamp createdAt;
 
+    /** "local" for username/password users, "google" for OAuth2 users. */
+    @Column(nullable = false)
+    private String provider = "local";
+
+    /** The OAuth2 provider's subject identifier (Google "sub" claim). */
+    private String providerId;
 }

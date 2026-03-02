@@ -7,6 +7,7 @@ import com.smecs.service.UserService;
 import com.smecs.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -15,6 +16,7 @@ import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -127,10 +129,50 @@ public class UserServiceImpl implements UserService {
         return passwordEncoder.encode(password);
     }
 
-    private boolean isValidEmail(String email) {
-        if (email == null) {
-            return false;
+    @Override
+    public User findOrCreateOAuthUser(OAuth2User oAuth2User, String provider) {
+        String providerId = oAuth2User.getAttribute("sub");
+        String email      = oAuth2User.getAttribute("email");
+        String name       = oAuth2User.getAttribute("name");
+
+        // 1. Exact match by provider + providerId (returning user)
+        return userRepository.findByProviderAndProviderId(provider, providerId)
+                .orElseGet(() -> {
+                    // 2. Same email already registered locally → link the account
+                    User user = userRepository.findByEmail(email).orElse(null);
+                    if (user == null) {
+                        // 3. Brand-new user — create one
+                        user = new User();
+                        user.setEmail(email);
+                        user.setUsername(deriveUsername(name, email));
+                        user.setRole("customer");
+                        user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+                    }
+                    // Bind the OAuth2 identity
+                    user.setProvider(provider);
+                    user.setProviderId(providerId);
+                    return userRepository.save(user);
+                });
+    }
+
+    // ── helpers ─────────────────────────────────────────────────────────────
+
+    /** Turns "Jane Doe" → "jane.doe", appending digits until the username is unique. */
+    private String deriveUsername(String displayName, String email) {
+        String base = (displayName != null && !displayName.isBlank())
+                ? displayName.trim().toLowerCase().replaceAll("\\s+", ".")
+                : email.split("@")[0];
+
+        String candidate = base;
+        int suffix = 1;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = base + suffix++;
         }
+        return candidate;
+    }
+
+    private boolean isValidEmail(String email) {
+        if (email == null) return false;
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(emailRegex);
     }
