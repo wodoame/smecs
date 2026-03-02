@@ -1,22 +1,21 @@
 package com.smecs.aspect;
 
 import com.smecs.annotation.RequireOwnership;
-import com.smecs.exception.ForbiddenException;
 import com.smecs.exception.UnauthorizedException;
+import com.smecs.security.SmecsUserPrincipal;
 import com.smecs.validation.OwnershipValidator;
-import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -29,12 +28,12 @@ import java.util.stream.Collectors;
 
 /**
  * Aspect that enforces resource ownership checks for methods annotated with @RequireOwnership.
- * This aspect runs after GraphQLSecurityAspect (which validates JWT and sets user attributes).
+ * Reads user identity from the Spring SecurityContext (populated by JwtAuthenticationFilter).
  * Admins automatically bypass ownership checks.
  */
 @Aspect
 @Component
-@Order(2) // Run after GraphQLSecurityAspect (which has default order)
+@Order(2)
 public class OwnershipAspect {
 
     private final Map<String, OwnershipValidator> validators;
@@ -54,17 +53,15 @@ public class OwnershipAspect {
      */
     @Before("@annotation(com.smecs.annotation.RequireOwnership)")
     public void checkOwnership(JoinPoint joinPoint) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attributes == null) {
-            // Not a web request, skip ownership check
-            return;
+        // Read identity from Spring SecurityContext
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof SmecsUserPrincipal principal)) {
+            throw new UnauthorizedException("User authentication required for ownership validation");
         }
 
-        HttpServletRequest request = attributes.getRequest();
-
-        // Extract user information from request attributes (set by GraphQLSecurityAspect)
-        Long userId = (Long) request.getAttribute("userId");
-        String role = (String) request.getAttribute("role");
+        Long userId = principal.getUserId();
+        String role = principal.getRole();
 
         if (userId == null) {
             throw new UnauthorizedException("User authentication required for ownership validation");
@@ -206,9 +203,7 @@ public class OwnershipAspect {
             f.setAccessible(true);
             Object value = f.get(obj);
             return convertToLong(value);
-        } catch (NoSuchFieldException ignored) {
-            // ignore
-        } catch (IllegalAccessException | IllegalArgumentException e) {
+        } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException ignored) {
             // ignore
         }
 
@@ -216,20 +211,17 @@ public class OwnershipAspect {
     }
 
     private Long convertToLong(Object arg) {
-        if (arg == null) return null;
-        if (arg instanceof Long) return (Long) arg;
-        if (arg instanceof Integer) return ((Integer) arg).longValue();
-        if (arg instanceof Short) return ((Short) arg).longValue();
-        if (arg instanceof String) {
-            try {
-                return Long.parseLong((String) arg);
-            } catch (NumberFormatException e) {
-                return null;
+        return switch (arg) {
+            case null -> null;
+            case Long l -> l;
+            case Integer i -> i.longValue();
+            case Short s -> s.longValue();
+            case String s -> {
+                try { yield Long.parseLong(s); }
+                catch (NumberFormatException e) { yield null; }
             }
-        }
-        if (arg instanceof Number) {
-            return ((Number) arg).longValue();
-        }
-        return null;
+            case Number n -> n.longValue();
+            default -> null;
+        };
     }
 }
