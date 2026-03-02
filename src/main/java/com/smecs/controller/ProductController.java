@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateProductRequestDTO;
 import com.smecs.dto.ProductDTO;
 import com.smecs.dto.ResponseDTO;
@@ -10,6 +9,7 @@ import com.smecs.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ public class ProductController {
     }
 
     @PostMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<ProductDTO>> createProduct(@Valid @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Product created", productService.createProduct(request)));
@@ -61,13 +61,13 @@ public class ProductController {
 
 
     @PutMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<ProductDTO>> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product updated", productService.updateProduct(id, request)));
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product deleted", null));
