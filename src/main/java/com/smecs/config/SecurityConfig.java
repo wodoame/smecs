@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.security.JwtAuthenticationFilter;
 import com.smecs.security.OAuth2AuthenticationSuccessHandler;
+import com.smecs.security.OwnershipFilter;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +20,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity   // enables @PreAuthorize, @PostAuthorize, etc.
@@ -25,13 +28,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
-
-    @Autowired
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
-    }
+    private final OwnershipFilter ownershipFilter;
 
 
     @Bean
@@ -109,7 +106,9 @@ public class SecurityConfig {
             )
 
             // Validate JWT before the standard username/password filter
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            // Enforce @RequireOwnership after authentication is established
+            .addFilterAfter(ownershipFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

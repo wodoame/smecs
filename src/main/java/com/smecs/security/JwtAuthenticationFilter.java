@@ -43,17 +43,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            if (jwtUtil.validateToken(token) &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
-
+            if (jwtUtil.validateToken(token)) {
                 String username = jwtUtil.extractUsername(token);
                 String role     = jwtUtil.extractRole(token);
                 String email    = jwtUtil.extractEmail(token);
                 Long userId     = jwtUtil.extractUserId(token);
                 Long cartId     = jwtUtil.extractCartId(token);
 
-                // Spring Security roles must be prefixed with ROLE_
-                String springRole = "ROLE_" + role.toUpperCase();
+                // Spring Security roles must be prefixed with ROLE_.
+                // Fall back to CUSTOMER if the claim is absent (e.g. legacy tokens).
+                String effectiveRole = (role != null && !role.isBlank()) ? role : "customer";
+                String springRole = "ROLE_" + effectiveRole.toUpperCase();
                 List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(springRole));
 
                 SmecsUserPrincipal principal = new SmecsUserPrincipal(userId, username, email, role, cartId);

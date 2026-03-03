@@ -6,10 +6,8 @@ import com.smecs.dto.UserResponseDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.entity.User;
 import com.smecs.service.UserService;
-import com.smecs.security.SmecsUserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -65,21 +63,8 @@ public class AuthController {
 
     @GetMapping("/verify")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ResponseDTO<UserResponseDTO>> verify(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof SmecsUserPrincipal principal)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ResponseDTO<>("error", "Not authenticated", null));
-        }
-
-        // All claims are already in the principal — no DB round-trip needed
-        UserResponseDTO response = new UserResponseDTO();
-        response.setId(principal.getUserId());
-        response.setUsername(principal.getUsername());
-        response.setEmail(principal.getEmail());
-        response.setRole(principal.getRole());
-        response.setCartId(principal.getCartId());
-
-        return ResponseEntity.ok(new ResponseDTO<>("success", "Authenticated", response));
+    public ResponseEntity<Void> verify() {
+        return ResponseEntity.noContent().build();
     }
 
     private UserResponseDTO mapToDTO(User user) {
