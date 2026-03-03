@@ -19,6 +19,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Configuration
@@ -29,6 +32,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final OwnershipFilter ownershipFilter;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
 
     @Bean
@@ -73,7 +77,9 @@ public class SecurityConfig {
             // Google OAuth2 login
             .oauth2Login(oauth2 -> oauth2
                     .authorizationEndpoint(endpoint ->
-                            endpoint.baseUri("/oauth2/authorization"))
+                            endpoint.baseUri("/oauth2/authorization")
+                                    .authorizationRequestResolver(
+                                            authorizationRequestResolver(clientRegistrationRepository)))
                     .redirectionEndpoint(endpoint ->
                             endpoint.baseUri("/login/oauth2/code/*"))
                     .successHandler(oAuth2SuccessHandler)
@@ -111,5 +117,14 @@ public class SecurityConfig {
             .addFilterAfter(ownershipFilter, JwtAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository) {
+        DefaultOAuth2AuthorizationRequestResolver resolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+        resolver.setAuthorizationRequestCustomizer(customizer ->
+                customizer.additionalParameters(params -> params.put("prompt", "select_account")));
+        return resolver;
     }
 }

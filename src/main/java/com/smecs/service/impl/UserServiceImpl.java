@@ -151,10 +151,10 @@ public class UserServiceImpl implements UserService {
                     if (user.getRole() == null || user.getRole().isBlank()) {
                         user.setRole("customer");
                     }
-                    // Bind the OAuth2 identity
-                    user.setProvider(provider);
-                    user.setProviderId(providerId);
-                    return userRepository.save(user);
+                     // Bind the OAuth2 identity
+                     user.setProvider(provider);
+                     user.setProviderId(providerId);
+                     return userRepository.save(user);
                 });
     }
 
