@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireRole;
 import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.AddToCartRequest;
 import com.smecs.dto.CartItemDTO;
@@ -13,6 +12,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class CartItemsController {
     private final CartItemService cartItemService;
 
     @PostMapping
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody @Valid AddToCartRequest request) {
         CartItem createdItem = cartItemService.addItemToCart(request);
@@ -35,7 +35,7 @@ public class CartItemsController {
 
 
     @GetMapping("/{id}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> getCartItem(@PathVariable Long id) {
         return cartItemService.getCartItemById(id)
@@ -45,7 +45,7 @@ public class CartItemsController {
     }
 
     @GetMapping("/cart/{cartId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<List<CartItemDTO>>> getCartItemsByCart(@PathVariable Long cartId) {
         List<CartItem> items = cartItemService.getCartItemsByCartId(cartId);
@@ -56,7 +56,7 @@ public class CartItemsController {
     }
 
     @PutMapping("/{id}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id,
             @RequestBody CartItemDTO dto) {
@@ -65,7 +65,7 @@ public class CartItemsController {
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<Void>> deleteCartItem(@PathVariable Long id) {
         if (cartItemService.getCartItemById(id).isPresent()) {

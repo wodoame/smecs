@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smecs-postgres
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-smecs}
+      POSTGRES_USER: ${DB_USER:-smecs}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smecs}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/main/resources/sql:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  postgres_data:

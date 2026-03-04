@@ -102,6 +102,12 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Spring Security (transitively included by oauth2-client, declared here for clarity) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
         <!-- JWT Dependencies -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

@@ -21,9 +21,11 @@ CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'customer')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    provider VARCHAR(50) NOT NULL DEFAULT 'local',
+    provider_id VARCHAR(255)
 );
 
 -- 2. Categories Table
@@ -114,6 +116,7 @@ CREATE TABLE CartItems (
 -- Users Indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON Users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON Users(email);
+CREATE INDEX IF NOT EXISTS idx_users_provider ON Users(provider, provider_id);
 
 -- Products Indexes
 CREATE INDEX IF NOT EXISTS idx_products_name ON Products(name);
@@ -428,3 +431,4 @@ BEGIN
     RAISE NOTICE 'Database seeding completed successfully.';
 END;
 $$;
+CALL seed_database();

@@ -1,7 +1,6 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireOwnership;
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderItemsRequestDTO;
 import com.smecs.dto.OrderItemDTO;
 import com.smecs.dto.ResponseDTO;
@@ -11,6 +10,7 @@ import com.smecs.service.OrderItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class OrderItemsController {
     }
 
     @GetMapping("/{id}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "orderItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> getOrderItem(@PathVariable Long id) {
         return orderItemService.getOrderItemById(id)
@@ -38,7 +38,7 @@ public class OrderItemsController {
     }
 
     @GetMapping("/order/{orderId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "order", idParamName = "orderId")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> getOrderItemsByOrder(@PathVariable Long orderId) {
         List<OrderItem> items = orderItemService.getOrderItemsByOrderId(orderId);
@@ -47,7 +47,7 @@ public class OrderItemsController {
     }
 
     @PostMapping
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "order", idParamName = "orderId")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems(@RequestBody CreateOrderItemsRequestDTO request) {
         List<OrderItem> savedItems = orderItemService.createOrderItems(request.getOrderId(), request.getItems());
@@ -57,7 +57,7 @@ public class OrderItemsController {
     }
 
     @PutMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> updateOrderItem(@PathVariable Long id, @RequestBody OrderItemDTO orderItemDTO) {
         try {
             OrderItem updatedItem = orderItemService.updateOrderItem(id, orderItemDTO);
@@ -69,7 +69,7 @@ public class OrderItemsController {
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteOrderItem(@PathVariable Long id) {
         try {
             orderItemService.deleteOrderItem(id);

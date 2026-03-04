@@ -1,7 +1,6 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireOwnership;
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CartDTO;
 import com.smecs.dto.CreateCartRequest;
 import com.smecs.dto.ResponseDTO;
@@ -12,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public class CartController {
     }
 
     @PostMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<CartDTO>> createCart(@Valid @RequestBody CreateCartRequest request) {
         Cart cart = cartService.createCart(request.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -39,7 +39,7 @@ public class CartController {
     }
 
     @DeleteMapping("/{cartId}/clear")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<Void>> clearCartItems(@PathVariable Long cartId) {
         int deleted = cartItemService.deleteAllItems(cartId);
@@ -50,7 +50,7 @@ public class CartController {
     }
 
     @GetMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<List<CartDTO>>> getAllCarts() {
         List<Cart> carts = cartService.getAllCarts();
         List<CartDTO> dtos = carts.stream().map(this::mapToCartDTO).collect(Collectors.toList());
@@ -58,7 +58,7 @@ public class CartController {
     }
 
     @GetMapping("/{cartId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartDTO>> getCartById(@PathVariable Long cartId) {
         return cartService.getCartById(cartId)
@@ -69,7 +69,7 @@ public class CartController {
     }
 
     @DeleteMapping("/{cartId}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteCart(@PathVariable Long cartId) {
         cartService.deleteCart(cartId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Cart deleted successfully", null));

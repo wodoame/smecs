@@ -1,7 +1,6 @@
 package com.smecs.controller;
 
 import com.smecs.annotation.RequireOwnership;
-import com.smecs.annotation.RequireRole;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.OrderQuery;
@@ -13,6 +12,7 @@ import com.smecs.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ public class OrderController {
     }
 
     @PostMapping
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<ResponseDTO<OrderDTO>> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -37,20 +37,20 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "order", idParamName = "id")
     public ResponseEntity<ResponseDTO<OrderDTO>> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order found", orderService.getOrderById(id)));
     }
 
     @PutMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<OrderDTO>> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order status updated", orderService.updateOrderStatus(id, request)));
     }
 
     @GetMapping
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getAllOrders(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -68,7 +68,7 @@ public class OrderController {
     }
 
     @GetMapping("/user/{userId}")
-    @RequireRole("customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getOrdersByUserId(
             @PathVariable Long userId,
@@ -86,7 +86,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole("admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResponseDTO<Void>> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order deleted", null));
