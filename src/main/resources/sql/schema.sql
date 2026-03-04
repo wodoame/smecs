@@ -431,3 +431,4 @@ BEGIN
     RAISE NOTICE 'Database seeding completed successfully.';
 END;
 $$;
+CALL seed_database();
