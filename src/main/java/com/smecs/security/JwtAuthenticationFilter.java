@@ -1,5 +1,6 @@
 package com.smecs.security;
 
+import com.smecs.service.SecurityEventService;
 import com.smecs.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,10 +27,12 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final SecurityEventService securityEventService;
 
     @Autowired
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, SecurityEventService securityEventService) {
         this.jwtUtil = jwtUtil;
+        this.securityEventService = securityEventService;
     }
 
     @Override
@@ -63,10 +66,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                securityEventService.recordTokenValidated(token, username, userId, request);
+            } else {
+                securityEventService.recordTokenRejected(token, request);
             }
         }
 
         filterChain.doFilter(request, response);
     }
 }
-

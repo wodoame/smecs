@@ -3,6 +3,7 @@ package com.smecs.security;
 import com.smecs.entity.Cart;
 import com.smecs.entity.User;
 import com.smecs.service.CartService;
+import com.smecs.service.SecurityEventService;
 import com.smecs.service.UserService;
 import com.smecs.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -38,14 +39,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserService userService;
     private final CartService cartService;
     private final JwtUtil jwtUtil;
+    private final SecurityEventService securityEventService;
 
     @Autowired
     public OAuth2AuthenticationSuccessHandler(UserService userService,
                                               CartService cartService,
-                                              JwtUtil jwtUtil) {
+                                              JwtUtil jwtUtil,
+                                              SecurityEventService securityEventService) {
         this.userService = userService;
         this.cartService = cartService;
         this.jwtUtil = jwtUtil;
+        this.securityEventService = securityEventService;
     }
 
     @Override
@@ -63,6 +67,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // 3. Mint a JWT the same way the password-login endpoint does
         String token = jwtUtil.generateToken(user, cart.getCartId());
+        securityEventService.recordOAuth2Success(user, request);
+        securityEventService.recordTokenIssued(user, token, request);
 
         // 4. Build the redirect URL
         String next = extractNextFromCookie(request);
@@ -97,4 +103,3 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         response.addCookie(cookie);
     }
 }
-

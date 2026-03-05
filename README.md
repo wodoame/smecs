@@ -15,6 +15,7 @@ Backend for an e-commerce platform built with Spring Boot, Spring Data JPA, Post
 8. [Troubleshooting](#troubleshooting)
 9. [Testing](#testing)
 10. [Documentation](#documentation)
+11. [Security Event Logging](#security-event-logging)
 
 ---
 
@@ -118,3 +119,19 @@ mvn test
 - `docs/CACHING.md` — cache names, defaults, and extension steps
 - `docs/PERFORMANCE_REPORT_TEMPLATE.md` — template for performance benchmarking
 - `docs/SECURITY_CSRF_CORS.md` — CSRF vs CORS explanation and demo steps
+
+---
+
+## Security Event Logging
+
+The backend captures authentication and token security events for auditing and brute-force detection.
+
+- Login success/failure, OAuth2 success, token issuance, valid/invalid token usage are stored in `security_events`.
+- Brute-force alerts are emitted after repeated failed logins from the same username/IP window.
+
+### Reports (admin-only)
+
+- `GET /api/security/reports/token-usage?start=2026-03-01T00:00:00Z&end=2026-03-05T23:59:59Z&limit=10`
+- `GET /api/security/reports/brute-force?start=2026-03-01T00:00:00Z&end=2026-03-05T23:59:59Z&limit=10`
+
+Both endpoints require `ROLE_ADMIN` and accept ISO-8601 `Instant` values for `start` and `end`.

@@ -5,6 +5,7 @@
 -- =====================================================
 
 -- Drop tables in dependency order to allow clean recreation
+DROP TABLE IF EXISTS SecurityEvents CASCADE;
 DROP TABLE IF EXISTS CartItems CASCADE;
 DROP TABLE IF EXISTS Carts CASCADE;
 DROP TABLE IF EXISTS Reviews CASCADE;
@@ -26,6 +27,21 @@ CREATE TABLE Users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     provider VARCHAR(50) NOT NULL DEFAULT 'local',
     provider_id VARCHAR(255)
+);
+
+-- 1b. Security Events Table
+-- Requirements: Audit login/token events and brute-force alerts
+CREATE TABLE SecurityEvents (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(40) NOT NULL,
+    user_id INTEGER,
+    username VARCHAR(100),
+    ip_address VARCHAR(64),
+    user_agent VARCHAR(512),
+    endpoint VARCHAR(200),
+    token_hash VARCHAR(64),
+    details VARCHAR(500),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Categories Table
@@ -117,6 +133,14 @@ CREATE TABLE CartItems (
 CREATE INDEX IF NOT EXISTS idx_users_username ON Users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON Users(email);
 CREATE INDEX IF NOT EXISTS idx_users_provider ON Users(provider, provider_id);
+
+-- SecurityEvents Indexes
+CREATE INDEX IF NOT EXISTS idx_security_events_type_created_at
+    ON SecurityEvents(event_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_security_events_user_created_at
+    ON SecurityEvents(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_security_events_ip_created_at
+    ON SecurityEvents(ip_address, created_at DESC);
 
 -- Products Indexes
 CREATE INDEX IF NOT EXISTS idx_products_name ON Products(name);

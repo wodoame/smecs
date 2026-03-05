@@ -146,9 +146,6 @@ public class UserServiceImpl implements UserService {
                         user.setEmail(email);
                         user.setUsername(deriveUsername(name, email));
                         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-                    }
-                    // Ensure role is always set — a linked local account may have a null role
-                    if (user.getRole() == null || user.getRole().isBlank()) {
                         user.setRole("customer");
                     }
                      // Bind the OAuth2 identity

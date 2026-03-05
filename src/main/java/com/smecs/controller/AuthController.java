@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import com.smecs.util.JwtUtil;
 import com.smecs.service.CartService;
 import com.smecs.entity.Cart;
+import com.smecs.service.SecurityEventService;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,16 +24,20 @@ public class AuthController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final CartService cartService;
+    private final SecurityEventService securityEventService;
 
     @Autowired
-    public AuthController(UserService userService, JwtUtil jwtUtil, CartService cartService) {
+    public AuthController(UserService userService, JwtUtil jwtUtil, CartService cartService,
+                          SecurityEventService securityEventService) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.cartService = cartService;
+        this.securityEventService = securityEventService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ResponseDTO<UserResponseDTO>> register(@Valid @RequestBody UserRegisterDTO dto) {
+    public ResponseEntity<ResponseDTO<UserResponseDTO>> register(@Valid @RequestBody UserRegisterDTO dto,
+                                                                 HttpServletRequest request) {
         boolean success = userService.registerUser(dto);
         if (!success) {
             return ResponseEntity.badRequest().body(new ResponseDTO<>("error", "Registration failed", null));
@@ -39,6 +45,7 @@ public class AuthController {
         User user = userService.findByUsername(dto.getUsername());
         Cart cart = cartService.createCart(user.getId());
         String token = jwtUtil.generateToken(user, cart.getCartId());
+        securityEventService.recordTokenIssued(user, token, request);
         UserResponseDTO response = mapToDTO(user);
         response.setToken(token);
         response.setCartId(cart.getCartId());
@@ -47,14 +54,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ResponseDTO<UserResponseDTO>> login(@Valid @RequestBody UserLoginDTO dto) {
+    public ResponseEntity<ResponseDTO<UserResponseDTO>> login(@Valid @RequestBody UserLoginDTO dto,
+                                                              HttpServletRequest request) {
         User user = userService.authenticateUser(dto.getUsername(), dto.getPassword());
         if (user == null) {
+            securityEventService.recordLoginFailure(dto.getUsername(), request);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO<>("error", "Invalid credentials", null));
         }
         Cart cart = cartService.createCart(user.getId());
         String token = jwtUtil.generateToken(user, cart.getCartId());
+        securityEventService.recordLoginSuccess(user, request);
+        securityEventService.recordTokenIssued(user, token, request);
         UserResponseDTO response = mapToDTO(user);
         response.setToken(token);
         response.setCartId(cart.getCartId());
