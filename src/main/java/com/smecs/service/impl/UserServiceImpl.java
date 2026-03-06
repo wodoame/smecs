@@ -5,7 +5,11 @@ import com.smecs.entity.User;
 import com.smecs.repository.UserRepository;
 import com.smecs.service.UserService;
 import com.smecs.exception.ResourceNotFoundException;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -14,17 +18,13 @@ import org.springframework.util.StringUtils;
 import java.sql.Timestamp;
 import java.util.List;
 
+@AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final AuthenticationManager authenticationManager;
 
     @Override
     public boolean registerUser(UserRegisterDTO registrationDTO) {
@@ -60,18 +60,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User authenticateUser(String username, String password) {
-        if (!StringUtils.hasText(username)) {
-            throw new IllegalArgumentException("Username is required");
+        String principal = username.trim();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(principal, password));
+            return findByUsernameOrEmail(principal);
+        } catch (AuthenticationException ex) {
+            return null;
         }
-        if (!StringUtils.hasText(password)) {
-            throw new IllegalArgumentException("Password is required");
-        }
-        User user = findByUsername(username.trim());
-        if (user != null && user.getPasswordHash() != null
-                && passwordEncoder.matches(password, user.getPasswordHash())) {
-            return user;
-        }
-        return null;
     }
 
     @Override
@@ -90,11 +86,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
-    }
-
-    @Override
     public boolean usernameExists(String username) {
         return userRepository.existsByUsername(username);
     }
@@ -102,15 +93,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
-    }
-
-    @Override
-    public boolean updateUser(User user) {
-        if (user == null || user.getId() == null || user.getId() <= 0) {
-            throw new IllegalArgumentException("Invalid user");
-        }
-        userRepository.save(user);
-        return true;
     }
 
     @Override
@@ -175,5 +157,13 @@ public class UserServiceImpl implements UserService {
         if (email == null) return false;
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(emailRegex);
+    }
+
+    private User findByUsernameOrEmail(String usernameOrEmail) {
+        User user = userRepository.findByUsername(usernameOrEmail).orElse(null);
+        if (user != null) {
+            return user;
+        }
+        return userRepository.findByEmail(usernameOrEmail).orElse(null);
     }
 }
