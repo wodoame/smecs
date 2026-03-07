@@ -31,7 +31,6 @@ export interface AuthData {
     username: string;
     authExpiry?: number;
     token: string;
-    cartId: number;
 }
 
 export interface RegisterPayload {

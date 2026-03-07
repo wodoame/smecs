@@ -77,15 +77,9 @@ export function useCart(): CartOperations {
             return;
         }
 
-        if (user.cartId) {
-            setCartId(user.cartId);
-            setAuthError(null);
-            await fetchCartItems(user.cartId);
-        } else {
-            setCartItems([]);
-            setCartId(null);
-            setAuthError(null);
-        }
+        setCartId(user.id);
+        setAuthError(null);
+        await fetchCartItems(user.id);
     }, [fetchCartItems]);
 
     useEffect(() => {
@@ -112,7 +106,7 @@ export function useCart(): CartOperations {
             return;
         }
 
-        const currentCartId = cartId || user.cartId;
+        const currentCartId = cartId || user.id;
 
         if (!currentCartId) {
             toast.error("Cart not available");

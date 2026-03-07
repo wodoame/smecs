@@ -7,7 +7,7 @@ import type { AuthData } from "@/types/api";
  * Landing page for the Google OAuth2 redirect.
  *
  * Spring Security redirects here after a successful Google login:
- *   /oauth2/callback?token=<jwt>&cartId=<id>&next=<path>
+ *   /oauth2/callback?token=<jwt>&next=<path>
  *
  * This page reads those params, stores the session via auth.login(),
  * then navigates the user to their intended destination.
@@ -23,7 +23,6 @@ export default function OAuth2CallbackPage() {
         handled.current = true;
 
         const token  = searchParams.get("token");
-        const cartId = searchParams.get("cartId");
         const next   = searchParams.get("next") || "/";
 
         if (!token) {
@@ -43,7 +42,6 @@ export default function OAuth2CallbackPage() {
                 username: payload.sub,
                 email:  payload.email,
                 role:   payload.role,
-                cartId: cartId ? Number(cartId) : 0,
             };
 
             auth.login(authData);
@@ -62,4 +60,3 @@ export default function OAuth2CallbackPage() {
         </div>
     );
 }
-
