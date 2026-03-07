@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.CreateReviewRequestDTO;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.ResponseDTO;
@@ -69,7 +68,6 @@ public class ReviewController {
 
     @PutMapping("/{reviewId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<ReviewDTO>> updateReview(@PathVariable Long reviewId, @Valid @RequestBody UpdateReviewRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Review updated successfully",
                 reviewService.updateReview(reviewId, request)));
@@ -77,7 +75,6 @@ public class ReviewController {
 
     @DeleteMapping("/{reviewId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "review", idParamName = "reviewId")
     public ResponseEntity<ResponseDTO<Void>> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Deleted review with id " + reviewId + "successfully", null));

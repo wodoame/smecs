@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.security.JwtAuthenticationFilter;
 import com.smecs.security.OAuth2AuthenticationSuccessHandler;
-import com.smecs.security.OwnershipFilter;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,14 +35,11 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
-    private final OwnershipFilter ownershipFilter;
     private final ClientRegistrationRepository clientRegistrationRepository;
 
 
     @Bean
-    //noinspection RedundantThrows — throws Exception is required by the HttpSecurity builder API
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // Local ObjectMapper — avoids a circular dependency with any app-level ObjectMapper bean
         ObjectMapper mapper = new ObjectMapper();
 
         http
@@ -51,10 +47,6 @@ public class SecurityConfig {
             // Stateless JWT — no CSRF needed
             .csrf(AbstractHttpConfigurer::disable)
 
-            // IF_REQUIRED: OAuth2 login needs a short-lived session to store the
-            // PKCE state/nonce between the authorization request and the callback.
-            // All regular API requests remain stateless (no session cookie is sent
-            // by the React frontend, so they fall through to the JWT filter as before).
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
@@ -119,8 +111,7 @@ public class SecurityConfig {
 
             // Validate JWT before the standard username/password filter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // Enforce @RequireOwnership after authentication is established
-            .addFilterAfter(ownershipFilter, JwtAuthenticationFilter.class);
+            ;
 
         return http.build();
     }

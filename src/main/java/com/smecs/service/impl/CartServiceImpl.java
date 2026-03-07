@@ -6,6 +6,7 @@ import com.smecs.repository.CartRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.service.CartService;
+import com.smecs.security.OwnershipChecks;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.Optional;
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
+    private final OwnershipChecks ownershipChecks;
 
     @Override
     public List<Cart> getAllCarts() {
@@ -26,7 +28,9 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public Optional<Cart> getCartById(Long cartId) {
-        return cartRepository.findById(cartId);
+        Optional<Cart> cartOpt = cartRepository.findById(cartId);
+        cartOpt.ifPresent(ownershipChecks::assertCartOwnership);
+        return cartOpt;
     }
 
     @Override
@@ -35,12 +39,14 @@ public class CartServiceImpl implements CartService {
         if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
-        Cart existingCart = cartRepository.findByUserId(userId);
+        Cart existingCart = cartRepository.findById(userId).orElse(null);
         if (existingCart != null) {
             return existingCart;
         }
+        User user = userOpt.get();
         Cart cart = new Cart();
-        cart.setUser(userOpt.get());
+        cart.setUser(user);
+        cart.setCartId(user.getId());
         cart.setCreatedAt(java.time.LocalDateTime.now());
         cart.setUpdatedAt(java.time.LocalDateTime.now());
         return cartRepository.save(cart);
@@ -53,4 +59,5 @@ public class CartServiceImpl implements CartService {
         }
         cartRepository.deleteById(cartId);
     }
+
 }

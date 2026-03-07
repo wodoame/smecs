@@ -108,8 +108,7 @@ CREATE TABLE Reviews (
 -- 8. Carts Table
 -- Requirements: Shopping cart for users
 CREATE TABLE Carts (
-    cart_id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE REFERENCES Users(user_id) ON DELETE CASCADE,
+    cart_id INTEGER PRIMARY KEY REFERENCES Users(user_id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -170,7 +169,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON Reviews(user_id);
 -- product_id is already UNIQUE, which creates an index implicitly.
 
 -- Carts Indexes
-CREATE INDEX IF NOT EXISTS idx_carts_user_id ON Carts(user_id);
+-- cart_id is the primary key, which already creates an index implicitly.
 
 -- CartItems Indexes
 CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON CartItems(cart_id);

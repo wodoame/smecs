@@ -6,9 +6,16 @@ import lombok.Getter;
 @Getter
 @Builder
 public final class InventoryQuery {
-    private final String query;
-    private final Integer page;
-    private final Integer size;
-    private final String sort;
+    @Builder.Default
+    private final String query = "";
+
+    @Builder.Default
+    private final Integer page = 1;
+
+    @Builder.Default
+    private final Integer size = 10;
+
+    @Builder.Default
+    private final String sort = "id,asc";
 }
 

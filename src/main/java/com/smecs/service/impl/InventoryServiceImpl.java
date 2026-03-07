@@ -72,13 +72,10 @@ public class InventoryServiceImpl implements InventoryService {
     @Cacheable(value = CacheConfig.INVENTORY_SEARCH,
             key = "T(com.smecs.service.impl.InventoryServiceImpl).searchCacheKey(#query)")
     public PagedResponseDTO<InventoryDTO> searchInventory(InventoryQuery query) {
-        String searchTerm = Optional.ofNullable(query).map(InventoryQuery::getQuery).orElse("");
-        int page = Optional.ofNullable(query).map(InventoryQuery::getPage).orElse(1);
-        int size = Optional.ofNullable(query).map(InventoryQuery::getSize).orElse(10);
-        String sort = Optional.ofNullable(query).map(InventoryQuery::getSort).orElse("id,asc");
-
-        Pageable pageable = buildPageable(sort, page, size);
-        Page<Inventory> inventoryPage = inventoryRepository.searchInventory(searchTerm, pageable);
+        Pageable pageable = buildPageable(query.getSort(),
+                query.getPage(),
+                query.getSize());
+        Page<Inventory> inventoryPage = inventoryRepository.searchInventory(query.getQuery(), pageable);
         return getInventoryDTOPagedResponseDTO(inventoryPage);
     }
 
@@ -204,10 +201,10 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     public static String searchCacheKey(InventoryQuery query) {
-        String searchTerm = Optional.ofNullable(query).map(InventoryQuery::getQuery).orElse("");
-        int page = Optional.ofNullable(query).map(InventoryQuery::getPage).orElse(1);
-        int size = Optional.ofNullable(query).map(InventoryQuery::getSize).orElse(10);
-        String sort = Optional.ofNullable(query).map(InventoryQuery::getSort).orElse("id,asc");
-        return String.format("%s|%d|%d|%s", searchTerm, page, size, sort);
+        return String.format("%s|%d|%d|%s",
+                query.getQuery(),
+                query.getPage(),
+                query.getSize(),
+                query.getSort());
     }
 }

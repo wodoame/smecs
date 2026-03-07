@@ -35,15 +35,5 @@ public class CategoryQuery {
     public String sortOrDefault() {
         return (sort != null && !sort.isBlank()) ? sort : DEFAULT_SORT;
     }
-
-    public String searchTerm() {
-        if (name != null && !name.isBlank()) {
-            return name;
-        }
-        if (description != null && !description.isBlank()) {
-            return description;
-        }
-        return "";
-    }
 }
 

@@ -1,15 +1,18 @@
 package com.smecs.service.impl;
 
 import com.smecs.dto.UserRegisterDTO;
+import com.smecs.entity.Cart;
 import com.smecs.entity.User;
-import com.smecs.repository.UserRepository;
-import com.smecs.service.UserService;
 import com.smecs.exception.ResourceNotFoundException;
+import com.smecs.exception.UnauthorizedException;
+import com.smecs.repository.CartRepository;
+import com.smecs.repository.UserRepository;
+import com.smecs.security.SmecsUserPrincipal;
+import com.smecs.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -24,7 +27,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
+    private final CartRepository cartRepository;
 
     @Override
     public boolean registerUser(UserRegisterDTO registrationDTO) {
@@ -55,20 +58,18 @@ public class UserServiceImpl implements UserService {
         user.setRole(role != null ? role : "customer");
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
         userRepository.save(user);
+
+        Cart cart = new Cart();
+        cart.setUser(user);
+        cart.setCartId(user.getId());
+        cart.setCreatedAt(java.time.LocalDateTime.now());
+        cart.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setCart(cart);
+        cartRepository.save(cart);
+
         return true;
     }
 
-    @Override
-    public User authenticateUser(String username, String password) {
-        String principal = username.trim();
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(principal, password));
-            return findByUsernameOrEmail(principal);
-        } catch (AuthenticationException ex) {
-            return null;
-        }
-    }
 
     @Override
     public List<User> getAllUsers() {
@@ -112,6 +113,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public SmecsUserPrincipal requirePrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof SmecsUserPrincipal principal)) {
+            throw new UnauthorizedException("Authentication required");
+        }
+        if (principal.getUserId() == null) {
+            throw new UnauthorizedException("Authentication required");
+        }
+        return principal;
+    }
+
+    @Override
+    public boolean isAdmin(SmecsUserPrincipal principal) {
+        String role = principal.getRole();
+        return role != null && role.equalsIgnoreCase("admin");
+    }
+
+    @Override
     public User findOrCreateOAuthUser(OAuth2User oAuth2User, String provider) {
         String providerId = oAuth2User.getAttribute("sub");
         String email      = oAuth2User.getAttribute("email");
@@ -130,10 +149,22 @@ public class UserServiceImpl implements UserService {
                         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
                         user.setRole("customer");
                     }
-                     // Bind the OAuth2 identity
-                     user.setProvider(provider);
-                     user.setProviderId(providerId);
-                     return userRepository.save(user);
+                    // Bind the OAuth2 identity
+                    user.setProvider(provider);
+                    user.setProviderId(providerId);
+                    User savedUser = userRepository.save(user);
+
+                    if (savedUser.getCart() == null) {
+                        Cart cart = new Cart();
+                        cart.setUser(savedUser);
+                        cart.setCartId(savedUser.getId());
+                        cart.setCreatedAt(java.time.LocalDateTime.now());
+                        cart.setUpdatedAt(java.time.LocalDateTime.now());
+                        savedUser.setCart(cart);
+                        cartRepository.save(cart);
+                    }
+
+                    return savedUser;
                 });
     }
 
@@ -157,13 +188,5 @@ public class UserServiceImpl implements UserService {
         if (email == null) return false;
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(emailRegex);
-    }
-
-    private User findByUsernameOrEmail(String usernameOrEmail) {
-        User user = userRepository.findByUsername(usernameOrEmail).orElse(null);
-        if (user != null) {
-            return user;
-        }
-        return userRepository.findByEmail(usernameOrEmail).orElse(null);
     }
 }

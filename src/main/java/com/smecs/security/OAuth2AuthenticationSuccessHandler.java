@@ -1,8 +1,6 @@
 package com.smecs.security;
 
-import com.smecs.entity.Cart;
 import com.smecs.entity.User;
-import com.smecs.service.CartService;
 import com.smecs.service.SecurityEventService;
 import com.smecs.service.UserService;
 import com.smecs.util.JwtUtil;
@@ -25,9 +23,8 @@ import java.util.Arrays;
 
  * Responsibilities:
  *   1. Resolve (find or create) the local User record.
- *   2. Ensure the user has a Cart.
- *   3. Mint a JWT using the existing JwtUtil.
- *   4. Redirect the React SPA to /oauth2/callback?token=…&cartId=…
+ *   2. Mint a JWT using the existing JwtUtil.
+ *   3. Redirect the React SPA to /oauth2/callback?token=…
  *      (plus an optional ?next= param read from the pre-redirect cookie).
  */
 @Component
@@ -37,19 +34,16 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     static final String CALLBACK_PATH = "/oauth2/callback";
 
     private final UserService userService;
-    private final CartService cartService;
-    private final JwtUtil jwtUtil;
     private final SecurityEventService securityEventService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
     public OAuth2AuthenticationSuccessHandler(UserService userService,
-                                              CartService cartService,
-                                              JwtUtil jwtUtil,
-                                              SecurityEventService securityEventService) {
+                                              SecurityEventService securityEventService,
+                                              JwtUtil jwtUtil) {
         this.userService = userService;
-        this.cartService = cartService;
-        this.jwtUtil = jwtUtil;
         this.securityEventService = securityEventService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -62,22 +56,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // 1. Find or create the local User record
         User user = userService.findOrCreateOAuthUser(oAuth2User, "google");
 
-        // 2. Ensure the user has a Cart (createCart is idempotent)
-        Cart cart = cartService.createCart(user.getId());
-
-        // 3. Mint a JWT the same way the password-login endpoint does
-        String token = jwtUtil.generateToken(user, cart.getCartId());
+        String token = jwtUtil.generateToken(user);
         securityEventService.recordOAuth2Success(user, request);
         securityEventService.recordTokenIssued(user, token, request);
 
-        // 4. Build the redirect URL
+        // 3. Build the redirect URL
         String next = extractNextFromCookie(request);
         clearNextCookie(response);
 
         String redirectUrl = UriComponentsBuilder
                 .fromPath(CALLBACK_PATH)
                 .queryParam("token", token)
-                .queryParam("cartId", cart.getCartId())
                 .queryParam("next", next != null ? next : "/")
                 .build()
                 .toUriString();

@@ -2,14 +2,13 @@ package com.smecs.service;
 
 import com.smecs.dto.UserRegisterDTO;
 import com.smecs.entity.User;
+import com.smecs.security.SmecsUserPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.List;
 
 public interface UserService {
     boolean registerUser(UserRegisterDTO registrationDTO);
-
-    User authenticateUser(String usernameOrEmail, String password);
 
     List<User> getAllUsers();
 
@@ -24,6 +23,10 @@ public interface UserService {
     void deleteUser(Long userId);
 
     String hashPassword(String password);
+
+    SmecsUserPrincipal requirePrincipal();
+
+    boolean isAdmin(SmecsUserPrincipal principal);
 
     /**
      * Finds an existing user by provider + providerId, links an existing local

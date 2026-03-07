@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.OrderQuery;
@@ -30,7 +29,6 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<ResponseDTO<OrderDTO>> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Order created", orderService.createOrder(request)));
@@ -38,7 +36,6 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "order", idParamName = "id")
     public ResponseEntity<ResponseDTO<OrderDTO>> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order found", orderService.getOrderById(id)));
     }
@@ -69,7 +66,6 @@ public class OrderController {
 
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "user", idParamName = "userId")
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getOrdersByUserId(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "1") int page,

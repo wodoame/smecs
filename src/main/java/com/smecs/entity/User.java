@@ -25,4 +25,7 @@ public class User {
 
     /** The OAuth2 provider's subject identifier (Google "sub" claim). */
     private String providerId;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Cart cart;
 }

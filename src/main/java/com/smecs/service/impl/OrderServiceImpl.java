@@ -14,6 +14,7 @@ import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.OrderRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.repository.OrderItemRepository;
+import com.smecs.security.OwnershipChecks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,12 +38,17 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OwnershipChecks ownershipChecks;
 
     @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository, OrderItemRepository orderItemRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            UserRepository userRepository,
+                            OrderItemRepository orderItemRepository,
+                            OwnershipChecks ownershipChecks) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderItemRepository = orderItemRepository;
+        this.ownershipChecks = ownershipChecks;
     }
 
     @Override
@@ -51,6 +57,7 @@ public class OrderServiceImpl implements OrderService {
     @CacheEvict(value = {CacheConfig.ORDER_SEARCH, CacheConfig.USER_ORDER_SEARCH}, allEntries = true)
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
         Long userId = request.getUserId();
+        ownershipChecks.assertUserMatches(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Order order = new Order();
@@ -65,7 +72,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Cacheable(value = CacheConfig.ORDERS_BY_ID, key = "#id")
     public OrderDTO getOrderById(Long id) {
-        return orderRepository.findById(id).map(this::toDTO).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        ownershipChecks.assertOrderOwnership(order);
+        return toDTO(order);
     }
 
     @Override
@@ -104,6 +114,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Cacheable(value = CacheConfig.USER_ORDER_SEARCH, key = "T(com.smecs.service.impl.OrderServiceImpl).userSearchCacheKey(#userId, #query)")
     public PagedResponseDTO<OrderDTO> getOrdersByUserId(Long userId, OrderQuery query) {
+        ownershipChecks.assertUserMatches(userId);
         Page<Order> orderPage = orderRepository.findByUser_Id(userId, buildPageable(query));
         return getPagedResponse(orderPage);
     }
@@ -199,4 +210,5 @@ public class OrderServiceImpl implements OrderService {
         Long normalizedUserId = userId != null ? userId : -1L;
         return String.format("user:%d|%s", normalizedUserId, searchCacheKey(query));
     }
+
 }

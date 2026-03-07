@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.AddToCartRequest;
 import com.smecs.dto.CartItemDTO;
 import com.smecs.dto.ResponseDTO;
@@ -26,7 +25,6 @@ public class CartItemsController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartItemDTO>> addCartItem(@RequestBody @Valid AddToCartRequest request) {
         CartItem createdItem = cartItemService.addItemToCart(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -36,7 +34,6 @@ public class CartItemsController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> getCartItem(@PathVariable Long id) {
         return cartItemService.getCartItemById(id)
                 .map(item -> ResponseEntity.ok(new ResponseDTO<>("success", "Cart item found", mapToDTO(item))))
@@ -46,7 +43,6 @@ public class CartItemsController {
 
     @GetMapping("/cart/{cartId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<List<CartItemDTO>>> getCartItemsByCart(@PathVariable Long cartId) {
         List<CartItem> items = cartItemService.getCartItemsByCartId(cartId);
         List<CartItemDTO> dtos = items.stream()
@@ -57,7 +53,6 @@ public class CartItemsController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<CartItemDTO>> updateCartItem(@PathVariable Long id,
             @RequestBody CartItemDTO dto) {
         CartItem updated = cartItemService.updateCartItem(id, dto.getQuantity());
@@ -66,7 +61,6 @@ public class CartItemsController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cartItem", idParamName = "id")
     public ResponseEntity<ResponseDTO<Void>> deleteCartItem(@PathVariable Long id) {
         if (cartItemService.getCartItemById(id).isPresent()) {
             cartItemService.deleteCartItem(id);

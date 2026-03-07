@@ -11,6 +11,7 @@ import com.smecs.repository.ProductRepository;
 import com.smecs.repository.InventoryRepository;
 import com.smecs.service.CartItemService;
 import com.smecs.service.CartService;
+import com.smecs.security.OwnershipChecks;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class CartItemServiceImpl implements CartItemService {
     private final CartService cartService;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository; // read-only checks only
+    private final OwnershipChecks ownershipChecks;
 
     @Override
     @Transactional
@@ -99,11 +101,15 @@ public class CartItemServiceImpl implements CartItemService {
 
     @Override
     public java.util.Optional<CartItem> getCartItemById(Long cartItemId) {
-        return cartItemRepository.findById(cartItemId);
+        java.util.Optional<CartItem> itemOpt = cartItemRepository.findById(cartItemId);
+        itemOpt.ifPresent(ownershipChecks::assertCartItemOwnership);
+        return itemOpt;
     }
 
     @Override
     public List<CartItem> getCartItemsByCartId(Long cartId) {
+        cartService.getCartById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
         return cartItemRepository.findByCartId(cartId);
     }
 
@@ -112,6 +118,7 @@ public class CartItemServiceImpl implements CartItemService {
     public void deleteCartItem(Long cartItemId) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("CartItem not found with id: " + cartItemId));
+        ownershipChecks.assertCartItemOwnership(cartItem);
 
         cartItemRepository.delete(cartItem);
     }
@@ -119,6 +126,8 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     @Transactional
     public void deleteCartItemsByCartIdAndProductIds(Long cartId, List<Long> productIds) {
+        cartService.getCartById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
         if (productIds == null || productIds.isEmpty()) {
             return;
         }
@@ -133,6 +142,8 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     @Transactional
     public int deleteAllItems(Long cartId) {
+        cartService.getCartById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
         List<CartItem> items = cartItemRepository.findByCartId(cartId);
         if (items == null || items.isEmpty()) {
             return 0;
@@ -146,4 +157,5 @@ public class CartItemServiceImpl implements CartItemService {
         });
         return deleted.get();
     }
+
 }

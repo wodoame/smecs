@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.annotation.RequireOwnership;
 import com.smecs.dto.CartDTO;
 import com.smecs.dto.CreateCartRequest;
 import com.smecs.dto.ResponseDTO;
@@ -40,7 +39,6 @@ public class CartController {
 
     @DeleteMapping("/{cartId}/clear")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<Void>> clearCartItems(@PathVariable Long cartId) {
         int deleted = cartItemService.deleteAllItems(cartId);
         if (deleted == 0) {
@@ -59,7 +57,6 @@ public class CartController {
 
     @GetMapping("/{cartId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    @RequireOwnership(resourceType = "cart", idParamName = "cartId")
     public ResponseEntity<ResponseDTO<CartDTO>> getCartById(@PathVariable Long cartId) {
         return cartService.getCartById(cartId)
                 .map(cart -> ResponseEntity

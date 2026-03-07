@@ -9,6 +9,7 @@ import com.smecs.entity.Inventory;
 import com.smecs.service.OrderItemService;
 import com.smecs.service.OrderService;
 import com.smecs.service.CartItemService;
+import com.smecs.security.OwnershipChecks;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.OrderRepository;
 import com.smecs.repository.OrderItemRepository;
@@ -35,12 +36,14 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final CartRepository cartRepository;
     private final CartItemService cartItemService;
     private final InventoryRepository inventoryRepository;
+    private final OwnershipChecks ownershipChecks;
 
     @Override
     @Transactional
     public List<OrderItem> createOrderItems(Long orderId, List<OrderItemDTO> orderItemDTOs) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        ownershipChecks.assertOrderOwnership(order);
 
         List<OrderItem> orderItems = new ArrayList<>();
 
@@ -78,7 +81,7 @@ public class OrderItemServiceImpl implements OrderItemService {
 
         // Delete cart items for the user after successfully creating order items
         Long userId = order.getUser() != null ? order.getUser().getId() : null;
-        Cart userCart = userId != null ? cartRepository.findByUserId(userId) : null;
+        Cart userCart = userId != null ? cartRepository.findById(userId).orElse(null) : null;
         if (userCart != null) {
             List<Long> productIds = savedItems.stream()
                     .map(item -> item.getProduct() != null ? item.getProduct().getId() : null)
@@ -138,11 +141,16 @@ public class OrderItemServiceImpl implements OrderItemService {
 
     @Override
     public Optional<OrderItem> getOrderItemById(Long orderItemId) {
-        return orderItemRepository.findById(orderItemId);
+        Optional<OrderItem> itemOpt = orderItemRepository.findById(orderItemId);
+        itemOpt.ifPresent(ownershipChecks::assertOrderItemOwnership);
+        return itemOpt;
     }
 
     @Override
     public List<OrderItem> getOrderItemsByOrderId(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        ownershipChecks.assertOrderOwnership(order);
         return orderItemRepository.findByOrder_Id(orderId);
     }
 

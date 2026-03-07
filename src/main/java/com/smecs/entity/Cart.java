@@ -12,11 +12,12 @@ import java.time.LocalDateTime;
 @Table(name = "Carts")
 public class Cart {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "cart_id")
     private Long cartId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @MapsId
+    @JoinColumn(name = "cart_id")
     private User user;
 
     private LocalDateTime createdAt;

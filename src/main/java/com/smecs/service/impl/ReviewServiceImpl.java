@@ -13,6 +13,7 @@ import com.smecs.entity.Review;
 import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.service.ReviewService;
+import com.smecs.security.OwnershipChecks;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,16 +29,22 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final OwnershipChecks ownershipChecks;
 
     @Autowired
-    public ReviewServiceImpl(ReviewRepository reviewRepository, UserRepository userRepository, ProductRepository productRepository) {
+    public ReviewServiceImpl(ReviewRepository reviewRepository,
+                             UserRepository userRepository,
+                             ProductRepository productRepository,
+                             OwnershipChecks ownershipChecks) {
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
+        this.ownershipChecks = ownershipChecks;
     }
 
     @Override
     public ReviewDTO createReview(CreateReviewRequestDTO request) {
+        ownershipChecks.assertUserMatches(request.getUserId());
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
         Product product = productRepository.findById(request.getProductId())
@@ -57,6 +64,7 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewDTO updateReview(Long reviewId, UpdateReviewRequestDTO request) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
+        ownershipChecks.assertReviewOwnership(review);
 
         if (request.getRating() != null) {
             review.setRating(request.getRating());
@@ -109,10 +117,10 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public void deleteReview(Long reviewId) {
-        if (!reviewRepository.existsById(reviewId)) {
-            throw new ResourceNotFoundException("Review not found with id: " + reviewId);
-        }
-        reviewRepository.deleteById(reviewId);
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
+        ownershipChecks.assertReviewOwnership(review);
+        reviewRepository.delete(review);
     }
 
     private ReviewDTO mapToDTO(Review review) {
@@ -125,4 +133,5 @@ public class ReviewServiceImpl implements ReviewService {
         dto.setCreatedAt(review.getCreatedAt());
         return dto;
     }
+
 }
