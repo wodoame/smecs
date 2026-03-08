@@ -9,8 +9,8 @@ SMECS uses stateless JWT auth for API calls and supports OAuth2 login. This guid
 - CSRF protects server state when cookies are used for auth; CORS controls which browsers are allowed to make requests.
 
 ## SMECS-specific context
-- JWT API requests are stateless and do not rely on session cookies, so CSRF is disabled.
-- See `src/main/java/com/smecs/config/SecurityConfig.java` where `.csrf(AbstractHttpConfigurer::disable)` is configured.
+- JWT API requests are stateless and do not rely on session cookies, so CSRF checks are ignored for API paths.
+- See `src/main/java/com/smecs/config/SecurityConfig.java` where CSRF ignores `/api/**`, `/graphql`, and OAuth2 callback paths.
 - OAuth2 login uses a short-lived server session only for the login redirect flow (PKCE state/nonce); normal API calls still use JWT.
 
 ## Practical demonstrations
@@ -32,17 +32,16 @@ Notes:
 - For frontend dev, the common origin is `http://localhost:5173`.
 - If CORS is not yet configured, add it in Spring Security or a `WebMvcConfigurer`, then re-run the demo.
 
-### Demo B: CSRF (when using cookie-based auth)
-CSRF only applies to cookie-based sessions. SMECS uses JWT for APIs, so CSRF is disabled.
+### Demo B: CSRF mechanism (illustration endpoint)
+SMECS includes a dedicated form endpoint to demonstrate CSRF token flow.
 
-If you want to see CSRF in action for learning purposes:
-1) Temporarily enable CSRF in `SecurityConfig`.
-2) Use a cookie-based login flow (form login or session-based auth).
-3) From a different origin, submit a state-changing request (e.g., `POST /api/reviews`).
-4) Expected: the request fails without a valid CSRF token, even if a session cookie is present.
+1) Open `GET http://localhost:8080/security/csrf-demo` in your browser.
+2) Submit the form normally.
+3) Expected: success message appears (hidden CSRF input is sent).
+4) Remove the hidden `_csrf` field in browser dev tools and resubmit.
+5) Expected: request is rejected with `403 Forbidden`.
 
 ## Quick reference
 - Use CSRF protection when your API relies on session cookies in browsers.
 - Use CORS configuration to limit which browser origins may call your API.
-- JWT + stateless APIs: CSRF can be disabled, but CORS still matters for browsers.
-
+- JWT + stateless APIs: ignore CSRF for API paths, but CORS still matters for browsers.

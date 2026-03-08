@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRF Demo Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            max-width: 760px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .muted { color: #555; }
+        input, button {
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+<h1>CSRF Demo Endpoint</h1>
+<p class="muted">
+    This endpoint demonstrates CSRF protection for form-based browser requests.
+    JWT API routes remain CSRF-ignored in security config.
+</p>
+
+<div class="card" th:if="${successMessage}">
+    <strong th:text="${successMessage}">Success</strong>
+</div>
+
+<form th:action="@{/security/csrf-demo}" method="post" class="card">
+    <label for="note">Demo Note</label>
+    <input id="note" name="note" type="text" required placeholder="Type something">
+
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+    <div style="margin-top: 0.75rem;">
+        <button type="submit">Submit Form</button>
+    </div>
+</form>
+
+<div class="card">
+    <p><strong>Current CSRF token:</strong></p>
+    <code th:text="${csrfToken}">token</code>
+</div>
+</body>
+</html>

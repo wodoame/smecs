@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -44,8 +43,14 @@ public class SecurityConfig {
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // Stateless JWT — no CSRF needed
-            .csrf(AbstractHttpConfigurer::disable)
+            // Keep CSRF for browser form flows, but ignore stateless JWT/API endpoints.
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                    "/api/**",
+                    "/graphql",
+                    "/graphiql/**",
+                    "/oauth2/**",
+                    "/login/oauth2/**"
+            ))
 
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -65,6 +70,8 @@ public class SecurityConfig {
                     .requestMatchers("/graphql", "/graphiql/**").permitAll()
                     // SpringDoc / Swagger UI
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                    // CSRF demo form endpoint (intentionally browser/session based)
+                    .requestMatchers("/security/csrf-demo").permitAll()
                     // Static assets and Thymeleaf views
                     .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.svg").permitAll()
                     .requestMatchers("/products", "/products/{id}", "/categories", "/categories/{id}", "/login", "/signup").permitAll()
