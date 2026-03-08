@@ -74,8 +74,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────
-
     private String extractNextFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
         return Arrays.stream(request.getCookies())

@@ -57,25 +57,17 @@ public class SecurityConfig {
 
             // Authorization rules
             .authorizeHttpRequests(auth -> auth
-                    // Public auth endpoints
                     .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                    // OAuth2 authorization + callback endpoints
                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                    // Public read-only product, category, and review endpoints
                     .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/reviews/product/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/reviews/{reviewId}").permitAll()
-                    // GraphQL endpoint — method-level @PreAuthorize handles it
                     .requestMatchers("/graphql", "/graphiql/**").permitAll()
-                    // SpringDoc / Swagger UI
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                    // CSRF demo form endpoint (intentionally browser/session based)
                     .requestMatchers("/security/csrf-demo").permitAll()
-                    // Static assets and Thymeleaf views
                     .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.svg").permitAll()
                     .requestMatchers("/products", "/products/{id}", "/categories", "/categories/{id}", "/login", "/signup").permitAll()
-                    // Everything else requires a valid token
                     .anyRequest().authenticated()
             )
 
