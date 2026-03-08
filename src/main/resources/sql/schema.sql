@@ -6,6 +6,7 @@
 
 -- Drop tables in dependency order to allow clean recreation
 DROP TABLE IF EXISTS SecurityEvents CASCADE;
+DROP TABLE IF EXISTS revoked_tokens CASCADE;
 DROP TABLE IF EXISTS CartItems CASCADE;
 DROP TABLE IF EXISTS Carts CASCADE;
 DROP TABLE IF EXISTS Reviews CASCADE;
@@ -42,6 +43,15 @@ CREATE TABLE SecurityEvents (
     token_hash VARCHAR(64),
     details VARCHAR(500),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1c. Revoked Tokens Table
+-- Requirements: Persist revoked JWT token hashes until expiration
+CREATE TABLE revoked_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Categories Table
@@ -140,6 +150,10 @@ CREATE INDEX IF NOT EXISTS idx_security_events_user_created_at
     ON SecurityEvents(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_security_events_ip_created_at
     ON SecurityEvents(ip_address, created_at DESC);
+
+-- Revoked token indexes
+CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires_at
+    ON revoked_tokens(expires_at);
 
 -- Products Indexes
 CREATE INDEX IF NOT EXISTS idx_products_name ON Products(name);

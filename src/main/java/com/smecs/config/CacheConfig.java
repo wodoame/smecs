@@ -20,9 +20,12 @@ public class CacheConfig {
     public static final String INVENTORIES_BY_ID = "inventoriesById";
     public static final String INVENTORIES_BY_PRODUCT_ID = "inventoriesByProductId";
     public static final String INVENTORY_SEARCH = "inventorySearch";
+    public static final String REVOKED_TOKENS = "revokedTokens";
 
     private static final long DEFAULT_TTL_MINUTES = 5;
     private static final long DEFAULT_MAX_SIZE = 1_000;
+    private static final long REVOKED_TOKEN_TTL_MINUTES = 15;
+    private static final long REVOKED_TOKEN_MAX_SIZE = 100_000;
 
     @Bean
     public CacheManager cacheManager() {
@@ -42,6 +45,13 @@ public class CacheConfig {
                 Caffeine.newBuilder()
                         .expireAfterWrite(Duration.ofMinutes(DEFAULT_TTL_MINUTES))
                         .maximumSize(DEFAULT_MAX_SIZE)
+        );
+        manager.registerCustomCache(
+                REVOKED_TOKENS,
+                Caffeine.newBuilder()
+                        .expireAfterWrite(Duration.ofMinutes(REVOKED_TOKEN_TTL_MINUTES))
+                        .maximumSize(REVOKED_TOKEN_MAX_SIZE)
+                        .build()
         );
         return manager;
     }

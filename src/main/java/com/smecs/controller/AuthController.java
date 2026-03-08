@@ -17,7 +17,10 @@ import com.smecs.util.JwtUtil;
 import com.smecs.service.CartService;
 import com.smecs.entity.Cart;
 import com.smecs.service.SecurityEventService;
+import com.smecs.service.TokenRevocationService;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.Instant;
 
 @AllArgsConstructor
 @RestController
@@ -28,6 +31,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final CartService cartService;
     private final SecurityEventService securityEventService;
+    private final TokenRevocationService tokenRevocationService;
 
     @PostMapping("/register")
     public ResponseEntity<ResponseDTO<UserResponseDTO>> register(@Valid @RequestBody UserRegisterDTO dto,
@@ -66,6 +70,23 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> verify() {
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ResponseDTO<Void>> logout(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDTO<>("error", "Missing or invalid Authorization header", null));
+        }
+
+        String token = authHeader.substring(7);
+        Instant expiresAt = jwtUtil.extractExpiration(token).toInstant();
+        tokenRevocationService.revokeToken(token, expiresAt);
+        securityEventService.recordTokenRejected(token, request);
+
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Logout successful", null));
     }
 
     private UserResponseDTO mapToDTO(User user) {
