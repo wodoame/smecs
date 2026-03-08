@@ -1,10 +1,10 @@
 package com.smecs.service.impl;
 
 import com.smecs.entity.User;
-import com.smecs.repository.UserRepository;
+import com.smecs.security.SmecsUserPrincipal;
 import com.smecs.service.AuthenticationService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -14,28 +14,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
 
-    private final UserRepository userRepository;
-    private final ObjectProvider<AuthenticationManager> authenticationManagerProvider;
-
+    private final AuthenticationManager authenticationManager;
     @Override
     public User authenticateUser(String usernameOrEmail, String password) {
         String principal = usernameOrEmail.trim();
         try {
-            AuthenticationManager authenticationManager = authenticationManagerProvider.getObject();
-            authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(principal, password));
-            return findByUsernameOrEmail(principal);
+            Object authenticatedPrincipal = authentication.getPrincipal();
+            if (authenticatedPrincipal instanceof SmecsUserPrincipal smecsPrincipal) {
+                return toUser(smecsPrincipal);
+            }
+            return null;
         } catch (AuthenticationException ex) {
             return null;
         }
     }
 
-    private User findByUsernameOrEmail(String usernameOrEmail) {
-        User user = userRepository.findByUsername(usernameOrEmail).orElse(null);
-        if (user != null) {
-            return user;
-        }
-        return userRepository.findByEmail(usernameOrEmail).orElse(null);
+    private User toUser(SmecsUserPrincipal principal) {
+        User user = new User();
+        user.setId(principal.getUserId());
+        user.setUsername(principal.getUsername());
+        user.setEmail(principal.getEmail());
+        user.setRole(principal.getRole());
+        return user;
     }
 }
-

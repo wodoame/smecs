@@ -65,8 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email    = jwtUtil.extractEmail(token);
                 Long userId     = jwtUtil.extractUserId(token);
 
-                // Spring Security roles must be prefixed with ROLE_.
-                // Fall back to CUSTOMER if the claim is absent (e.g. legacy tokens).
                 String effectiveRole = (role != null && !role.isBlank()) ? role : "customer";
                 String springRole = "ROLE_" + effectiveRole.toUpperCase();
                 List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(springRole));
