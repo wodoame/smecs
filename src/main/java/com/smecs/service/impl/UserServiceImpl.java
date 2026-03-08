@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.sql.Timestamp;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
     private final CartRepository cartRepository;
 
     @Override
+    @Transactional
     public boolean registerUser(UserRegisterDTO registrationDTO) {
         String username = registrationDTO.getUsername();
         String email = registrationDTO.getEmail();
@@ -57,14 +59,13 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(hashPassword(password));
         user.setRole(role != null ? role : "customer");
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         Cart cart = new Cart();
-        cart.setUser(user);
-        cart.setCartId(user.getId());
+        cart.setUser(savedUser);
         cart.setCreatedAt(java.time.LocalDateTime.now());
         cart.setUpdatedAt(java.time.LocalDateTime.now());
-        user.setCart(cart);
+        savedUser.setCart(cart);
         cartRepository.save(cart);
 
         return true;
@@ -157,7 +158,6 @@ public class UserServiceImpl implements UserService {
                     if (savedUser.getCart() == null) {
                         Cart cart = new Cart();
                         cart.setUser(savedUser);
-                        cart.setCartId(savedUser.getId());
                         cart.setCreatedAt(java.time.LocalDateTime.now());
                         cart.setUpdatedAt(java.time.LocalDateTime.now());
                         savedUser.setCart(cart);

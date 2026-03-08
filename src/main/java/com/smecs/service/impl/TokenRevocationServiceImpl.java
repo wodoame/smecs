@@ -1,66 +1,49 @@
 package com.smecs.service.impl;
 
-import com.smecs.config.CacheConfig;
-import com.smecs.entity.RevokedToken;
-import com.smecs.repository.RevokedTokenRepository;
 import com.smecs.service.TokenRevocationService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TokenRevocationServiceImpl implements TokenRevocationService {
 
-    private final RevokedTokenRepository revokedTokenRepository;
-
-    @Autowired
-    public TokenRevocationServiceImpl(RevokedTokenRepository revokedTokenRepository) {
-        this.revokedTokenRepository = revokedTokenRepository;
-    }
+    private final Map<String, Instant> revokedTokenExpirations = new ConcurrentHashMap<>();
 
     @Override
-    @CachePut(
-            value = CacheConfig.REVOKED_TOKENS,
-            key = "T(com.smecs.service.impl.TokenRevocationServiceImpl).hashTokenForKey(#token)",
-            condition = "#token != null && !#token.isBlank()"
-    )
     public boolean revokeToken(String token, Instant expiresAt) {
-        String tokenHash = hashToken(token);
-        if (tokenHash == null) {
+        String tokenHash = hashTokenForKey(token);
+        if (tokenHash == null || expiresAt == null) {
             return false;
         }
 
-        if (!revokedTokenRepository.existsByTokenHash(tokenHash)) {
-            RevokedToken revokedToken = new RevokedToken();
-            revokedToken.setTokenHash(tokenHash);
-            revokedToken.setExpiresAt(expiresAt);
-            revokedTokenRepository.save(revokedToken);
-        }
-
-        revokedTokenRepository.deleteByExpiresAtBefore(Instant.now());
+        revokedTokenExpirations.put(tokenHash, expiresAt);
+        cleanupExpired(Instant.now());
         return true;
     }
 
     @Override
-    @Cacheable(
-            value = CacheConfig.REVOKED_TOKENS,
-            key = "T(com.smecs.service.impl.TokenRevocationServiceImpl).hashTokenForKey(#token)",
-            condition = "#token != null && !#token.isBlank()",
-            unless = "!#result"
-    )
     public boolean isRevoked(String token) {
-        String tokenHash = hashToken(token);
+        String tokenHash = hashTokenForKey(token);
         if (tokenHash == null) {
             return false;
         }
 
-        return revokedTokenRepository.existsByTokenHash(tokenHash);
+        Instant now = Instant.now();
+        Instant expiresAt = revokedTokenExpirations.get(tokenHash);
+        if (expiresAt == null) {
+            return false;
+        }
+        if (!expiresAt.isAfter(now)) {
+            revokedTokenExpirations.remove(tokenHash);
+            return false;
+        }
+        return true;
     }
 
     public static String hashTokenForKey(String token) {
@@ -76,7 +59,7 @@ public class TokenRevocationServiceImpl implements TokenRevocationService {
         }
     }
 
-    private String hashToken(String token) {
-        return hashTokenForKey(token);
+    private void cleanupExpired(Instant now) {
+        revokedTokenExpirations.entrySet().removeIf(entry -> !entry.getValue().isAfter(now));
     }
 }

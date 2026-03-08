@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,7 +58,7 @@ class UserServiceImplTest {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("hashed");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(42L);
             return user;
@@ -72,6 +73,43 @@ class UserServiceImplTest {
         Cart cart = cartCaptor.getValue();
         assertThat(cart.getCartId()).isEqualTo(42L);
         assertThat(cart.getUser().getId()).isEqualTo(42L);
+    }
+
+    @Test
+    void registerUser_whenUserDoesNotExist_createsUserAndAssignsCartWithSameId() {
+        UserRegisterDTO dto = new UserRegisterDTO();
+        dto.setUsername("newuser");
+        dto.setEmail("newuser@example.com");
+        dto.setPassword("secret123");
+        dto.setRole("customer");
+
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("newuser@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("secret123")).thenReturn("hashed-password");
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(101L);
+            return saved;
+        });
+        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        boolean result = userService.registerUser(dto);
+
+        assertThat(result).isTrue();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
+        User createdUser = userCaptor.getValue();
+        assertThat(createdUser.getUsername()).isEqualTo("newuser");
+        assertThat(createdUser.getEmail()).isEqualTo("newuser@example.com");
+        assertThat(createdUser.getPasswordHash()).isEqualTo("hashed-password");
+        assertThat(createdUser.getId()).isEqualTo(101L);
+
+        ArgumentCaptor<Cart> cartCaptor = ArgumentCaptor.forClass(Cart.class);
+        verify(cartRepository, times(1)).save(cartCaptor.capture());
+        Cart createdCart = cartCaptor.getValue();
+        assertThat(createdCart.getUser()).isSameAs(createdUser);
+        assertThat(createdCart.getCartId()).isEqualTo(createdUser.getId());
     }
 
     @Test
@@ -103,4 +141,3 @@ class UserServiceImplTest {
         assertThat(userService.findByUsername("missing")).isNull();
     }
 }
-

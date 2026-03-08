@@ -22,5 +22,4 @@ public class Cart {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    // cartItems removed as relationship is now decoupled
 }

@@ -1,7 +1,5 @@
 package com.smecs.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.smecs.dto.ResponseDTO;
 import com.smecs.service.SecurityEventService;
 import com.smecs.service.TokenRevocationService;
 import com.smecs.util.JwtUtil;
@@ -32,17 +30,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final SecurityEventService securityEventService;
     private final TokenRevocationService tokenRevocationService;
-    private final ObjectMapper objectMapper;
 
     @Autowired
     public JwtAuthenticationFilter(JwtUtil jwtUtil,
                                    SecurityEventService securityEventService,
-                                   TokenRevocationService tokenRevocationService,
-                                   ObjectMapper objectMapper) {
+                                   TokenRevocationService tokenRevocationService) {
         this.jwtUtil = jwtUtil;
         this.securityEventService = securityEventService;
         this.tokenRevocationService = tokenRevocationService;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -60,9 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 securityEventService.recordTokenRejected(token, request);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
-                response.getWriter().write(objectMapper.writeValueAsString(
-                        new ResponseDTO<>("error", "Token has been revoked", null)
-                ));
+                response.getWriter().write("{\"status\":\"error\",\"message\":\"Token has been revoked\",\"data\":null}");
                 return;
             }
 
