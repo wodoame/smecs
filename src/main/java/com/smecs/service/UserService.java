@@ -8,7 +8,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import java.util.List;
 
 public interface UserService {
-    boolean registerUser(UserRegisterDTO registrationDTO);
+    User registerUser(UserRegisterDTO registrationDTO);
 
     List<User> getAllUsers();
 

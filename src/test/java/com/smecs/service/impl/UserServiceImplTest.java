@@ -58,15 +58,23 @@ class UserServiceImplTest {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("hashed");
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(42L);
             return user;
         });
+        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
+            Cart cart = invocation.getArgument(0);
+            if (cart.getUser() != null) {
+                cart.setCartId(cart.getUser().getId());
+            }
+            return cart;
+        });
 
-        boolean result = userService.registerUser(dto);
+        User result = userService.registerUser(dto);
 
-        assertThat(result).isTrue();
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(42L);
 
         ArgumentCaptor<Cart> cartCaptor = ArgumentCaptor.forClass(Cart.class);
         verify(cartRepository).save(cartCaptor.capture());
@@ -86,19 +94,26 @@ class UserServiceImplTest {
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("newuser@example.com")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("hashed-password");
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User saved = invocation.getArgument(0);
             saved.setId(101L);
             return saved;
         });
-        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
+            Cart cart = invocation.getArgument(0);
+            if (cart.getUser() != null) {
+                cart.setCartId(cart.getUser().getId());
+            }
+            return cart;
+        });
 
-        boolean result = userService.registerUser(dto);
+        User result = userService.registerUser(dto);
 
-        assertThat(result).isTrue();
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(101L);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository, times(1)).saveAndFlush(userCaptor.capture());
+        verify(userRepository, times(1)).save(userCaptor.capture());
         User createdUser = userCaptor.getValue();
         assertThat(createdUser.getUsername()).isEqualTo("newuser");
         assertThat(createdUser.getEmail()).isEqualTo("newuser@example.com");

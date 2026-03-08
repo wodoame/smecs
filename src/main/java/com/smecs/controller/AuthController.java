@@ -36,11 +36,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ResponseDTO<UserResponseDTO>> register(@Valid @RequestBody UserRegisterDTO dto,
                                                                  HttpServletRequest request) {
-        boolean success = userService.registerUser(dto);
-        if (!success) {
-            return ResponseEntity.badRequest().body(new ResponseDTO<>("error", "Registration failed", null));
-        }
-        User user = userService.findByUsername(dto.getUsername());
+        User user = userService.registerUser(dto);
         String token = jwtUtil.generateToken(user);
         securityEventService.recordTokenIssued(user, token, request);
         UserResponseDTO response = mapToDTO(user);

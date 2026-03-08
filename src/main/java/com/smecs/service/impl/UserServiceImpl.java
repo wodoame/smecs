@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public boolean registerUser(UserRegisterDTO registrationDTO) {
+    public User registerUser(UserRegisterDTO registrationDTO) {
         String username = registrationDTO.getUsername();
         String email = registrationDTO.getEmail();
         String password = registrationDTO.getPassword();
@@ -59,16 +59,9 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(hashPassword(password));
         user.setRole(role != null ? role : "customer");
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        User savedUser = userRepository.saveAndFlush(user);
-
-        Cart cart = new Cart();
-        cart.setUser(savedUser);
-        cart.setCreatedAt(java.time.LocalDateTime.now());
-        cart.setUpdatedAt(java.time.LocalDateTime.now());
-        savedUser.setCart(cart);
-        cartRepository.save(cart);
-
-        return true;
+        User savedUser = userRepository.save(user);
+        ensureCart(savedUser);
+        return savedUser;
     }
 
 
@@ -132,18 +125,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User findOrCreateOAuthUser(OAuth2User oAuth2User, String provider) {
         String providerId = oAuth2User.getAttribute("sub");
         String email      = oAuth2User.getAttribute("email");
         String name       = oAuth2User.getAttribute("name");
 
-        // 1. Exact match by provider + providerId (returning user)
         return userRepository.findByProviderAndProviderId(provider, providerId)
                 .orElseGet(() -> {
-                    // 2. Same email already registered locally → link the account
                     User user = userRepository.findByEmail(email).orElse(null);
                     if (user == null) {
-                        // 3. Brand-new user — create one
                         user = new User();
                         user.setEmail(email);
                         user.setUsername(deriveUsername(name, email));
@@ -154,21 +145,11 @@ public class UserServiceImpl implements UserService {
                     user.setProvider(provider);
                     user.setProviderId(providerId);
                     User savedUser = userRepository.save(user);
-
-                    if (savedUser.getCart() == null) {
-                        Cart cart = new Cart();
-                        cart.setUser(savedUser);
-                        cart.setCreatedAt(java.time.LocalDateTime.now());
-                        cart.setUpdatedAt(java.time.LocalDateTime.now());
-                        savedUser.setCart(cart);
-                        cartRepository.save(cart);
-                    }
-
+                    ensureCart(savedUser);
                     return savedUser;
                 });
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────
 
     /** Turns "Jane Doe" → "jane.doe", appending digits until the username is unique. */
     private String deriveUsername(String displayName, String email) {
@@ -188,5 +169,17 @@ public class UserServiceImpl implements UserService {
         if (email == null) return false;
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
         return email.matches(emailRegex);
+    }
+
+    private void ensureCart(User user) {
+        if (user.getCart() != null) {
+            return;
+        }
+        Cart cart = new Cart();
+        cart.setUser(user);
+        cart.setCreatedAt(java.time.LocalDateTime.now());
+        cart.setUpdatedAt(java.time.LocalDateTime.now());
+        user.setCart(cart);
+        cartRepository.save(cart);
     }
 }
