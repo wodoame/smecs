@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class JwtUtilTest {
 
-    private final JwtUtil jwtUtil = new JwtUtil();
+    private static final String TEST_SECRET = "test_secret_key_which_is_long_enough_for_hs256";
+    private final JwtUtil jwtUtil = new JwtUtil(TEST_SECRET);
 
     @Test
     public void testGenerateAndValidateToken() {
