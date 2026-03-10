@@ -89,8 +89,9 @@ export default function AdminOrdersPage() {
         }
 
         fetch(`/api/orders?size=100`, {
+            credentials: "include",
             headers: {
-                "Authorization": `Bearer ${user.token}`,
+                ...auth.authHeaders(),
             },
         })
             .then((res) => {
@@ -129,9 +130,10 @@ export default function AdminOrdersPage() {
         try {
             const res = await fetch(`/api/orders/${orderId}`, {
                 method: "PUT",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`,
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({ status: newStatus }),
             });

@@ -9,8 +9,10 @@ import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.CartItemRepository;
 import com.smecs.repository.ProductRepository;
 import com.smecs.repository.InventoryRepository;
+import com.smecs.security.SmecsUserPrincipal;
 import com.smecs.service.CartItemService;
 import com.smecs.service.CartService;
+import com.smecs.service.UserService;
 import com.smecs.security.OwnershipChecks;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ public class CartItemServiceImpl implements CartItemService {
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository; // read-only checks only
     private final OwnershipChecks ownershipChecks;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -38,8 +41,8 @@ public class CartItemServiceImpl implements CartItemService {
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
 
-        Cart cart = cartService.getCartById(request.getCartId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + request.getCartId()));
+        SmecsUserPrincipal principal = userService.requirePrincipal();
+        Cart cart = cartService.getOrCreateCartForUser(principal.getUserId());
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
@@ -64,6 +67,7 @@ public class CartItemServiceImpl implements CartItemService {
         }
 
         cartItem.setQuantity(desiredTotal);
+        cart.setUpdatedAt(LocalDateTime.now());
         return cartItemRepository.save(cartItem);
     }
 

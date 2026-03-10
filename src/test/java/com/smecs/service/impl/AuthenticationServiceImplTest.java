@@ -1,6 +1,5 @@
 package com.smecs.service.impl;
 
-import com.smecs.entity.User;
 import com.smecs.security.SmecsUserPrincipal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +26,7 @@ class AuthenticationServiceImplTest {
     private AuthenticationServiceImpl authenticationService;
 
     @Test
-    void authenticateUser_returnsUser_whenCredentialsValid() {
+    void authenticateUser_returnsAuthentication_whenCredentialsValid() {
         SmecsUserPrincipal principal = new SmecsUserPrincipal(7L, "alice", "alice@example.com", "admin", "hashed");
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 principal,
@@ -35,33 +34,19 @@ class AuthenticationServiceImplTest {
                 principal.getAuthorities());
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
 
-        User result = authenticationService.authenticateUser("alice", "secret");
+        Authentication result = authenticationService.authenticateUser("alice", "secret");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(7L);
-        assertThat(result.getUsername()).isEqualTo("alice");
-        assertThat(result.getEmail()).isEqualTo("alice@example.com");
-        assertThat(result.getRole()).isEqualTo("admin");
+        assertThat(result.getPrincipal()).isSameAs(principal);
     }
 
     @Test
-    void authenticateUser_returnsNull_whenPrincipalTypeIsUnexpected() {
-        Authentication authentication = new UsernamePasswordAuthenticationToken("alice", null);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
-
-        User result = authenticationService.authenticateUser("alice@example.com", "secret");
-
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void authenticateUser_returnsNull_whenAuthenticationFails() {
+    void authenticateUser_propagatesAuthenticationFailure() {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("bad"));
 
-        User result = authenticationService.authenticateUser("alice", "wrong");
-
-        assertThat(result).isNull();
+        org.junit.jupiter.api.Assertions.assertThrows(BadCredentialsException.class,
+                () -> authenticationService.authenticateUser("alice", "wrong"));
     }
 }

@@ -1,8 +1,7 @@
 package com.smecs.service;
 
-import com.smecs.entity.User;
+import org.springframework.security.core.Authentication;
 
 public interface AuthenticationService {
-    User authenticateUser(String usernameOrEmail, String password);
+    Authentication authenticateUser(String usernameOrEmail, String password);
 }
-

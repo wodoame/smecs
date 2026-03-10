@@ -8,7 +8,19 @@ export const auth = {
         window.dispatchEvent(new Event("auth-change"));
     },
 
-    logout: () => {
+    logout: async () => {
+        const user = auth.getUser();
+        try {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+                },
+            });
+        } catch {
+            // Local cleanup still happens even if logout revocation fails.
+        }
         localStorage.removeItem(AUTH_KEY);
         window.dispatchEvent(new Event("auth-change"));
     },
@@ -34,5 +46,10 @@ export const auth = {
 
         // If no expiry, user is authenticated if data exists
         return true;
+    },
+
+    authHeaders: (): Record<string, string> => {
+        const user = auth.getUser();
+        return user?.token ? { Authorization: `Bearer ${user.token}` } : {};
     }
 };

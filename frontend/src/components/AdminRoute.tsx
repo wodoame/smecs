@@ -7,11 +7,11 @@ interface AdminRouteProps {
 }
 
 export function AdminRoute({ children }: AdminRouteProps) {
-    const { isAdmin } = useAuth();
+    const { canAccessAdmin } = useAuth();
 
     return (
         <ProtectedRoute>
-            {isAdmin ? (
+            {canAccessAdmin ? (
                 <>{children}</>
             ) : (
                 <div className="flex flex-col items-center justify-center h-[70vh] gap-4">

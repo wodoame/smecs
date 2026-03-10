@@ -24,7 +24,9 @@ export function useAuth() {
     return {
         user,
         isAuthenticated: !!user,
-        isAdmin: user?.role === "admin",
+        isAdmin: user?.role?.toUpperCase() === "ADMIN",
+        isStaff: user?.role?.toUpperCase() === "STAFF",
+        canAccessAdmin: ["ADMIN", "STAFF"].includes(user?.role?.toUpperCase() ?? ""),
         logout: auth.logout,
     };
 }

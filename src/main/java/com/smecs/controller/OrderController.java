@@ -41,13 +41,13 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<OrderDTO>> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateOrderStatusRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order status updated", orderService.updateOrderStatus(id, request)));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<PagedResponseDTO<OrderDTO>> getAllOrders(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -82,7 +82,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<Void>> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Order deleted", null));

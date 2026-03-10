@@ -43,9 +43,10 @@ export default function CartPage() {
             // Step 1: Create the order
             const orderResponse = await fetch("/api/orders", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`,
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
                     userId: user.id,
@@ -69,9 +70,10 @@ export default function CartPage() {
 
             const orderItemsResponse = await fetch("/api/orderitems", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`,
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
                     orderId: orderId,

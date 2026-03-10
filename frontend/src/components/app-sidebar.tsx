@@ -32,7 +32,7 @@ interface Category {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { pathname } = useLocation()
-  const { user, isAdmin } = useAuth()
+  const { user, canAccessAdmin } = useAuth()
   const [categories, setCategories] = React.useState<Category[]>([])
 
   React.useEffect(() => {
@@ -112,7 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Admin",
       url: "#",
       icon: Shield,
-      visible: isAdmin, // Only show if admin
+      visible: canAccessAdmin,
       items: [
         {
           title: "Inventories",

@@ -1,11 +1,9 @@
 package com.smecs.service.impl;
 
 import com.smecs.dto.UserRegisterDTO;
-import com.smecs.entity.Cart;
 import com.smecs.entity.User;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.exception.UnauthorizedException;
-import com.smecs.repository.CartRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.security.SmecsUserPrincipal;
 import com.smecs.service.UserService;
@@ -21,14 +19,16 @@ import org.springframework.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final Set<String> ALLOWED_ROLES = Set.of("ADMIN", "CUSTOMER", "STAFF");
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final CartRepository cartRepository;
 
     @Override
     @Transactional
@@ -57,11 +57,9 @@ public class UserServiceImpl implements UserService {
         user.setUsername(username.trim());
         user.setEmail(email.trim());
         user.setPasswordHash(hashPassword(password));
-        user.setRole(role != null ? role : "customer");
+        user.setRole(resolveRole(role));
         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        User savedUser = userRepository.save(user);
-        ensureCart(savedUser);
-        return savedUser;
+        return userRepository.save(user);
     }
 
 
@@ -139,14 +137,11 @@ public class UserServiceImpl implements UserService {
                         user.setEmail(email);
                         user.setUsername(deriveUsername(name, email));
                         user.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-                        user.setRole("customer");
+                        user.setRole("CUSTOMER");
                     }
-                    // Bind the OAuth2 identity
                     user.setProvider(provider);
                     user.setProviderId(providerId);
-                    User savedUser = userRepository.save(user);
-                    ensureCart(savedUser);
-                    return savedUser;
+                    return userRepository.save(user);
                 });
     }
 
@@ -171,15 +166,14 @@ public class UserServiceImpl implements UserService {
         return email.matches(emailRegex);
     }
 
-    private void ensureCart(User user) {
-        if (user.getCart() != null) {
-            return;
+    private String resolveRole(String role) {
+        if (!StringUtils.hasText(role)) {
+            return "CUSTOMER";
         }
-        Cart cart = new Cart();
-        cart.setUser(user);
-        cart.setCreatedAt(java.time.LocalDateTime.now());
-        cart.setUpdatedAt(java.time.LocalDateTime.now());
-        user.setCart(cart);
-        cartRepository.save(cart);
+        String normalizedRole = role.trim().toUpperCase();
+        if (!ALLOWED_ROLES.contains(normalizedRole)) {
+            throw new IllegalArgumentException("Invalid role. Allowed roles: ADMIN, CUSTOMER, STAFF");
+        }
+        return normalizedRole;
     }
 }

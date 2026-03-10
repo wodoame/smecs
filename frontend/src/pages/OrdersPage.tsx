@@ -89,8 +89,9 @@ export default function OrdersPage() {
         }
 
         fetch(`/api/orders/user/${user.id}`, {
+            credentials: "include",
             headers: {
-                "Authorization": `Bearer ${user.token}`,
+                ...auth.authHeaders(),
             },
         })
             .then((res) => {

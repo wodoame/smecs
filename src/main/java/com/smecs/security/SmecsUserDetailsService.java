@@ -2,6 +2,7 @@ package com.smecs.security;
 
 import com.smecs.entity.User;
 import com.smecs.repository.UserRepository;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +20,7 @@ public class SmecsUserDetailsService implements UserDetailsService {
     }
 
     @Override
+    @NullMarked
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(usernameOrEmail)
                 .orElseGet(() -> userRepository.findByEmail(usernameOrEmail).orElse(null));

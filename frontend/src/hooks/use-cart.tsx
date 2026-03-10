@@ -26,12 +26,11 @@ export function useCart(): CartOperations {
     const [authError, setAuthError] = useState<'unauthorized' | 'forbidden' | null>(null);
 
     const fetchCartItems = useCallback(async (id: number) => {
-        const user = auth.getUser();
-
         try {
             const response = await fetch(`/api/cart-items/cart/${id}`, {
+                credentials: "include",
                 headers: {
-                    ...(user?.token && { "Authorization": `Bearer ${user.token}` })
+                    ...auth.authHeaders(),
                 }
             });
 
@@ -118,12 +117,12 @@ export function useCart(): CartOperations {
         try {
             const response = await fetch("/api/cart-items", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
-                    cartId: currentCartId,
                     productId: product.id,
                     quantity: 1
                 })
@@ -152,8 +151,9 @@ export function useCart(): CartOperations {
         try {
             const response = await fetch(`/api/cart-items/${targetId}`, {
                 method: "DELETE",
+                credentials: "include",
                 headers: {
-                    "Authorization": `Bearer ${user.token}`
+                    ...auth.authHeaders(),
                 }
             });
             if (response.ok) await refreshCart();
@@ -175,9 +175,10 @@ export function useCart(): CartOperations {
         try {
             const response = await fetch(`/api/cart-items/${targetId}`, {
                 method: "PUT",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
                     quantity
@@ -197,8 +198,9 @@ export function useCart(): CartOperations {
         try {
             const response = await fetch(`/api/carts/${cartId}/clear`, {
                 method: "DELETE",
+                credentials: "include",
                 headers: {
-                    "Authorization": `Bearer ${user.token}`
+                    ...auth.authHeaders(),
                 }
             });
             if (response.ok) {

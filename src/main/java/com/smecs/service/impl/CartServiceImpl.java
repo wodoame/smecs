@@ -43,10 +43,22 @@ public class CartServiceImpl implements CartService {
         if (existingCart != null) {
             return existingCart;
         }
-        User user = userOpt.get();
+        return createNewCart(userOpt.get());
+    }
+
+    @Override
+    public Cart getOrCreateCartForUser(Long userId) {
+        return cartRepository.findById(userId)
+                .orElseGet(() -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    return createNewCart(user);
+                });
+    }
+
+    private Cart createNewCart(User user) {
         Cart cart = new Cart();
         cart.setUser(user);
-        cart.setCartId(user.getId());
         cart.setCreatedAt(java.time.LocalDateTime.now());
         cart.setUpdatedAt(java.time.LocalDateTime.now());
         return cartRepository.save(cart);

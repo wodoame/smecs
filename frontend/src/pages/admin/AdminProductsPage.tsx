@@ -176,6 +176,7 @@ export default function AdminProductsPage() {
 
         fetch("/graphql", {
             method: "POST",
+            credentials: "include",
             headers,
             body: JSON.stringify(graphqlQuery),
         })
@@ -320,6 +321,7 @@ export default function AdminProductsPage() {
 
         fetch("/graphql", {
             method: "POST",
+            credentials: "include",
             headers,
             body: JSON.stringify(mutation),
         })
@@ -402,6 +404,7 @@ export default function AdminProductsPage() {
 
         fetch(`/api/inventories/${editingItem.id}`, {
             method: "PUT",
+            credentials: "include",
             headers,
             body: JSON.stringify(payload),
         })
@@ -448,6 +451,7 @@ export default function AdminProductsPage() {
 
         fetch(`/api/products/${editingProductItem.productId}`, {
             method: "PUT",
+            credentials: "include",
             headers,
             body: JSON.stringify(payload),
         })
@@ -481,9 +485,10 @@ export default function AdminProductsPage() {
 
             const response = await fetch(`/api/products/${productId}`, {
                 method: "DELETE",
+                credentials: "include",
                 headers: {
-                    "Authorization": `Bearer ${user.token}`,
                     "Content-Type": "application/json",
+                    ...auth.authHeaders(),
                 },
             });
 

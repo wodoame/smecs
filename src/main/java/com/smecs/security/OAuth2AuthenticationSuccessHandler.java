@@ -24,8 +24,7 @@ import java.util.Arrays;
  * Responsibilities:
  *   1. Resolve (find or create) the local User record.
  *   2. Mint a JWT using the existing JwtUtil.
- *   3. Redirect the React SPA to /oauth2/callback?token=…
- *      (plus an optional ?next= param read from the pre-redirect cookie).
+ *   3. Deliver the JWT in an HttpOnly cookie before redirecting the SPA.
  */
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -59,14 +58,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String token = jwtUtil.generateToken(user);
         securityEventService.recordOAuth2Success(user, request);
         securityEventService.recordTokenIssued(user, token, request);
+        AuthCookieUtils.addAccessTokenCookie(response, token, jwtUtil.getExpirationTimeSeconds());
 
-        // 3. Build the redirect URL
         String next = extractNextFromCookie(request);
         clearNextCookie(response);
 
         String redirectUrl = UriComponentsBuilder
                 .fromPath(CALLBACK_PATH)
-                .queryParam("token", token)
                 .queryParam("next", next != null ? next : "/")
                 .build()
                 .toUriString();

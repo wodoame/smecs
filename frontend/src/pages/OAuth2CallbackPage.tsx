@@ -7,10 +7,10 @@ import type { AuthData } from "@/types/api";
  * Landing page for the Google OAuth2 redirect.
  *
  * Spring Security redirects here after a successful Google login:
- *   /oauth2/callback?token=<jwt>&next=<path>
+ *   /oauth2/callback?next=<path>
  *
- * This page reads those params, stores the session via auth.login(),
- * then navigates the user to their intended destination.
+ * The JWT is delivered in an HttpOnly cookie, so the SPA fetches the
+ * authenticated user profile and then restores the original route.
  */
 export default function OAuth2CallbackPage() {
     const [searchParams] = useSearchParams();
@@ -22,33 +22,35 @@ export default function OAuth2CallbackPage() {
         if (handled.current) return;
         handled.current = true;
 
-        const token  = searchParams.get("token");
-        const next   = searchParams.get("next") || "/";
+        const completeOAuthLogin = async () => {
+            try {
+                const next = searchParams.get("next") || "/";
+                const response = await fetch("/api/auth/me", {
+                    credentials: "include",
+                });
 
-        if (!token) {
-            // Something went wrong on the backend — send to login with an error flag
-            navigate("/login?error=oauth_failed", { replace: true });
-            return;
-        }
+                if (!response.ok) {
+                    navigate("/login?error=oauth_failed", { replace: true });
+                    return;
+                }
 
-        // Decode the JWT payload to extract user claims (no signature check needed
-        // here — the server already validated the token before issuing it)
-        try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
+                const payload = await response.json();
+                const user = payload.data;
+                const authData: AuthData = {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                };
 
-            const authData: AuthData = {
-                token,
-                id:     payload.id,
-                username: payload.sub,
-                email:  payload.email,
-                role:   payload.role,
-            };
+                auth.login(authData);
+                navigate(next, { replace: true });
+            } catch {
+                navigate("/login?error=oauth_failed", { replace: true });
+            }
+        };
 
-            auth.login(authData);
-            navigate(next, { replace: true });
-        } catch {
-            navigate("/login?error=oauth_failed", { replace: true });
-        }
+        void completeOAuthLogin();
     }, [navigate, searchParams]);
 
     return (

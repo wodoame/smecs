@@ -30,7 +30,7 @@ export interface AuthData {
     role: string;
     username: string;
     authExpiry?: number;
-    token: string;
+    token?: string;
 }
 
 export interface RegisterPayload {

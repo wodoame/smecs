@@ -53,7 +53,7 @@ public class OrderItemsController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<OrderItemDTO>> updateOrderItem(@PathVariable Long id, @RequestBody OrderItemDTO orderItemDTO) {
         try {
             OrderItem updatedItem = orderItemService.updateOrderItem(id, orderItemDTO);
@@ -65,7 +65,7 @@ public class OrderItemsController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<Void>> deleteOrderItem(@PathVariable Long id) {
         try {
             orderItemService.deleteOrderItem(id);

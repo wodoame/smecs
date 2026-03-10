@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { auth } from "@/lib/auth";
 
 interface ReviewFormProps {
     productId: number;
@@ -44,9 +45,10 @@ export function ReviewForm({ productId, onSubmitSuccess }: ReviewFormProps) {
 
             const response = await fetch("/api/reviews", {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${user.token}`
+                    ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
                     userId: user.id,

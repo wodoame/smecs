@@ -28,7 +28,7 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<ProductDTO>> createProduct(@Valid @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Product created", productService.createProduct(request)));
@@ -61,13 +61,13 @@ public class ProductController {
 
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<ProductDTO>> updateProduct(@PathVariable Long id, @RequestBody CreateProductRequestDTO request) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product updated", productService.updateProduct(id, request)));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Product deleted", null));

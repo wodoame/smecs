@@ -152,9 +152,10 @@ export default function AdminCategoriesPage() {
 
         fetch("/api/categories", {
             method: "POST",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${user.token}`,
+                ...auth.authHeaders(),
             },
             body: JSON.stringify(newCategory),
         })
@@ -187,8 +188,9 @@ export default function AdminCategoriesPage() {
         try {
             const response = await fetch(`/api/categories/${id}`, {
                 method: "DELETE",
+                credentials: "include",
                 headers: {
-                    "Authorization": `Bearer ${user.token}`,
+                    ...auth.authHeaders(),
                 },
             });
 
@@ -226,9 +228,10 @@ export default function AdminCategoriesPage() {
 
         fetch(`/api/categories/${editingCategory.categoryId}`, {
             method: "PUT",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${user.token}`,
+                ...auth.authHeaders(),
             },
             body: JSON.stringify({
                 categoryName: editingCategory.categoryName,

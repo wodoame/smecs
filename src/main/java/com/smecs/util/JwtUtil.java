@@ -1,20 +1,30 @@
 package com.smecs.util;
 
 import com.smecs.entity.User;
+import com.smecs.security.AuthCookieUtils;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecurityException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -52,9 +62,53 @@ public class JwtUtil {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            return false;
+        } catch (ExpiredJwtException e) {
+            log.warn("Rejected JWT: token expired at {}", e.getClaims().getExpiration());
+        } catch (MalformedJwtException e) {
+            log.warn("Rejected JWT: token is malformed");
+        } catch (SecurityException e) {
+            log.warn("Rejected JWT: signature validation failed");
+        } catch (UnsupportedJwtException e) {
+            log.warn("Rejected JWT: token format is unsupported");
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected JWT: token is blank or invalid");
         }
+        return false;
+    }
+
+    public long getExpirationTimeSeconds() {
+        return EXPIRATION_TIME / 1000;
+    }
+
+    public String generateToken(Long userId, String username, String email, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("email", email);
+        claims.put("id", userId);
+        return createToken(claims, username);
+    }
+
+    public String generateToken(com.smecs.security.SmecsUserPrincipal principal) {
+        return generateToken(principal.getUserId(), principal.getUsername(), principal.getEmail(), principal.getRole());
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+    }
+
+    public String resolveToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        if (request.getCookies() == null) {
+            return null;
+        }
+        return Arrays.stream(request.getCookies())
+                .filter(cookie -> AuthCookieUtils.ACCESS_TOKEN_COOKIE.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     public String extractUsername(String token) {
@@ -85,11 +139,4 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-    }
-
-    private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
 }

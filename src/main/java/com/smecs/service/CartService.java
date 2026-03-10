@@ -10,6 +10,6 @@ public interface CartService {
     List<Cart> getAllCarts();
     Optional<Cart> getCartById(Long cartId);
     Cart createCart(Long userId);
+    Cart getOrCreateCartForUser(Long userId);
     void deleteCart(Long cartId);
 }
-

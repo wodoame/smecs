@@ -9,8 +9,10 @@ import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.repository.CartItemRepository;
 import com.smecs.repository.InventoryRepository;
 import com.smecs.repository.ProductRepository;
+import com.smecs.security.SmecsUserPrincipal;
 import com.smecs.security.OwnershipChecks;
 import com.smecs.service.CartService;
+import com.smecs.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,13 +44,15 @@ class CartItemServiceImplTest {
     @Mock
     private OwnershipChecks ownershipChecks;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private CartItemServiceImpl cartItemService;
 
     @Test
     void addItemToCart_createsNewItemWhenNoneExists() {
         AddToCartRequest request = new AddToCartRequest();
-        request.setCartId(7L);
         request.setProductId(9L);
         request.setQuantity(2);
 
@@ -59,7 +63,8 @@ class CartItemServiceImplTest {
         Inventory inventory = new Inventory();
         inventory.setQuantity(5);
 
-        when(cartService.getCartById(7L)).thenReturn(Optional.of(cart));
+        when(userService.requirePrincipal()).thenReturn(new SmecsUserPrincipal(7L, "alice", "alice@example.com", "CUSTOMER"));
+        when(cartService.getOrCreateCartForUser(7L)).thenReturn(cart);
         when(productRepository.findById(9L)).thenReturn(Optional.of(product));
         when(cartItemRepository.findByCartIdAndProductId(7L, 9L)).thenReturn(null);
         when(inventoryRepository.findByProduct_Id(9L)).thenReturn(Optional.of(inventory));
@@ -75,7 +80,6 @@ class CartItemServiceImplTest {
     @Test
     void addItemToCart_throwsWhenInventoryInsufficient() {
         AddToCartRequest request = new AddToCartRequest();
-        request.setCartId(7L);
         request.setProductId(9L);
         request.setQuantity(3);
 
@@ -86,7 +90,8 @@ class CartItemServiceImplTest {
         Inventory inventory = new Inventory();
         inventory.setQuantity(2);
 
-        when(cartService.getCartById(7L)).thenReturn(Optional.of(cart));
+        when(userService.requirePrincipal()).thenReturn(new SmecsUserPrincipal(7L, "alice", "alice@example.com", "CUSTOMER"));
+        when(cartService.getOrCreateCartForUser(7L)).thenReturn(cart);
         when(productRepository.findById(9L)).thenReturn(Optional.of(product));
         when(cartItemRepository.findByCartIdAndProductId(7L, 9L)).thenReturn(null);
         when(inventoryRepository.findByProduct_Id(9L)).thenReturn(Optional.of(inventory));
@@ -118,4 +123,3 @@ class CartItemServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> cartItemService.getCartItemsByCartId(10L));
     }
 }
-

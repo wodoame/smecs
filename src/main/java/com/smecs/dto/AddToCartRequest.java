@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 @Data
 public class AddToCartRequest {
-    @NotNull(message = "Cart ID is required")
     private Long cartId;
 
     @NotNull(message = "Product ID is required")

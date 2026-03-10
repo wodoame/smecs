@@ -40,8 +40,9 @@ export default function OrderItemsPage() {
             try {
                 // Fetch the order items
                 const res = await fetch(`/api/orderitems/order/${orderId}`, {
+                    credentials: "include",
                     headers: {
-                        "Authorization": `Bearer ${user.token}`,
+                        ...auth.authHeaders(),
                     }
                 });
 

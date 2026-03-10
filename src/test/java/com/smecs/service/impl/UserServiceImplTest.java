@@ -1,16 +1,13 @@
 package com.smecs.service.impl;
 
 import com.smecs.dto.UserRegisterDTO;
-import com.smecs.entity.Cart;
 import com.smecs.entity.User;
 import com.smecs.exception.UnauthorizedException;
-import com.smecs.repository.CartRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.security.SmecsUserPrincipal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,8 +20,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,9 +31,6 @@ class UserServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private CartRepository cartRepository;
-
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -48,7 +40,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void registerUser_createsUserAndCart() {
+    void registerUser_createsUserWithoutCart() {
         UserRegisterDTO dto = new UserRegisterDTO();
         dto.setUsername("alice");
         dto.setEmail("alice@example.com");
@@ -63,68 +55,35 @@ class UserServiceImplTest {
             user.setId(42L);
             return user;
         });
-        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
-            Cart cart = invocation.getArgument(0);
-            if (cart.getUser() != null) {
-                cart.setCartId(cart.getUser().getId());
-            }
-            return cart;
-        });
 
         User result = userService.registerUser(dto);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(42L);
-
-        ArgumentCaptor<Cart> cartCaptor = ArgumentCaptor.forClass(Cart.class);
-        verify(cartRepository).save(cartCaptor.capture());
-        Cart cart = cartCaptor.getValue();
-        assertThat(cart.getCartId()).isEqualTo(42L);
-        assertThat(cart.getUser().getId()).isEqualTo(42L);
     }
 
     @Test
-    void registerUser_whenUserDoesNotExist_createsUserAndAssignsCartWithSameId() {
+    void registerUser_normalizesSupportedRoles() {
         UserRegisterDTO dto = new UserRegisterDTO();
-        dto.setUsername("newuser");
-        dto.setEmail("newuser@example.com");
+        dto.setUsername("staffer");
+        dto.setEmail("staffer@example.com");
         dto.setPassword("secret123");
-        dto.setRole("customer");
+        dto.setRole("staff");
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("newuser@example.com")).thenReturn(false);
+        when(userRepository.existsByUsername("staffer")).thenReturn(false);
+        when(userRepository.existsByEmail("staffer@example.com")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("hashed-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User saved = invocation.getArgument(0);
             saved.setId(101L);
             return saved;
         });
-        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
-            Cart cart = invocation.getArgument(0);
-            if (cart.getUser() != null) {
-                cart.setCartId(cart.getUser().getId());
-            }
-            return cart;
-        });
 
         User result = userService.registerUser(dto);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(101L);
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository, times(1)).save(userCaptor.capture());
-        User createdUser = userCaptor.getValue();
-        assertThat(createdUser.getUsername()).isEqualTo("newuser");
-        assertThat(createdUser.getEmail()).isEqualTo("newuser@example.com");
-        assertThat(createdUser.getPasswordHash()).isEqualTo("hashed-password");
-        assertThat(createdUser.getId()).isEqualTo(101L);
-
-        ArgumentCaptor<Cart> cartCaptor = ArgumentCaptor.forClass(Cart.class);
-        verify(cartRepository, times(1)).save(cartCaptor.capture());
-        Cart createdCart = cartCaptor.getValue();
-        assertThat(createdCart.getUser()).isSameAs(createdUser);
-        assertThat(createdCart.getCartId()).isEqualTo(createdUser.getId());
+        assertThat(result.getRole()).isEqualTo("STAFF");
     }
 
     @Test

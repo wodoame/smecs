@@ -23,7 +23,7 @@ CREATE TABLE Users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash TEXT,
-    role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'customer')),
+    role VARCHAR(20) DEFAULT 'CUSTOMER' CHECK (role IN ('ADMIN', 'CUSTOMER', 'STAFF')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     provider VARCHAR(50) NOT NULL DEFAULT 'local',
     provider_id VARCHAR(255)

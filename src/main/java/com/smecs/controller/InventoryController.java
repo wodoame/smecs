@@ -30,14 +30,14 @@ public class InventoryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> createInventory(@Valid @RequestBody CreateInventoryRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Inventory created", inventoryService.createInventory(request)));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<PagedResponseDTO<InventoryDTO>>> searchInventory(
             @RequestParam(required = false, defaultValue = "") String query,
             @RequestParam(defaultValue = "1") @Min(1) int page,
@@ -56,20 +56,20 @@ public class InventoryController {
     }
 
     @GetMapping("/product/{productId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryByProductId(@PathVariable Long productId) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory found", inventoryService.getInventoryByProductId(productId)));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> getInventoryById(@PathVariable Long id) {
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory retrieved", inventoryService.getInventoryById(id)));
     }
 
 
     @PutMapping("/{inventoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<InventoryDTO>> updateInventory(
             @PathVariable Long inventoryId,
             @Valid @RequestBody UpdateInventoryRequestDTO request) {
@@ -78,7 +78,7 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{inventoryId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<ResponseDTO<Void>> deleteInventory(@PathVariable Long inventoryId) {
         inventoryService.deleteInventory(inventoryId);
         return ResponseEntity.ok(new ResponseDTO<>("success", "Inventory with id " + inventoryId + " deleted successfully", null));

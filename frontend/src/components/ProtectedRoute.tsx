@@ -25,9 +25,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
             try {
                 const response = await fetch("/api/auth/verify", {
                     method: "GET",
+                    credentials: "include",
                     headers: {
-                        "Authorization": `Bearer ${user.token}`,
                         "Content-Type": "application/json",
+                        ...auth.authHeaders(),
                     },
                 });
 
