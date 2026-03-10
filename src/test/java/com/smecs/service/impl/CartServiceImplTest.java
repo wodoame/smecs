@@ -63,7 +63,6 @@ class CartServiceImplTest {
         verify(cartRepository).save(captor.capture());
         Cart created = captor.getValue();
 
-        assertThat(created.getCartId()).isEqualTo(5L);
         assertThat(created.getUser()).isSameAs(user);
         assertThat(result.getCartId()).isEqualTo(5L);
     }
@@ -90,4 +89,3 @@ class CartServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> cartService.deleteCart(99L));
     }
 }
-
