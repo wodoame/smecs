@@ -118,6 +118,7 @@ mvn test
 - `docs/TRANSACTION_HANDLING.md` — transaction boundaries and rollback guidance
 - `docs/CACHING.md` — cache names, defaults, and extension steps
 - `docs/PERFORMANCE_REPORT_TEMPLATE.md` — template for performance benchmarking
+- `docs/PERFORMANCE_MONITORING.md` — actuator-based CPU, memory, and latency capture steps
 - `docs/SECURITY_CSRF_CORS.md` — CSRF vs CORS explanation and demo steps
 
 ---

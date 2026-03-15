@@ -55,12 +55,12 @@ class CartServiceImplTest {
 
         Cart saved = new Cart();
         saved.setCartId(5L);
-        when(cartRepository.save(any(Cart.class))).thenReturn(saved);
+        when(cartRepository.saveAndFlush(any(Cart.class))).thenReturn(saved);
 
         Cart result = cartService.createCart(5L);
 
         ArgumentCaptor<Cart> captor = ArgumentCaptor.forClass(Cart.class);
-        verify(cartRepository).save(captor.capture());
+        verify(cartRepository).saveAndFlush(captor.capture());
         Cart created = captor.getValue();
 
         assertThat(created.getUser()).isSameAs(user);
@@ -80,6 +80,37 @@ class CartServiceImplTest {
 
         assertThat(result).isSameAs(existing);
         verify(cartRepository, never()).save(any(Cart.class));
+    }
+
+    @Test
+    void getOrCreateCartForUser_returnsExistingLockedCart() {
+        Cart existing = new Cart();
+        existing.setCartId(8L);
+        when(cartRepository.findByCartId(8L)).thenReturn(Optional.of(existing));
+
+        Cart result = cartService.getOrCreateCartForUser(8L);
+
+        assertThat(result).isSameAs(existing);
+        verify(cartRepository, never()).saveAndFlush(any(Cart.class));
+    }
+
+    @Test
+    void getOrCreateCartForUser_retriesAfterConcurrentCreate() {
+        User user = new User();
+        user.setId(8L);
+        Cart existing = new Cart();
+        existing.setCartId(8L);
+
+        when(cartRepository.findByCartId(8L))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existing));
+        when(userRepository.findById(8L)).thenReturn(Optional.of(user));
+        when(cartRepository.saveAndFlush(any(Cart.class))).thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate"));
+
+        Cart result = cartService.getOrCreateCartForUser(8L);
+
+        assertThat(result).isSameAs(existing);
+        verify(cartRepository).saveAndFlush(any(Cart.class));
     }
 
     @Test

@@ -9,7 +9,9 @@ import com.smecs.service.CartService;
 import com.smecs.security.OwnershipChecks;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,13 +49,21 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @Transactional
     public Cart getOrCreateCartForUser(Long userId) {
-        return cartRepository.findById(userId)
-                .orElseGet(() -> {
-                    User user = userRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-                    return createNewCart(user);
-                });
+        return cartRepository.findByCartId(userId)
+                .orElseGet(() -> createCartWithRetry(userId));
+    }
+
+    private Cart createCartWithRetry(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        try {
+            return createNewCart(user);
+        } catch (DataIntegrityViolationException exception) {
+            return cartRepository.findByCartId(userId)
+                    .orElseThrow(() -> exception);
+        }
     }
 
     private Cart createNewCart(User user) {
@@ -61,7 +71,7 @@ public class CartServiceImpl implements CartService {
         cart.setUser(user);
         cart.setCreatedAt(java.time.LocalDateTime.now());
         cart.setUpdatedAt(java.time.LocalDateTime.now());
-        return cartRepository.save(cart);
+        return cartRepository.saveAndFlush(cart);
     }
 
     @Override

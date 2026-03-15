@@ -11,6 +11,7 @@
 - `docs/TRANSACTION_HANDLING.md` — how `@Transactional` is applied, rollback patterns, and when to tune isolation.
 - `docs/CACHING.md` — cache names, TTL/size defaults, eviction patterns, and how to add new caches.
 - `docs/PERFORMANCE_REPORT_TEMPLATE.md` — template for capturing before/after metrics and cache impact.
+- `docs/PERFORMANCE_MONITORING.md` — how to capture response time, CPU, and memory metrics during benchmarks.
 - `docs/SECURITY_CSRF_CORS.md` — CSRF vs CORS explanation and Postman/browser demo steps.
 - `DESIGN_SYSTEM.md` — UI design references for the frontend.
 
@@ -20,6 +21,7 @@
 - **Add/modify transactions**: `docs/TRANSACTION_HANDLING.md`.
 - **Tune caching**: `docs/CACHING.md`.
 - **Report performance work**: `docs/PERFORMANCE_REPORT_TEMPLATE.md`.
+- **Capture runtime metrics**: `docs/PERFORMANCE_MONITORING.md`.
 - **Understand CORS/CSRF behavior**: `docs/SECURITY_CSRF_CORS.md`.
 
 ## Quick Links

@@ -16,6 +16,7 @@ import com.smecs.service.UserService;
 import com.smecs.security.OwnershipChecks;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +37,6 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     @Transactional
     public CartItem addItemToCart(AddToCartRequest request) {
-        // Validate input quantity
         if (request.getQuantity() <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
@@ -45,30 +45,55 @@ public class CartItemServiceImpl implements CartItemService {
         Cart cart = cartService.getOrCreateCartForUser(principal.getUserId());
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
-
-        CartItem cartItem = cartItemRepository.findByCartIdAndProductId(cart.getCartId(), product.getId());
-
-        // Check inventory availability (read-only) before updating cart
         Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
-        int available = inventory.getQuantity() == null ? 0 : inventory.getQuantity();
-        int currentCartQty = cartItem == null ? 0 : cartItem.getQuantity();
-        int desiredTotal = currentCartQty + request.getQuantity();
-        if (available < desiredTotal) {
-            throw new IllegalArgumentException("Not enough inventory for product id: " + product.getId());
+
+        return addOrUpdateCartItem(cart, product, inventory, request.getQuantity());
+    }
+
+    private CartItem addOrUpdateCartItem(Cart cart, Product product, Inventory inventory, int quantityToAdd) {
+        CartItem existingItem = cartItemRepository.findByCartIdAndProductIdForUpdate(cart.getCartId(), product.getId())
+                .orElse(null);
+
+        if (existingItem != null) {
+            return incrementExistingCartItem(existingItem, inventory, quantityToAdd);
         }
 
-        if (cartItem == null) {
-            cartItem = new CartItem();
-            cartItem.setCart(cart);
-            cartItem.setProduct(product);
-            cartItem.setQuantity(0);
-            cartItem.setAddedAt(LocalDateTime.now());
-        }
+        validateInventory(inventory, quantityToAdd, product.getId());
 
-        cartItem.setQuantity(desiredTotal);
+        CartItem newItem = new CartItem();
+        newItem.setCart(cart);
+        newItem.setProduct(product);
+        newItem.setQuantity(quantityToAdd);
+        newItem.setAddedAt(LocalDateTime.now());
         cart.setUpdatedAt(LocalDateTime.now());
+
+        try {
+            return cartItemRepository.save(newItem);
+        } catch (DataIntegrityViolationException exception) {
+            CartItem lockedItem = cartItemRepository.findByCartIdAndProductIdForUpdate(cart.getCartId(), product.getId())
+                    .orElseThrow(() -> exception);
+            return incrementExistingCartItem(lockedItem, inventory, quantityToAdd);
+        }
+    }
+
+    private CartItem incrementExistingCartItem(CartItem cartItem, Inventory inventory, int quantityToAdd) {
+        Long productId = cartItem.getProduct() != null ? cartItem.getProduct().getId() : null;
+        int currentCartQty = cartItem.getQuantity();
+        int desiredTotal = currentCartQty + quantityToAdd;
+        validateInventory(inventory, desiredTotal, productId);
+        cartItem.setQuantity(desiredTotal);
+        if (cartItem.getCart() != null) {
+            cartItem.getCart().setUpdatedAt(LocalDateTime.now());
+        }
         return cartItemRepository.save(cartItem);
+    }
+
+    private void validateInventory(Inventory inventory, int desiredTotal, Long productId) {
+        int available = inventory.getQuantity() == null ? 0 : inventory.getQuantity();
+        if (available < desiredTotal) {
+            throw new IllegalArgumentException("Not enough inventory for product id: " + productId);
+        }
     }
 
     @Override

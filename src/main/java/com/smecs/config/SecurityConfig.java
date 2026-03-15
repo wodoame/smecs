@@ -68,6 +68,7 @@ public class SecurityConfig {
                     .requestMatchers("/security/csrf-demo").permitAll()
                     .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.svg").permitAll()
                     .requestMatchers("/products", "/products/{id}", "/categories", "/categories/{id}", "/login", "/signup").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
                     .anyRequest().authenticated()
             )
 
