@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 @Validated
 @RestController
@@ -29,9 +27,9 @@ public class OrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<ResponseDTO<OrderDTO>> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
+    public ResponseEntity<ResponseDTO<OrderDTO>> createOrder() {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ResponseDTO<>("success", "Order created", orderService.createOrder(request)));
+                .body(new ResponseDTO<>("success", "Order created", orderService.createOrder()));
     }
 
     @GetMapping("/{id}")

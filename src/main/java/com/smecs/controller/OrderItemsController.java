@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/orderitems")
+@RequestMapping("/api/order-items")
 public class OrderItemsController {
 
     private final OrderItemService orderItemService;
@@ -46,7 +46,7 @@ public class OrderItemsController {
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems(@RequestBody CreateOrderItemsRequestDTO request) {
-        List<OrderItem> savedItems = orderItemService.createOrderItems(request.getOrderId(), request.getItems());
+        List<OrderItem> savedItems = orderItemService.createOrderItems(request.getItems());
         List<OrderItemDTO> dtos = savedItems.stream().map(this::mapToDTO).collect(Collectors.toList());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Order items created", dtos));

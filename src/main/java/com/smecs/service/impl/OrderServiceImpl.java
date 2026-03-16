@@ -1,7 +1,6 @@
 package com.smecs.service.impl;
 
 import com.smecs.config.CacheConfig;
-import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
@@ -15,7 +14,8 @@ import com.smecs.repository.OrderRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.repository.OrderItemRepository;
 import com.smecs.security.OwnershipChecks;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.smecs.service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,36 +33,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
 @Service
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final OrderItemRepository orderItemRepository;
     private final OwnershipChecks ownershipChecks;
-
-    @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository,
-                            UserRepository userRepository,
-                            OrderItemRepository orderItemRepository,
-                            OwnershipChecks ownershipChecks) {
-        this.orderRepository = orderRepository;
-        this.userRepository = userRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.ownershipChecks = ownershipChecks;
-    }
+    private final UserService userService;
 
     @Override
     @Transactional
     @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
     @CacheEvict(value = {CacheConfig.ORDER_SEARCH, CacheConfig.USER_ORDER_SEARCH}, allEntries = true)
-    public OrderDTO createOrder(CreateOrderRequestDTO request) {
-        Long userId = request.getUserId();
-        ownershipChecks.assertUserMatches(userId);
+    public OrderDTO createOrder() {
+        Long userId = userService.requirePrincipal().getUserId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Order order = new Order();
         order.setUser(user);
-        order.setTotalAmount(0.0); // Placeholder, should be calculated
+        order.setTotalAmount(0.0);
         order.setStatus(Order.Status.PENDING);
         order.setCreatedAt(LocalDateTime.now());
         order = orderRepository.save(order);

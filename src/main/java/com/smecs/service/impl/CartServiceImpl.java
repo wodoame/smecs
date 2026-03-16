@@ -2,8 +2,10 @@ package com.smecs.service.impl;
 
 import com.smecs.entity.Cart;
 import com.smecs.entity.User;
+import com.smecs.entity.CartItem;
 import com.smecs.repository.CartRepository;
 import com.smecs.repository.UserRepository;
+import com.smecs.repository.CartItemRepository;
 import com.smecs.exception.ResourceNotFoundException;
 import com.smecs.service.CartService;
 import com.smecs.security.OwnershipChecks;
@@ -21,6 +23,7 @@ import java.util.Optional;
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
+    private final CartItemRepository cartItemRepository;
     private final OwnershipChecks ownershipChecks;
 
     @Override
@@ -82,4 +85,18 @@ public class CartServiceImpl implements CartService {
         cartRepository.deleteById(cartId);
     }
 
+    @Override
+    public void clearCart(Long cartId) {
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
+        ownershipChecks.assertCartOwnership(cart);
+
+        List<CartItem> items = cartItemRepository.findByCartId(cartId);
+        if (items != null && !items.isEmpty()) {
+            cartItemRepository.deleteAll(items);
+        }
+
+        cart.setUpdatedAt(java.time.LocalDateTime.now());
+        cartRepository.save(cart);
+    }
 }

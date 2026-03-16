@@ -12,4 +12,5 @@ public interface CartService {
     Cart createCart(Long userId);
     Cart getOrCreateCartForUser(Long userId);
     void deleteCart(Long cartId);
+    void clearCart(Long cartId);
 }

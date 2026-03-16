@@ -40,11 +40,8 @@ public class CartController {
     @DeleteMapping("/{cartId}/clear")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ResponseDTO<Void>> clearCartItems(@PathVariable Long cartId) {
-        int deleted = cartItemService.deleteAllItems(cartId);
-        if (deleted == 0) {
-            return ResponseEntity.ok(new ResponseDTO<>("success", "No cart items to delete", null));
-        }
-        return ResponseEntity.ok(new ResponseDTO<>("success", deleted + " cart items deleted", null));
+        cartService.clearCart(cartId);
+        return ResponseEntity.ok(new ResponseDTO<>("success", "Cart items deleted", null));
     }
 
     @GetMapping

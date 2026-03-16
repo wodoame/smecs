@@ -1,6 +1,5 @@
 package com.smecs.service.impl;
 
-import com.smecs.dto.CreateOrderRequestDTO;
 import com.smecs.dto.OrderDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.entity.Order;
@@ -11,6 +10,8 @@ import com.smecs.repository.OrderItemRepository;
 import com.smecs.repository.OrderRepository;
 import com.smecs.repository.UserRepository;
 import com.smecs.security.OwnershipChecks;
+import com.smecs.security.SmecsUserPrincipal;
+import com.smecs.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,13 +42,16 @@ class OrderServiceImplTest {
     @Mock
     private OwnershipChecks ownershipChecks;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
     @Test
-    void createOrder_createsForUser() {
-        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
-        request.setUserId(10L);
+    void createOrder_createsForAuthenticatedUser() {
+        SmecsUserPrincipal principal = new SmecsUserPrincipal(10L, "test", "test@example.com", "customer");
+        when(userService.requirePrincipal()).thenReturn(principal);
 
         User user = new User();
         user.setId(10L);
@@ -58,9 +62,8 @@ class OrderServiceImplTest {
             return order;
         });
 
-        OrderDTO result = orderService.createOrder(request);
+        OrderDTO result = orderService.createOrder();
 
-        verify(ownershipChecks).assertUserMatches(10L);
         assertThat(result.getId()).isEqualTo(7L);
         assertThat(result.getUserId()).isEqualTo(10L);
         assertThat(result.getStatus()).isEqualTo(Order.Status.PENDING.toString());

@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
@@ -151,40 +150,4 @@ public class CartItemServiceImpl implements CartItemService {
 
         cartItemRepository.delete(cartItem);
     }
-
-    @Override
-    @Transactional
-    public void deleteCartItemsByCartIdAndProductIds(Long cartId, List<Long> productIds) {
-        cartService.getCartById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
-        if (productIds == null || productIds.isEmpty()) {
-            return;
-        }
-        productIds.forEach(productId -> {
-            CartItem item = cartItemRepository.findByCartIdAndProductId(cartId, productId);
-            if (item != null) {
-                cartItemRepository.deleteById(item.getCartItemId());
-            }
-        });
-    }
-
-    @Override
-    @Transactional
-    public int deleteAllItems(Long cartId) {
-        cartService.getCartById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found with id: " + cartId));
-        List<CartItem> items = cartItemRepository.findByCartId(cartId);
-        if (items == null || items.isEmpty()) {
-            return 0;
-        }
-        AtomicInteger deleted = new AtomicInteger(0);
-        items.forEach(item -> {
-            if (item.getCartItemId() != null) {
-                cartItemRepository.deleteById(item.getCartItemId());
-                deleted.incrementAndGet();
-            }
-        });
-        return deleted.get();
-    }
-
 }

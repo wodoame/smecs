@@ -1,21 +1,14 @@
 package com.smecs.service.impl;
 
-import com.smecs.entity.OrderItem;
+import com.smecs.entity.*;
 import com.smecs.dto.OrderItemDTO;
-import com.smecs.entity.Order;
-import com.smecs.entity.Product;
-import com.smecs.entity.Cart;
-import com.smecs.entity.Inventory;
 import com.smecs.service.OrderItemService;
 import com.smecs.service.OrderService;
-import com.smecs.service.CartItemService;
+import com.smecs.service.CartService;
+import com.smecs.service.UserService;
 import com.smecs.security.OwnershipChecks;
 import com.smecs.exception.ResourceNotFoundException;
-import com.smecs.repository.OrderRepository;
-import com.smecs.repository.OrderItemRepository;
-import com.smecs.repository.ProductRepository;
-import com.smecs.repository.CartRepository;
-import com.smecs.repository.InventoryRepository;
+import com.smecs.repository.*;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Service
@@ -34,17 +26,27 @@ public class OrderItemServiceImpl implements OrderItemService {
     private final OrderRepository orderRepository;
     private final OrderService orderService;
     private final CartRepository cartRepository;
-    private final CartItemService cartItemService;
+    private final CartService cartService;
     private final InventoryRepository inventoryRepository;
+    private final CartItemRepository cartItemRepository;
+    private final UserService userService;
     private final OwnershipChecks ownershipChecks;
 
     @Override
     @Transactional
-    public List<OrderItem> createOrderItems(Long orderId, List<OrderItemDTO> orderItemDTOs) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
-        ownershipChecks.assertOrderOwnership(order);
+    public List<OrderItem> createOrderItems(List<OrderItemDTO> orderItemDTOs) {
+        Long userId = userService.requirePrincipal().getUserId();
+        Cart cart = cartRepository.findByCartId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
 
+        // Lock the cart items to ensure we have a consistent view and prevent parallel checkouts
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getCartId());
+        if (cartItems.isEmpty()) {
+            throw new IllegalStateException("Cannot checkout an empty cart");
+        }
+
+        Long orderId = orderService.createOrder().getId();
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("There was an error creating the order"));
         List<OrderItem> orderItems = new ArrayList<>();
 
         // Verify and decrement inventory per item
@@ -80,63 +82,11 @@ public class OrderItemServiceImpl implements OrderItemService {
         orderService.updateOrderTotalOrThrow(orderId);
 
         // Delete cart items for the user after successfully creating order items
-        Long userId = order.getUser() != null ? order.getUser().getId() : null;
-        Cart userCart = userId != null ? cartRepository.findById(userId).orElse(null) : null;
-        if (userCart != null) {
-            List<Long> productIds = savedItems.stream()
-                    .map(item -> item.getProduct() != null ? item.getProduct().getId() : null)
-                    .filter(productId -> productId != null)
-                    .collect(Collectors.toList());
-            cartItemService.deleteCartItemsByCartIdAndProductIds(userCart.getCartId(), productIds);
+        if (cart.getCartId() != null) {
+            cartService.clearCart(cart.getCartId());
         }
 
         return savedItems;
-    }
-
-    @Override
-    @Transactional
-    public OrderItem saveOrderItem(OrderItem orderItem) {
-        // Determine inventory adjustment: new vs existing
-        int delta;
-        Long oid = orderItem.getOrderItemId();
-        if (oid == null) {
-            delta = orderItem.getQuantity();
-        } else {
-            Optional<OrderItem> existingOpt = orderItemRepository.findById(oid);
-            if (existingOpt.isPresent()) {
-                OrderItem existing = existingOpt.get();
-                delta = orderItem.getQuantity() - existing.getQuantity();
-            } else {
-                delta = orderItem.getQuantity();
-            }
-        }
-
-        if (delta != 0) {
-            Long productId = orderItem.getProduct() != null ? orderItem.getProduct().getId() : null;
-            if (productId == null) {
-                throw new ResourceNotFoundException("Product not specified for order item");
-            }
-            Inventory inventory = inventoryRepository.findByProduct_Id(productId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + productId));
-            int available = inventory.getQuantity() == null ? 0 : inventory.getQuantity();
-            if (delta > 0) {
-                if (available < delta) {
-                    throw new IllegalArgumentException("Not enough inventory for product id: " + productId);
-                }
-                inventory.setQuantity(available - delta);
-            } else {
-                // delta < 0 -> restore stock
-                inventory.setQuantity(available - delta); // subtract negative -> add
-            }
-            inventoryRepository.save(inventory);
-        }
-
-        OrderItem savedItem = orderItemRepository.save(orderItem);
-        Long orderId = savedItem.getOrder() != null ? savedItem.getOrder().getId() : null;
-        if (orderId != null) {
-            orderService.updateOrderTotalOrThrow(orderId);
-        }
-        return savedItem;
     }
 
     @Override
