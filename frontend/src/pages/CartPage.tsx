@@ -11,11 +11,10 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, LogIn, ShieldAlert, CircleCheck, ShoppingCart } from "lucide-react";
+import { Trash2, LogIn, ShieldAlert, CircleCheck, ShoppingCart, Loader2 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { auth } from "@/lib/auth";
-import type { SingleApiResponse } from "@/types/api";
 
 export default function CartPage() {
     const location = useLocation();
@@ -40,35 +39,14 @@ export default function CartPage() {
         setCheckoutLoading(true);
 
         try {
-            // Step 1: Create the order
-            const orderResponse = await fetch("/api/orders", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...auth.authHeaders(),
-                },
-                body: JSON.stringify({
-                    userId: user.id,
-                }),
-            });
-
-            if (!orderResponse.ok) {
-                throw new Error("Failed to create order");
-            }
-
-            const orderData: SingleApiResponse<{ id: number; userId: number; totalAmount: number; status: string; createdAt: string }> = await orderResponse.json();
-            const orderId = orderData.data.id;
-
-            // Step 2: Create order items from cart items
+            // Create order items from cart items (backend will handle order creation/lookup)
             const orderItems = cartItems.map(item => ({
-                orderId: orderId,
                 productId: item.id,
                 quantity: item.quantity,
                 price: item.price,
             }));
 
-            const orderItemsResponse = await fetch("/api/orderitems", {
+            const response = await fetch("/api/order-items", {
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -76,19 +54,18 @@ export default function CartPage() {
                     ...auth.authHeaders(),
                 },
                 body: JSON.stringify({
-                    orderId: orderId,
                     items: orderItems,
                 }),
             });
 
-            if (!orderItemsResponse.ok) {
-                throw new Error("Failed to create order items");
+            if (!response.ok) {
+                throw new Error("Failed to complete checkout");
             }
 
-            // Step 3: Clear the cart
+            // Step 2: Clear the cart
             await clearCart();
 
-            // Step 4: Show success message and redirect
+            // Step 3: Show success message and redirect
             toast.success("Order placed successfully!", {
                 icon: <CircleCheck className="h-5 w-5 text-green-500" />,
             });
@@ -235,7 +212,14 @@ export default function CartPage() {
                                 onClick={handleCheckout}
                                 disabled={checkoutLoading}
                             >
-                                {checkoutLoading ? "Processing..." : "Checkout"}
+                                {checkoutLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    "Checkout"
+                                )}
                             </Button>
                         </CardFooter>
                     </Card>
