@@ -1,5 +1,6 @@
 package com.smecs.security;
 
+import com.smecs.dto.RequestMetadata;
 import com.smecs.entity.User;
 import com.smecs.service.SecurityEventService;
 import com.smecs.service.UserService;
@@ -56,8 +57,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User user = userService.findOrCreateOAuthUser(oAuth2User, "google");
 
         String token = jwtUtil.generateToken(user);
-        securityEventService.recordOAuth2Success(user, request);
-        securityEventService.recordTokenIssued(user, token, request);
+        securityEventService.recordOAuth2Success(user, RequestMetadata.from(request));
+        securityEventService.recordTokenIssued(user, token, RequestMetadata.from(request));
         AuthCookieUtils.addAccessTokenCookie(response, token, jwtUtil.getExpirationTimeSeconds());
 
         String next = extractNextFromCookie(request);

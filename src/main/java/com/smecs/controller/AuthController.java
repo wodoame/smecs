@@ -1,5 +1,6 @@
 package com.smecs.controller;
 
+import com.smecs.dto.RequestMetadata;
 import com.smecs.dto.UserRegisterDTO;
 import com.smecs.dto.UserLoginDTO;
 import com.smecs.dto.UserResponseDTO;
@@ -45,7 +46,7 @@ public class AuthController {
         User user = userService.registerUser(dto);
         String token = jwtUtil.generateToken(user);
         AuthCookieUtils.addAccessTokenCookie(response, token, jwtUtil.getExpirationTimeSeconds());
-        securityEventService.recordTokenIssued(user, token, request);
+        securityEventService.recordTokenIssued(user, token, RequestMetadata.from(request));
         UserResponseDTO responseBody = mapToDTO(user);
         responseBody.setToken(token);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -61,13 +62,13 @@ public class AuthController {
             SmecsUserPrincipal principal = requirePrincipal(authentication);
             String token = jwtUtil.generateToken(principal);
             AuthCookieUtils.addAccessTokenCookie(response, token, jwtUtil.getExpirationTimeSeconds());
-            securityEventService.recordLoginSuccess(toUser(principal), request);
-            securityEventService.recordTokenIssued(toUser(principal), token, request);
+            securityEventService.recordLoginSuccess(toUser(principal), RequestMetadata.from(request));
+            securityEventService.recordTokenIssued(toUser(principal), token, RequestMetadata.from(request));
             UserResponseDTO responseBody = mapToDTO(principal);
             responseBody.setToken(token);
             return ResponseEntity.ok(new ResponseDTO<>("success", "Login successful", responseBody));
         } catch (AuthenticationException ex) {
-            securityEventService.recordLoginFailure(dto.getUsername(), request);
+            securityEventService.recordLoginFailure(dto.getUsername(), RequestMetadata.from(request));
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO<>("error", "Invalid credentials", null));
         }
@@ -97,7 +98,7 @@ public class AuthController {
         }
         Instant expiresAt = jwtUtil.extractExpiration(token).toInstant();
         tokenRevocationService.revokeToken(token, expiresAt);
-        securityEventService.recordTokenRejected(token, request);
+        securityEventService.recordTokenRejected(token, RequestMetadata.from(request));
         AuthCookieUtils.clearAccessTokenCookie(response);
 
         return ResponseEntity.ok(new ResponseDTO<>("success", "Logout successful", null));

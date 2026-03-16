@@ -1,5 +1,6 @@
 package com.smecs.security;
 
+import com.smecs.dto.RequestMetadata;
 import com.smecs.service.SecurityEventService;
 import com.smecs.service.TokenRevocationService;
 import com.smecs.util.JwtUtil;
@@ -53,7 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && !token.isBlank()) {
 
             if (tokenRevocationService.isRevoked(token)) {
-                securityEventService.recordTokenRejected(token, request);
+                securityEventService.recordTokenRejected(token, RequestMetadata.from(request));
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("{\"status\":\"error\",\"message\":\"Token has been revoked\",\"data\":null}");
@@ -77,9 +78,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                securityEventService.recordTokenValidated(token, username, userId, request);
+                securityEventService.recordTokenValidated(token, username, userId, RequestMetadata.from(request));
             } else {
-                securityEventService.recordTokenRejected(token, request);
+                securityEventService.recordTokenRejected(token, RequestMetadata.from(request));
             }
         }
 

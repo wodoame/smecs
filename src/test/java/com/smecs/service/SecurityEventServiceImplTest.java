@@ -1,9 +1,9 @@
 package com.smecs.service;
 
+import com.smecs.dto.RequestMetadata;
 import com.smecs.entity.SecurityEventType;
 import com.smecs.repository.SecurityEventRepository;
 import com.smecs.service.impl.SecurityEventServiceImpl;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -16,14 +16,14 @@ class SecurityEventServiceImplTest {
     void bruteForceAlertEmitsOnceAfterThreshold() {
         SecurityEventRepository repository = mock(SecurityEventRepository.class);
         SecurityEventServiceImpl service = new SecurityEventServiceImpl(repository);
-        HttpServletRequest request = mock(HttpServletRequest.class);
-
-        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(request.getRequestURI()).thenReturn("/api/auth/login");
-        when(request.getHeader("User-Agent")).thenReturn("JUnit");
+        RequestMetadata metadata = RequestMetadata.builder()
+                .ipAddress("127.0.0.1")
+                .userAgent("JUnit")
+                .endpoint("/api/auth/login")
+                .build();
 
         for (int i = 0; i < 6; i++) {
-            service.recordLoginFailure("alice", request);
+            service.recordLoginFailure("alice", metadata);
         }
 
         ArgumentCaptor<com.smecs.entity.SecurityEvent> events =

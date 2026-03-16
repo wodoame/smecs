@@ -1,19 +1,18 @@
 package com.smecs.service;
 
+import com.smecs.dto.RequestMetadata;
 import com.smecs.entity.User;
-import jakarta.servlet.http.HttpServletRequest;
 
 public interface SecurityEventService {
-    void recordLoginSuccess(User user, HttpServletRequest request);
+    void recordLoginSuccess(User user, RequestMetadata metadata);
 
-    void recordLoginFailure(String username, HttpServletRequest request);
+    void recordLoginFailure(String username, RequestMetadata metadata);
 
-    void recordTokenIssued(User user, String token, HttpServletRequest request);
+    void recordTokenIssued(User user, String token, RequestMetadata metadata);
 
-    void recordTokenValidated(String token, String username, Long userId, HttpServletRequest request);
+    void recordTokenValidated(String token, String username, Long userId, RequestMetadata metadata);
 
-    void recordTokenRejected(String token, HttpServletRequest request);
+    void recordTokenRejected(String token, RequestMetadata metadata);
 
-    void recordOAuth2Success(User user, HttpServletRequest request);
+    void recordOAuth2Success(User user, RequestMetadata metadata);
 }
-

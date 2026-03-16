@@ -2,13 +2,14 @@ package com.smecs.service.impl;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.smecs.dto.RequestMetadata;
 import com.smecs.entity.SecurityEvent;
 import com.smecs.entity.SecurityEventType;
 import com.smecs.entity.User;
 import com.smecs.repository.SecurityEventRepository;
 import com.smecs.service.SecurityEventService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -37,86 +38,84 @@ public class SecurityEventServiceImpl implements SecurityEventService {
                 .build();
     }
 
+    @Async
     @Override
-    public void recordLoginSuccess(User user, HttpServletRequest request) {
-        SecurityEvent event = baseEvent(SecurityEventType.LOGIN_SUCCESS, request);
+    public void recordLoginSuccess(User user, RequestMetadata metadata) {
+        SecurityEvent event = baseEvent(SecurityEventType.LOGIN_SUCCESS, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
         securityEventRepository.save(event);
     }
 
+    @Async
     @Override
-    public void recordLoginFailure(String username, HttpServletRequest request) {
-        String key = buildAttemptKey(username, request);
+    public void recordLoginFailure(String username, RequestMetadata metadata) {
+        String key = buildAttemptKey(username, metadata);
         FailedLoginTracker tracker = failedLoginCache.get(key, k -> new FailedLoginTracker());
         int attempts = tracker.incrementAndGet();
 
-        SecurityEvent event = baseEvent(SecurityEventType.LOGIN_FAILURE, request);
+        SecurityEvent event = baseEvent(SecurityEventType.LOGIN_FAILURE, metadata);
         event.setUsername(username);
         event.setDetails("attempts=" + attempts);
         securityEventRepository.save(event);
 
         if (attempts >= BRUTE_FORCE_THRESHOLD && tracker.markAlertEmitted()) {
-            SecurityEvent alert = baseEvent(SecurityEventType.BRUTE_FORCE_ALERT, request);
+            SecurityEvent alert = baseEvent(SecurityEventType.BRUTE_FORCE_ALERT, metadata);
             alert.setUsername(username);
             alert.setDetails("attempts=" + attempts);
             securityEventRepository.save(alert);
         }
     }
 
+    @Async
     @Override
-    public void recordTokenIssued(User user, String token, HttpServletRequest request) {
-        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_ISSUED, request);
+    public void recordTokenIssued(User user, String token, RequestMetadata metadata) {
+        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_ISSUED, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
         event.setTokenHash(hashToken(token));
         securityEventRepository.save(event);
     }
 
+    @Async
     @Override
-    public void recordTokenValidated(String token, String username, Long userId, HttpServletRequest request) {
-        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_VALID, request);
+    public void recordTokenValidated(String token, String username, Long userId, RequestMetadata metadata) {
+        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_VALID, metadata);
         event.setUserId(userId);
         event.setUsername(username);
         event.setTokenHash(hashToken(token));
         securityEventRepository.save(event);
     }
 
+    @Async
     @Override
-    public void recordTokenRejected(String token, HttpServletRequest request) {
-        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_INVALID, request);
+    public void recordTokenRejected(String token, RequestMetadata metadata) {
+        SecurityEvent event = baseEvent(SecurityEventType.TOKEN_INVALID, metadata);
         event.setTokenHash(hashToken(token));
         securityEventRepository.save(event);
     }
 
+    @Async
     @Override
-    public void recordOAuth2Success(User user, HttpServletRequest request) {
-        SecurityEvent event = baseEvent(SecurityEventType.OAUTH2_SUCCESS, request);
+    public void recordOAuth2Success(User user, RequestMetadata metadata) {
+        SecurityEvent event = baseEvent(SecurityEventType.OAUTH2_SUCCESS, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
         securityEventRepository.save(event);
     }
 
-    private SecurityEvent baseEvent(SecurityEventType type, HttpServletRequest request) {
+    private SecurityEvent baseEvent(SecurityEventType type, RequestMetadata metadata) {
         SecurityEvent event = new SecurityEvent();
         event.setEventType(type);
-        event.setIpAddress(extractClientIp(request));
-        event.setUserAgent(truncate(request.getHeader("User-Agent"), 512));
-        event.setEndpoint(truncate(request.getRequestURI(), 200));
+        event.setIpAddress(metadata.getIpAddress());
+        event.setUserAgent(truncate(metadata.getUserAgent(), 512));
+        event.setEndpoint(truncate(metadata.getEndpoint(), 200));
         return event;
     }
 
-    private String buildAttemptKey(String username, HttpServletRequest request) {
+    private String buildAttemptKey(String username, RequestMetadata metadata) {
         String userPart = Objects.requireNonNullElse(username, "unknown");
-        return userPart + "|" + extractClientIp(request);
-    }
-
-    private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return userPart + "|" + metadata.getIpAddress();
     }
 
     private String hashToken(String token) {
@@ -151,4 +150,3 @@ public class SecurityEventServiceImpl implements SecurityEventService {
         }
     }
 }
-

@@ -1,16 +1,10 @@
 package com.smecs.controller;
 
-import com.smecs.dto.ResponseDTO;
-import com.smecs.dto.SecurityBruteForceReportDTO;
-import com.smecs.dto.SecurityEndpointAccessReportDTO;
-import com.smecs.dto.SecurityEventCountDTO;
-import com.smecs.dto.SecurityEventEndpointCountDTO;
-import com.smecs.dto.SecurityEventIpCountDTO;
-import com.smecs.dto.SecurityEventUserCountDTO;
-import com.smecs.dto.SecurityTokenUsageReportDTO;
+import com.smecs.dto.*;
 import com.smecs.entity.SecurityEventType;
 import com.smecs.repository.SecurityEventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,19 +16,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @RestController
 @RequestMapping("/api/security/reports")
 public class SecurityEventReportController {
 
-//    private static final int DEFAULT_LIMIT = 10;
     private static final Duration DEFAULT_WINDOW = Duration.ofDays(7);
 
     private final SecurityEventRepository securityEventRepository;
+    private final Executor reportTaskExecutor;
 
     @Autowired
-    public SecurityEventReportController(SecurityEventRepository securityEventRepository) {
+    public SecurityEventReportController(SecurityEventRepository securityEventRepository,
+                                         @Qualifier("reportTaskExecutor") Executor reportTaskExecutor) {
         this.securityEventRepository = securityEventRepository;
+        this.reportTaskExecutor = reportTaskExecutor;
     }
 
     @GetMapping("/token-usage")
@@ -52,18 +50,24 @@ public class SecurityEventReportController {
                 SecurityEventType.TOKEN_INVALID
         );
 
-        List<SecurityEventCountDTO> totals = securityEventRepository.countByEventType(types, range.start(), range.end());
-        List<SecurityEventUserCountDTO> topUsers = securityEventRepository.findTopUsers(
-                types, range.start(), range.end(), PageRequest.of(0, safeLimit));
-        List<SecurityEventIpCountDTO> topIps = securityEventRepository.findTopIps(
-                types, range.start(), range.end(), PageRequest.of(0, safeLimit));
+        CompletableFuture<List<SecurityEventCountDTO>> totalsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.countByEventType(types, range.start(), range.end()), reportTaskExecutor);
 
+        CompletableFuture<List<SecurityEventUserCountDTO>> topUsersFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.findTopUsers(types, range.start(), range.end(), PageRequest.of(0, safeLimit)), reportTaskExecutor);
+
+        CompletableFuture<List<SecurityEventIpCountDTO>> topIpsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.findTopIps(types, range.start(), range.end(), PageRequest.of(0, safeLimit)), reportTaskExecutor);
+
+        CompletableFuture.allOf(totalsFuture, topUsersFuture, topIpsFuture).join();
+
+        List<SecurityEventCountDTO> totals = totalsFuture.join();
         long totalEvents = totals.stream().mapToLong(SecurityEventCountDTO::getCount).sum();
 
         SecurityTokenUsageReportDTO report = new SecurityTokenUsageReportDTO();
         report.setTotalsByType(totals);
-        report.setTopUsers(topUsers);
-        report.setTopIps(topIps);
+        report.setTopUsers(topUsersFuture.join());
+        report.setTopIps(topIpsFuture.join());
         report.setTotalEvents(totalEvents);
 
         return new ResponseDTO<>("success", "Token usage report", report);
@@ -80,18 +84,22 @@ public class SecurityEventReportController {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         Set<SecurityEventType> failureTypes = Set.of(SecurityEventType.LOGIN_FAILURE);
 
-        long alertCount = securityEventRepository.countByEventTypeAndCreatedAtBetween(
-                SecurityEventType.BRUTE_FORCE_ALERT, range.start(), range.end());
+        CompletableFuture<Long> alertCountFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.countByEventTypeAndCreatedAtBetween(
+                        SecurityEventType.BRUTE_FORCE_ALERT, range.start(), range.end()), reportTaskExecutor);
 
-        List<SecurityEventUserCountDTO> topUsers = securityEventRepository.findTopUsers(
-                failureTypes, range.start(), range.end(), PageRequest.of(0, safeLimit));
-        List<SecurityEventIpCountDTO> topIps = securityEventRepository.findTopIps(
-                failureTypes, range.start(), range.end(), PageRequest.of(0, safeLimit));
+        CompletableFuture<List<SecurityEventUserCountDTO>> topUsersFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.findTopUsers(failureTypes, range.start(), range.end(), PageRequest.of(0, safeLimit)), reportTaskExecutor);
+
+        CompletableFuture<List<SecurityEventIpCountDTO>> topIpsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.findTopIps(failureTypes, range.start(), range.end(), PageRequest.of(0, safeLimit)), reportTaskExecutor);
+
+        CompletableFuture.allOf(alertCountFuture, topUsersFuture, topIpsFuture).join();
 
         SecurityBruteForceReportDTO report = new SecurityBruteForceReportDTO();
-        report.setAlertCount(alertCount);
-        report.setTopUsernames(topUsers);
-        report.setTopIps(topIps);
+        report.setAlertCount(alertCountFuture.join());
+        report.setTopUsernames(topUsersFuture.join());
+        report.setTopIps(topIpsFuture.join());
 
         return new ResponseDTO<>("success", "Brute force report", report);
     }
@@ -106,15 +114,21 @@ public class SecurityEventReportController {
         InstantRange range = resolveRange(start, end);
         int safeLimit = Math.max(1, Math.min(limit, 50));
 
-        List<SecurityEventEndpointCountDTO> topEndpoints = securityEventRepository.findTopEndpoints(
-                range.start(), range.end(), PageRequest.of(0, safeLimit));
-        long totalEvents = securityEventRepository.countByCreatedAtBetween(range.start(), range.end());
-        long uniqueEndpoints = securityEventRepository.countDistinctEndpoints(range.start(), range.end());
+        CompletableFuture<List<SecurityEventEndpointCountDTO>> topEndpointsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.findTopEndpoints(range.start(), range.end(), PageRequest.of(0, safeLimit)), reportTaskExecutor);
+
+        CompletableFuture<Long> totalEventsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.countByCreatedAtBetween(range.start(), range.end()), reportTaskExecutor);
+
+        CompletableFuture<Long> uniqueEndpointsFuture = CompletableFuture.supplyAsync(
+                () -> securityEventRepository.countDistinctEndpoints(range.start(), range.end()), reportTaskExecutor);
+
+        CompletableFuture.allOf(topEndpointsFuture, totalEventsFuture, uniqueEndpointsFuture).join();
 
         SecurityEndpointAccessReportDTO report = new SecurityEndpointAccessReportDTO();
-        report.setTopEndpoints(topEndpoints);
-        report.setTotalEvents(totalEvents);
-        report.setUniqueEndpoints(uniqueEndpoints);
+        report.setTopEndpoints(topEndpointsFuture.join());
+        report.setTotalEvents(totalEventsFuture.join());
+        report.setUniqueEndpoints(uniqueEndpointsFuture.join());
 
         return new ResponseDTO<>("success", "Endpoint access frequency report", report);
     }
@@ -131,4 +145,3 @@ public class SecurityEventReportController {
     private record InstantRange(Instant start, Instant end) {
     }
 }
-
