@@ -9,6 +9,8 @@ import com.smecs.entity.User;
 import com.smecs.repository.SecurityEventRepository;
 import com.smecs.service.SecurityEventService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class SecurityEventServiceImpl implements SecurityEventService {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityEventServiceImpl.class);
 
     private static final int BRUTE_FORCE_THRESHOLD = 5;
     private static final Duration BRUTE_FORCE_WINDOW = Duration.ofMinutes(10);
@@ -41,6 +45,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordLoginSuccess(User user, RequestMetadata metadata) {
+        log.info("recordLoginSuccess invoked on thread={}", Thread.currentThread().getName());
         SecurityEvent event = baseEvent(SecurityEventType.LOGIN_SUCCESS, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
@@ -50,6 +55,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordLoginFailure(String username, RequestMetadata metadata) {
+        log.info("recordLoginFailure invoked on thread={}", Thread.currentThread().getName());
         String key = buildAttemptKey(username, metadata);
         FailedLoginTracker tracker = failedLoginCache.get(key, k -> new FailedLoginTracker());
         int attempts = tracker.incrementAndGet();
@@ -70,6 +76,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordTokenIssued(User user, String token, RequestMetadata metadata) {
+        log.info("recordTokenIssued invoked on thread={}", Thread.currentThread().getName());
         SecurityEvent event = baseEvent(SecurityEventType.TOKEN_ISSUED, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
@@ -80,6 +87,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordTokenValidated(String token, String username, Long userId, RequestMetadata metadata) {
+        log.info("recordTokenValidated invoked on thread={}", Thread.currentThread().getName());
         SecurityEvent event = baseEvent(SecurityEventType.TOKEN_VALID, metadata);
         event.setUserId(userId);
         event.setUsername(username);
@@ -90,6 +98,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordTokenRejected(String token, RequestMetadata metadata) {
+        log.info("recordTokenRejected invoked on thread={}", Thread.currentThread().getName());
         SecurityEvent event = baseEvent(SecurityEventType.TOKEN_INVALID, metadata);
         event.setTokenHash(hashToken(token));
         securityEventRepository.save(event);
@@ -98,6 +107,7 @@ public class SecurityEventServiceImpl implements SecurityEventService {
     @Async
     @Override
     public void recordOAuth2Success(User user, RequestMetadata metadata) {
+        log.info("recordOAuth2Success invoked on thread={}", Thread.currentThread().getName());
         SecurityEvent event = baseEvent(SecurityEventType.OAUTH2_SUCCESS, metadata);
         event.setUserId(user.getId());
         event.setUsername(user.getUsername());
