@@ -62,11 +62,11 @@ class OrderServiceImplTest {
             return order;
         });
 
-        OrderDTO result = orderService.createOrder();
+        Order result = orderService.createOrder();
 
         assertThat(result.getId()).isEqualTo(7L);
-        assertThat(result.getUserId()).isEqualTo(10L);
-        assertThat(result.getStatus()).isEqualTo(Order.Status.PENDING.toString());
+        assertThat(result.getUser().getId()).isEqualTo(10L);
+        assertThat(result.getStatus()).isEqualTo(Order.Status.PENDING);
     }
 
     @Test
@@ -105,4 +105,3 @@ class OrderServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () -> orderService.getOrderById(99L));
     }
 }
-

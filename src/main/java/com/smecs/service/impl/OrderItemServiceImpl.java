@@ -39,14 +39,13 @@ public class OrderItemServiceImpl implements OrderItemService {
         Cart cart = cartRepository.findByCartId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
 
-        // Lock the cart items to ensure we have a consistent view and prevent parallel checkouts
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getCartId());
         if (cartItems.isEmpty()) {
             throw new IllegalStateException("Cannot checkout an empty cart");
         }
 
-        Long orderId = orderService.createOrder().getId();
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("There was an error creating the order"));
+        // createOrder now returns the persisted Order entity so use it directly
+        Order order = orderService.createOrder();
         List<OrderItem> orderItems = new ArrayList<>();
 
         // Verify and decrement inventory per item
@@ -79,7 +78,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         }
 
         List<OrderItem> savedItems = orderItemRepository.saveAll(orderItems);
-        orderService.updateOrderTotalOrThrow(orderId);
+        orderService.updateOrderTotalOrThrow(order.getId());
 
         // Delete cart items for the user after successfully creating order items
         if (cart.getCartId() != null) {

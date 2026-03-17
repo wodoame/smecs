@@ -41,12 +41,13 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OwnershipChecks ownershipChecks;
     private final UserService userService;
+    private final com.smecs.mapper.OrderMapper orderMapper;
 
     @Override
     @Transactional
     @CachePut(value = CacheConfig.ORDERS_BY_ID, key = "#result.id")
     @CacheEvict(value = {CacheConfig.ORDER_SEARCH, CacheConfig.USER_ORDER_SEARCH}, allEntries = true)
-    public OrderDTO createOrder() {
+    public Order createOrder() {
         Long userId = userService.requirePrincipal().getUserId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
@@ -56,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(Order.Status.PENDING);
         order.setCreatedAt(LocalDateTime.now());
         order = orderRepository.save(order);
-        return toDTO(order);
+        return order;
     }
 
     @Override
@@ -65,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         ownershipChecks.assertOrderOwnership(order);
-        return toDTO(order);
+        return orderMapper.toDTO(order);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Invalid order status: " + request.getStatus());
         }
 
-        return toDTO(orderRepository.save(order));
+        return orderMapper.toDTO(orderRepository.save(order));
     }
 
     @Override

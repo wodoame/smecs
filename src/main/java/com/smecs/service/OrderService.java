@@ -1,12 +1,13 @@
 package com.smecs.service;
 
 import com.smecs.dto.OrderDTO;
+import com.smecs.entity.Order;
 import com.smecs.dto.OrderQuery;
 import com.smecs.dto.PagedResponseDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 
 public interface OrderService {
-    OrderDTO createOrder();
+    Order createOrder();
     OrderDTO getOrderById(Long id);
     OrderDTO updateOrderStatus(Long id, UpdateOrderStatusRequestDTO request);
     PagedResponseDTO<OrderDTO> getAllOrders(OrderQuery query);

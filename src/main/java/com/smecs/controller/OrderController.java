@@ -7,6 +7,7 @@ import com.smecs.dto.ResponseDTO;
 import com.smecs.dto.UpdateOrderStatusRequestDTO;
 import com.smecs.entity.Order;
 import com.smecs.service.OrderService;
+import com.smecs.mapper.OrderMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,17 +20,21 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/orders")
 public class OrderController {
     private final OrderService orderService;
+    private final OrderMapper orderMapper;
 
     @Autowired
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, OrderMapper orderMapper) {
         this.orderService = orderService;
+        this.orderMapper = orderMapper;
     }
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ResponseDTO<OrderDTO>> createOrder() {
+        Order order = orderService.createOrder();
+        OrderDTO dto = orderMapper.toDTO(order);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ResponseDTO<>("success", "Order created", orderService.createOrder()));
+                .body(new ResponseDTO<>("success", "Order created", dto));
     }
 
     @GetMapping("/{id}")

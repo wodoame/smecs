@@ -85,16 +85,12 @@ class OrderItemServiceImplTest {
         when(cartRepository.findByCartId(12L)).thenReturn(Optional.of(cart));
         when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(new CartItem()));
 
-        OrderDTO orderDTO = new OrderDTO();
-        orderDTO.setId(4L);
-        when(orderService.createOrder()).thenReturn(orderDTO);
-
         Order order = new Order();
         order.setId(4L);
         User user = new User();
         user.setId(12L);
         order.setUser(user);
-        when(orderRepository.findById(4L)).thenReturn(Optional.of(order));
+        when(orderService.createOrder()).thenReturn(order);
 
         Product product = new Product();
         product.setId(9L);
@@ -131,13 +127,9 @@ class OrderItemServiceImplTest {
         when(cartRepository.findByCartId(12L)).thenReturn(Optional.of(cart));
         when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(new CartItem()));
 
-        OrderDTO orderDTO = new OrderDTO();
-        orderDTO.setId(4L);
-        when(orderService.createOrder()).thenReturn(orderDTO);
-
         Order order = new Order();
         order.setId(4L);
-        when(orderRepository.findById(4L)).thenReturn(Optional.of(order));
+        when(orderService.createOrder()).thenReturn(order);
 
         Product product = new Product();
         product.setId(9L);
