@@ -41,11 +41,14 @@ This document tracks baseline and post-optimization performance measurements for
 - Observed result: final quantity was 2731 instead of 2949, indicating lost updates during concurrent writes to the same cart item.
 - This was caused by the add-to-cart flow not being thread-safe for concurrent updates on the same cart/product pair.
 - After adding locking and retry logic, the shared-user rerun produced an exact final quantity match, so the correctness issue is resolved.
+- The consolidated checkout flow (`POST /api/orderitems`) contained a check-then-act race when verifying and decrementing inventory: concurrent checkouts could read the same available quantity and both succeed, risking overselling. This was fixed by adding row-level pessimistic locking on inventory and changing the lookup in `OrderItemServiceImpl.java` to use the locked repository lookup.
+ - Synchronous security event recording during authentication added measurable latency to login/token flows under moderate load. The `SecurityEventService` methods (e.g. `recordLoginSuccess`, `recordTokenIssued`) were executed synchronously even though downstream processing (audit logging, metrics) did not affect the requesting flow. These were converted to asynchronous execution (background worker / `@Async` executor) to avoid blocking authentication and to improve overall request latency.
 
 ## 5. Changes Applied
 - Added pessimistic locking for cart-item updates so concurrent requests on the same cart/product do not overwrite each other.
 - Added a locked cart lookup and retry handling for concurrent cart creation attempts.
 - Added tests covering locked update behavior and duplicate-insert retry handling in the cart flow.
+ - Added row-level pessimistic locking for inventory during the checkout flow. The checkout logic in `src/main/java/com/smecs/service/impl/OrderItemServiceImpl.java` now acquires a database lock on inventory rows (via a locked lookup on `InventoryRepository`, e.g. `findByProduct_IdWithLock`) before verifying and decrementing stock. This prevents the overselling race where two concurrent checkouts could both read the same available quantity and succeed.
 
 ## 6. Load / Concurrency Results
 | Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
@@ -114,7 +117,7 @@ The following race conditions were identified during high-concurrency load testi
 ### 10.2 Inventory Decrement (Overselling)
 **Finding:** Code review of the consolidated checkout flow (`POST /api/orderitems`) revealed a potential overselling risk where two concurrent checkouts for the last remaining item could both succeed.
 **Root Cause:** Thread A checks stock (Available: 1) -> Thread B checks stock (Available: 1) -> Both decrement and create orders.
-**Solution:** Implemented **Row-Level Pessimistic Locking** in `InventoryRepository` via `findByProduct_IdWithLock`. When a checkout transaction begins, it locks the relevant inventory rows, forcing other checkouts for the same products to wait until the first transaction commits or rolls back.
+**Solution:** Implemented **Row-Level Pessimistic Locking** at the repository/use-site level. The checkout implementation in `src/main/java/com/smecs/service/impl/OrderItemServiceImpl.java` previously used an unlocked lookup (`findByProduct_Id`) which allowed a classic check-then-act race. The code now uses a locked lookup provided by `InventoryRepository` (for example `findByProduct_IdWithLock`) inside the same transactional boundary, so the relevant inventory rows are locked for writing while the transaction verifies and decrements stock. This serializes concurrent checkouts for the same product and prevents overselling.
 
 ### 10.3 Duplicate Checkout Submissions
 **Finding:** Potential for duplicate orders if a user double-clicks the "Checkout" button.
