@@ -39,13 +39,8 @@ export default function CartPage() {
         setCheckoutLoading(true);
 
         try {
-            // Create order items from cart items (backend will handle order creation/lookup)
-            const orderItems = cartItems.map(item => ({
-                productId: item.id,
-                quantity: item.quantity,
-                price: item.price,
-            }));
-
+            // The backend derives order items from the user's cart; do not send cart items in the request body.
+            // Send an empty payload to satisfy the controller's @RequestBody without duplicating cart data.
             const response = await fetch("/api/order-items", {
                 method: "POST",
                 credentials: "include",
@@ -53,9 +48,6 @@ export default function CartPage() {
                     "Content-Type": "application/json",
                     ...auth.authHeaders(),
                 },
-                body: JSON.stringify({
-                    items: orderItems,
-                }),
             });
 
             if (!response.ok) {

@@ -64,8 +64,11 @@ This document tracks baseline and post-optimization performance measurements for
 ## 6. Load / Concurrency Results
 | Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET /api/products?query=laptop` (caching+async disabled) | 3643 | 20 virtual users | 21 | 13 | 16 | 237 | 19.54 | 1.35% | Heap used 234.89 MB | 0.00% | Avg +4 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
+| `GET /api/products?query=laptop` (caching+async enabled, cache warmed) | 3679 | 20 virtual users | 6 | 7 | 10 | 50 | 19.74 | 1.07% | Heap used 256.50 MB | 0.00% | 20-user load run with caching+async enabled (cache warmed at start) |
 | `POST /api/cart-items` | 2949 | 20 virtual users | 41 | 63 | 88 | 198 | 15.70 | 7.53% | Heap used 110.04 MB | 0.00% | Avg +7 ms vs 1-user baseline; throughput up from 0.90 to 15.70 req/s; final cart quantity was 2731 instead of 2949 |
 | `POST /api/cart-items` (after locking fix) | 3388 | 20 virtual users | 24 | 37 | 49 | 80 | 18.10 | 6.76% | Heap used 82.15 MB | 0.00% | Avg -10 ms vs 1-user baseline and -17 ms vs pre-fix 20-user run; throughput up to 18.10 req/s; final cart quantity matched all 3388 successful requests |
+| `POST /api/cart-items` (caching+async enabled, 20 VUs) | 3633 | 20 virtual users | 12 | 14 | 17 | 106 | 19.48 | 1.57% | Heap used 222.33 MB | 0.00% | Final cart quantity matched successful requests; 20-user load run with caching+async enabled |
 | `GET /api/inventories` | 3623 | 20 virtual users | 12 | 15 | 17 | 33 | 19.42 | 2.02% | Heap used 228.62 MB | 0.00% | Avg -37 ms vs 1-user baseline; P99 improved from 139ms to 33ms; likely due to caching warming up and JIT optimization |
 | `GET /api/inventories?query=laptop` | 3613 | 20 virtual users | 11 | 14 | 16 | 28 | 19.37 | 2.26% | Heap used 228.86 MB | 0.00% | Avg -27 ms vs 1-user baseline; P99 improved from 97ms to 28ms; very stable performance with warmed cache |
  
