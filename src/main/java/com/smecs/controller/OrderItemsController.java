@@ -1,6 +1,5 @@
 package com.smecs.controller;
 
-import com.smecs.dto.CreateOrderItemsRequestDTO;
 import com.smecs.dto.OrderItemDTO;
 import com.smecs.dto.ResponseDTO;
 import com.smecs.entity.OrderItem;
@@ -45,8 +44,8 @@ public class OrderItemsController {
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems(@RequestBody CreateOrderItemsRequestDTO request) {
-        List<OrderItem> savedItems = orderItemService.createOrderItems(request.getItems());
+    public ResponseEntity<ResponseDTO<List<OrderItemDTO>>> createOrderItems() {
+        List<OrderItem> savedItems = orderItemService.createOrderItems();
         List<OrderItemDTO> dtos = savedItems.stream().map(this::mapToDTO).collect(Collectors.toList());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ResponseDTO<>("success", "Order items created", dtos));

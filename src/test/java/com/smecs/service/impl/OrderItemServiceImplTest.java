@@ -83,7 +83,12 @@ class OrderItemServiceImplTest {
         Cart cart = new Cart();
         cart.setCartId(12L);
         when(cartRepository.findByCartId(12L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(new CartItem()));
+        CartItem ci = new CartItem();
+        Product product = new Product();
+        product.setId(9L);
+        ci.setProduct(product);
+        ci.setQuantity(2);
+        when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(ci));
 
         Order order = new Order();
         order.setId(4L);
@@ -92,8 +97,6 @@ class OrderItemServiceImplTest {
         order.setUser(user);
         when(orderService.createOrder()).thenReturn(order);
 
-        Product product = new Product();
-        product.setId(9L);
         when(productRepository.findById(9L)).thenReturn(Optional.of(product));
 
         Inventory inventory = new Inventory();
@@ -105,12 +108,7 @@ class OrderItemServiceImplTest {
         saved.setQuantity(2);
         when(orderItemRepository.saveAll(any())).thenReturn(List.of(saved));
 
-        OrderItemDTO dto = new OrderItemDTO();
-        dto.setProductId(9L);
-        dto.setQuantity(2);
-        dto.setPrice(0);
-
-        orderItemService.createOrderItems(List.of(dto));
+        orderItemService.createOrderItems();
 
         verify(orderService).updateOrderTotalOrThrow(4L);
         verify(inventoryRepository).save(any(Inventory.class));
@@ -125,7 +123,12 @@ class OrderItemServiceImplTest {
         Cart cart = new Cart();
         cart.setCartId(12L);
         when(cartRepository.findByCartId(12L)).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(new CartItem()));
+        CartItem ci = new CartItem();
+        Product product = new Product();
+        product.setId(9L);
+        ci.setProduct(product);
+        ci.setQuantity(3);
+        when(cartItemRepository.findByCartId(12L)).thenReturn(List.of(ci));
 
         Order order = new Order();
         order.setId(4L);
@@ -139,11 +142,7 @@ class OrderItemServiceImplTest {
         inventory.setQuantity(1);
         when(inventoryRepository.findByProduct_Id(9L)).thenReturn(Optional.of(inventory));
 
-        OrderItemDTO dto = new OrderItemDTO();
-        dto.setProductId(9L);
-        dto.setQuantity(3);
-
-        assertThrows(IllegalArgumentException.class, () -> orderItemService.createOrderItems(List.of(dto)));
+        assertThrows(IllegalArgumentException.class, () -> orderItemService.createOrderItems());
     }
 
     @Test

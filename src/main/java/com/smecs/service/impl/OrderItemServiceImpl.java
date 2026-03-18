@@ -34,7 +34,7 @@ public class OrderItemServiceImpl implements OrderItemService {
 
     @Override
     @Transactional
-    public List<OrderItem> createOrderItems(List<OrderItemDTO> orderItemDTOs) {
+    public List<OrderItem> createOrderItems() {
         Long userId = userService.requirePrincipal().getUserId();
         Cart cart = cartRepository.findByCartId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
@@ -44,36 +44,36 @@ public class OrderItemServiceImpl implements OrderItemService {
             throw new IllegalStateException("Cannot checkout an empty cart");
         }
 
-        // createOrder now returns the persisted Order entity so use it directly
         Order order = orderService.createOrder();
         List<OrderItem> orderItems = new ArrayList<>();
 
-        // Verify and decrement inventory per item
-        for (OrderItemDTO dto : orderItemDTOs) {
-            Product product = productRepository.findById(dto.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + dto.getProductId()));
+        for (CartItem ci : cartItems) {
+            Long prodId = ci.getProduct() != null ? ci.getProduct().getId() : null;
+            if (prodId == null) {
+                throw new ResourceNotFoundException("Product not specified for cart item: " + ci.getCartItemId());
+            }
+
+            Product product = productRepository.findById(prodId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + prodId));
 
             Inventory inventory = inventoryRepository.findByProduct_Id(product.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + product.getId()));
 
+            int qty = ci.getQuantity();
             int available = inventory.getQuantity() == null ? 0 : inventory.getQuantity();
-            if (available < dto.getQuantity()) {
+            if (available < qty) {
                 throw new IllegalArgumentException("Not enough inventory for product id: " + product.getId());
             }
 
-            inventory.setQuantity(available - dto.getQuantity());
+            inventory.setQuantity(available - qty);
             inventoryRepository.save(inventory);
 
             OrderItem item = new OrderItem();
             item.setProduct(product);
             item.setOrder(order);
-            item.setQuantity(dto.getQuantity());
-            if (dto.getPrice() > 0) {
-                item.setPriceAtPurchase(dto.getPrice());
-            } else {
-                Double productPrice = product.getPrice();
-                item.setPriceAtPurchase(productPrice != null ? productPrice : 0.0);
-            }
+            item.setQuantity(qty);
+            Double productPrice = product.getPrice();
+            item.setPriceAtPurchase(productPrice != null ? productPrice : 0.0);
             orderItems.add(item);
         }
 

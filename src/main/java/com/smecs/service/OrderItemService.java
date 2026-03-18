@@ -5,7 +5,7 @@ import com.smecs.dto.OrderItemDTO;
 import java.util.List;
 
 public interface OrderItemService {
-    List<OrderItem> createOrderItems(List<OrderItemDTO> orderItemDTOs);
+    List<OrderItem> createOrderItems();
     java.util.Optional<OrderItem> getOrderItemById(Long orderItemId);
     List<OrderItem> getOrderItemsByOrderId(Long orderId);
     OrderItem updateOrderItem(Long orderItemId, OrderItemDTO orderItemDTO);
