@@ -25,16 +25,27 @@ This document tracks baseline and post-optimization performance measurements for
 - Scenario 9: `GET /api/inventories`, 3-minute run, 20 virtual users.
 - Scenario 10: `GET /api/inventories?query=laptop`, 3-minute run, 20 virtual users.
 
-## 3. Baseline Metrics (Before)
+## 3. Baseline Metrics
+
+### Baseline Metrics (Before) — caching + async disabled
 | Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /api/products` (no query params) | 169 | 1 virtual user | 30 | 46 | 54 | 92 | 0.90 | 1.18% | Heap used 126.45 MB; Heap max 4.16 GB | 0.00% | 3-minute baseline rerun with Actuator metrics |
-| `GET /api/products?query=laptop` | 171 | 1 virtual user | 26 | 39 | 48 | 62 | 0.91 | 0.82% | Heap used 113.68 MB | 0.00% | 3-minute baseline run with search query |
-| `GET /api/inventories` | 175 | 1 virtual user | 13 | 14 | 15 | 42 | 0.94 | 0.23% | Heap used 260.10 MB | 0.00% | 3-minute warm baseline rerun |
-| `GET /api/inventories?query=laptop` | 184 | 1 virtual user | 13 | 14 | 15 | 26 | 0.99 | 0.46% | Heap used 202.12 MB | 0.00% | 3-minute warm baseline rerun with search query |
-| `GET /api/categories?relatedImages=true` | 170 | 1 virtual user | 34 | 45 | 60 | 82 | 0.91 | 1.12% | Heap used 129.72 MB | 0.00% | 3-minute baseline run with related images |
-| `GET /api/categories` | 173 | 1 virtual user | 20 | 35 | 46 | 85 | 0.92 | 0.68% | Heap used 113.90 MB | 0.00% | 3-minute baseline run |
-| `POST /api/cart-items` | 169 | 1 virtual user | 34 | 58 | 72 | 103 | 0.90 | 1.39% | Heap used 69.18 MB | 0.00% | 3-minute baseline write-path run |
+| `GET /api/products` (no query params, caching+async disabled) | 189 | 1 virtual user | 17 | 23 | 27 | 36 | 1.01 | 0.26% | Heap used 215.26 MB | 0.00% | 3-minute baseline run with caching and async disabled |
+| `GET /api/products?query=laptop` (caching+async disabled) | 187 | 1 virtual user | 17 | 23 | 24 | 31 | 1.00 | 0.26% | Heap used 242.74 MB | 0.00% | 3-minute baseline run with caching and async disabled |
+| `GET /api/inventories` (no query params, caching+async disabled) | 181 | 1 virtual user | 18 | 22 | 25 | 27 | 0.97 | 0.25% | Heap used 223.15 MB | 0.00% | 3-minute baseline run with caching and async disabled |
+| `GET /api/inventories?query=laptop` (caching+async disabled) | 181 | 1 virtual user | 14 | 17 | 18 | 20 | 0.97 | 0.21% | Heap used 232.93 MB | 0.00% | 3-minute baseline run with caching and async disabled |
+| `GET /api/categories?relatedImages=true` (caching+async disabled) | 181 | 1 virtual user | 22 | 27 | 30 | 36 | 0.97 | 0.21% | Heap used 248.37 MB | 0.00% | 3-minute baseline run with caching and async disabled |
+
+### Baseline Metrics (After) — caching + async enabled (cache warmed where noted)
+| Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET /api/products` (no query params, caching+async enabled, cache warmed) | 187 | 1 virtual user | 6 | 9 | 10 | 15 | 1.00 | 0.18% | Heap used 255.83 MB | 0.00% | 3-minute baseline run with caching and async enabled (cache warmed at start) |
+| `GET /api/products?query=laptop` (caching+async enabled, cache warmed) | 184 | 1 virtual user | 9 | 12 | 13 | 17 | 0.99 | 0.23% | Heap used 259.50 MB | 0.00% | 3-minute baseline run with caching and async enabled (cache warmed at start) |
+| `GET /api/inventories` (no query params, caching+async enabled, cache warmed) | 177 | 1 virtual user | 11 | 16 | 18 | 21 | 0.95 | 0.23% | Heap used 213.36 MB | 0.00% | 3-minute baseline run with caching and async enabled (cache warmed at start) |
+| `GET /api/inventories?query=laptop` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 10 | 14 | 17 | 25 | 1.01 | 0.28% | Heap used 235.43 MB | 0.00% | 3-minute baseline run with caching and async enabled (cache warmed at start) |
+| `GET /api/categories?relatedImages=true` (caching+async enabled, cache warmed) | 186 | 1 virtual user | 7 | 10 | 11 | 24 | 1.00 | 0.24% | Heap used 235.67 MB | 0.00% | 3-minute baseline run with caching and async enabled (cache warmed at start) |
+| `POST /api/cart-items` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 14 | 18 | 19 | 26 | 1.01 | 0.22% | Heap used 254.73 MB | 0.00% | 3-minute baseline write-path run with caching and async enabled |
+| `POST /api/cart-items` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 14 | 18 | 19 | 26 | 1.01 | 0.22% | Heap used 254.73 MB | 0.00% | 3-minute baseline write-path run with caching and async enabled |
 
 ## 4. Bottlenecks Identified
 - `POST /api/cart-items` shows a concurrency correctness issue under shared-user load: 2949 successful requests did not produce the expected final cart quantity.
@@ -57,6 +68,7 @@ This document tracks baseline and post-optimization performance measurements for
 | `POST /api/cart-items` (after locking fix) | 3388 | 20 virtual users | 24 | 37 | 49 | 80 | 18.10 | 6.76% | Heap used 82.15 MB | 0.00% | Avg -10 ms vs 1-user baseline and -17 ms vs pre-fix 20-user run; throughput up to 18.10 req/s; final cart quantity matched all 3388 successful requests |
 | `GET /api/inventories` | 3623 | 20 virtual users | 12 | 15 | 17 | 33 | 19.42 | 2.02% | Heap used 228.62 MB | 0.00% | Avg -37 ms vs 1-user baseline; P99 improved from 139ms to 33ms; likely due to caching warming up and JIT optimization |
 | `GET /api/inventories?query=laptop` | 3613 | 20 virtual users | 11 | 14 | 16 | 28 | 19.37 | 2.26% | Heap used 228.86 MB | 0.00% | Avg -27 ms vs 1-user baseline; P99 improved from 97ms to 28ms; very stable performance with warmed cache |
+ 
 
 ## 7. Runtime Metrics Notes
 - `GET /api/products` baseline rerun shows low latency under single-user load, with no observed request failures.
