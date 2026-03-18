@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 
 @Configuration
+@EnableCaching
 @ConditionalOnProperty(name = "app.cache.enabled", havingValue = "true", matchIfMissing = true)
 public class CacheConfig {
     private static final Logger log = LoggerFactory.getLogger(CacheConfig.class);

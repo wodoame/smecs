@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -28,9 +30,12 @@ import org.springframework.stereotype.Component;
 public class ServiceLoggingAspect {
     private static final Logger logger = LoggerFactory.getLogger(ServiceLoggingAspect.class);
     private final CacheManager cacheManager;
+    private final boolean cacheEnabled;
 
-    public ServiceLoggingAspect(CacheManager cacheManager) {
+    @Autowired
+    public ServiceLoggingAspect(CacheManager cacheManager, @Value("${app.cache.enabled:true}") boolean cacheEnabled) {
         this.cacheManager = cacheManager;
+        this.cacheEnabled = cacheEnabled;
     }
 
     @Pointcut("execution(* com.smecs.service.ProductService.getProducts(..)) || " +
@@ -70,6 +75,11 @@ public class ServiceLoggingAspect {
 
     @Around("cacheableLookups()")
     public Object logCacheHitOrMiss(ProceedingJoinPoint joinPoint) throws Throwable {
+        // If caching is disabled at runtime, skip cache hit/miss logging entirely.
+        if (!cacheEnabled) {
+            return joinPoint.proceed();
+        }
+
         CacheTarget target = resolveCacheTarget(joinPoint);
         if (target != null) {
             logCacheStatus(target.cacheName, target.key, target.keyForLog);
