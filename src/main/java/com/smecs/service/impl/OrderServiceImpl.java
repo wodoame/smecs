@@ -27,7 +27,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.smecs.mapper.OrderMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OwnershipChecks ownershipChecks;
     private final UserService userService;
-    private final com.smecs.mapper.OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     @Override
     @Transactional
