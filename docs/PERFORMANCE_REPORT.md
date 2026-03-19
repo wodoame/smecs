@@ -3,27 +3,32 @@
 This document tracks baseline and post-optimization performance measurements for the Smart E-Commerce System.
 
 ## 1. Test Context
-- **Date:**
-- **Branch / Commit:**
+- **Date:** 2026-03-19
 - **Environment:** Local development
-- **Database:**
-- **Java Version:**
-- **Hardware:**
-- **Dataset:**
-- **Profiling Tools:**
-- **Load Testing Tool:**
+- **Database:** PostgreSQL
+- **Java Version:** 25
+- **Hardware:** 11th Gen Intel i7-1165G7 (8) @ 4.700GHz
+- **Profiling Tools:** Spring Actuator
+- **Load Testing Tool:** Postman
 
 ## 2. Scenarios Under Test
-- Scenario 1: `GET /api/products` without query parameters, 3-minute run, 1 virtual user.
-- Scenario 2: `GET /api/products?query=laptop`, 3-minute run, 1 virtual user.
-- Scenario 3: `GET /api/inventories`, 3-minute run, 1 virtual user.
-- Scenario 4: `GET /api/inventories?query=laptop`, 3-minute run, 1 virtual user.
-- Scenario 5: `GET /api/categories?relatedImages=true`, 3-minute run, 1 virtual user.
-- Scenario 6: `GET /api/categories`, 3-minute run, 1 virtual user.
-- Scenario 7: `POST /api/cart-items`, 3-minute run, 1 virtual user.
-- Scenario 8: `POST /api/cart-items`, 3-minute run, 20 virtual users.
-- Scenario 9: `GET /api/inventories`, 3-minute run, 20 virtual users.
-- Scenario 10: `GET /api/inventories?query=laptop`, 3-minute run, 20 virtual users.
+- Single‑user baselines (3-minute runs, 1 virtual user):
+  - Scenario 1: `GET /api/products` (no query parameters)
+  - Scenario 2: `GET /api/products?query=laptop`
+  - Scenario 3: `GET /api/inventories` (no query parameters)
+  - Scenario 4: `GET /api/inventories?query=laptop`
+  - Scenario 5: `GET /api/categories?relatedImages=true`
+  - Scenario 6: `GET /api/categories`
+  - Scenario 7: `POST /api/cart-items` (single-user write baseline)
+
+- Concurrency / Load tests (3-minute runs, 20 virtual users):
+  - Scenario 8: `GET /api/products` (no query parameters)
+  - Scenario 9: `GET /api/products?query=laptop`
+  - Scenario 10: `GET /api/inventories` (no query parameters)
+  - Scenario 11: `GET /api/inventories?query=laptop`
+  - Scenario 12: `GET /api/categories?relatedImages=true`
+  - Scenario 13: `GET /api/categories`
+  - Scenario 14: `POST /api/cart-items` (shared-user write test)
 
 ## 3. Baseline Metrics
 
@@ -47,7 +52,29 @@ This document tracks baseline and post-optimization performance measurements for
 | `POST /api/cart-items` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 14 | 18 | 19 | 26 | 1.01 | 0.22% | Heap used 254.73 MB | 0.00% | 3-minute baseline write-path run with caching and async enabled |
 | `POST /api/cart-items` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 14 | 18 | 19 | 26 | 1.01 | 0.22% | Heap used 254.73 MB | 0.00% | 3-minute baseline write-path run with caching and async enabled |
 
-## 4. Bottlenecks Identified
+
+## 4. Load / Concurrency Results
+
+### Load / Concurrency Results (Before) — caching + async disabled
+| Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET /api/products?query=laptop` (caching+async disabled) | 3643 | 20 virtual users | 21 | 13 | 16 | 237 | 19.54 | 1.35% | Heap used 234.89 MB | 0.00% | Avg +4 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
+| `GET /api/products` (no query params, caching+async disabled) | 3656 | 20 virtual users | 9 | 11 | 12 | 19 | 19.62 | 1.54% | Heap used 245.94 MB | 0.00% | Avg -8 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
+| `GET /api/inventories` (no query params, caching+async disabled) | 3659 | 20 virtual users | 10 | 14 | 15 | 21 | 19.63 | 1.95% | Heap used 220.80 MB | 0.00% | Avg -8 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
+| `GET /api/inventories?query=laptop` (caching+async disabled) | 3651 | 20 virtual users | 10 | 14 | 16 | 25 | 19.59 | 2.82% | Heap used 241.69 MB | 0.00% | Avg -4 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
+| `POST /api/cart-items` (caching+async disabled) | 3639 | 20 virtual users | 12 | 17 | 18 | 26 | 19.52 | 1.80% | Heap used 246.33 MB | 0.00% | 20-user load run with caching and async disabled |
+| `GET /api/categories?relatedImages=true` (caching+async disabled) | 3652 | 20 virtual users | 12 | 17 | 19 | 25 | 19.60 | 2.44% | Heap used 240.25 MB | 0.00% | 20-user load run with caching and async disabled |
+| `GET /api/categories` (caching+async disabled) | 3657 | 20 virtual users | 9 | 12 | 13 | 18 | 19.63 | 1.25% | Heap used 231.59 MB | 0.00% | 20-user load run with caching and async disabled |
+
+### Load / Concurrency Results (After) — caching + async enabled (cache warmed where noted)
+| Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `GET /api/products?query=laptop` (caching+async enabled, cache warmed) | 3679 | 20 virtual users | 6 | 7 | 10 | 50 | 19.74 | 1.07% | Heap used 256.50 MB | 0.00% | 20-user load run with caching+async enabled (cache warmed at start) |
+| `POST /api/cart-items` (caching+async enabled, 20 VUs) | 3633 | 20 virtual users | 12 | 14 | 17 | 106 | 19.48 | 1.57% | Heap used 222.33 MB | 0.00% | Final cart quantity matched successful requests; 20-user load run with caching+async enabled |
+| `GET /api/inventories` (caching+async enabled, cache warmed) | 3623 | 20 virtual users | 12 | 15 | 17 | 33 | 19.42 | 2.02% | Heap used 228.62 MB | 0.00% | Avg -37 ms vs 1-user baseline; P99 improved from 139ms to 33ms; likely due to caching warming up and JIT optimization |
+| `GET /api/inventories?query=laptop` (caching+async enabled, cache warmed) | 3613 | 20 virtual users | 11 | 14 | 16 | 28 | 19.37 | 2.26% | Heap used 228.86 MB | 0.00% | Avg -27 ms vs 1-user baseline; P99 improved from 97ms to 28ms; very stable performance with warmed cache |
+
+## 5. Bottlenecks Identified
 
 1. Cart Item Updates (Lost Updates)
 - Finding: `POST /api/cart-items` under a shared-user 20‑VU test recorded 2949 successful requests but the final cart quantity was 2731.
@@ -80,7 +107,7 @@ This document tracks baseline and post-optimization performance measurements for
 - Impact: duplicate orders from repeated user actions; requires per‑user checkout serialization.
 
 
-## 5. Changes Applied
+## 6. Changes Applied
 
 1. Cart Item Concurrency Fixes
 - Action: Added pessimistic locking for cart‑item updates to serialize concurrent updates on the same cart/product pair.
@@ -94,18 +121,6 @@ This document tracks baseline and post-optimization performance measurements for
 3. Authentication Event Performance
 - Action: Converted synchronous `SecurityEventService` calls (e.g., `recordLoginSuccess`, `recordTokenIssued`) to asynchronous execution using a background worker / `@Async` executor.
 - Rationale: Offloads non‑critical audit/metric recording off the request path to reduce authentication latency under load.
-
-
-## 6. Load / Concurrency Results
-| Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /api/products?query=laptop` (caching+async disabled) | 3643 | 20 virtual users | 21 | 13 | 16 | 237 | 19.54 | 1.35% | Heap used 234.89 MB | 0.00% | Avg +4 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
-| `GET /api/products?query=laptop` (caching+async enabled, cache warmed) | 3679 | 20 virtual users | 6 | 7 | 10 | 50 | 19.74 | 1.07% | Heap used 256.50 MB | 0.00% | 20-user load run with caching+async enabled (cache warmed at start) |
-| `POST /api/cart-items` (caching+async enabled, 20 VUs) | 3633 | 20 virtual users | 12 | 14 | 17 | 106 | 19.48 | 1.57% | Heap used 222.33 MB | 0.00% | Final cart quantity matched successful requests; 20-user load run with caching+async enabled |
-| `GET /api/inventories` | 3623 | 20 virtual users | 12 | 15 | 17 | 33 | 19.42 | 2.02% | Heap used 228.62 MB | 0.00% | Avg -37 ms vs 1-user baseline; P99 improved from 139ms to 33ms; likely due to caching warming up and JIT optimization |
-| `GET /api/inventories?query=laptop` | 3613 | 20 virtual users | 11 | 14 | 16 | 28 | 19.37 | 2.26% | Heap used 228.86 MB | 0.00% | Avg -27 ms vs 1-user baseline; P99 improved from 97ms to 28ms; very stable performance with warmed cache |
- 
-
 
 
 ## 8. Profiling Evidence
@@ -123,32 +138,3 @@ This report captures single‑user baselines and representative 20‑VU load tes
 2. The add‑to‑cart write path required targeted locking to resolve a lost‑update data‑integrity issue; after adding pessimistic locking and retry handling the shared‑user correctness problem was resolved and performance improved under contention.
 3. Inventory decrements during checkout were protected via row‑level pessimistic locking to prevent overselling under concurrent checkouts.
 4. Authentication latency was reduced by moving non‑critical security event recording off the request path and executing it asynchronously.
-
-Further testing recommendations: automated cache warmers for reproducible runs, Caffeine hit/miss instrumentation for cache visibility, and targeted JFR/profile captures when persistent P99 outliers are observed.
-
-## 10. Concurrency and Data Integrity
-
-The following race conditions were identified during high-concurrency load testing and resolved through targeted locking strategies.
-
-### 10.1 Cart Item Updates (Lost Updates)
-**Finding:** During concurrent `POST /api/cart-items` requests to the same cart/product pair, successful HTTP requests did not result in the correct final database quantity.
-**Root Cause:** A "Check-then-Act" race where multiple threads read the same initial quantity, calculated the increment locally, and overwrote each other's updates.
-**Solution:** Implemented `@Lock(LockModeType.PESSIMISTIC_WRITE)` in `CartItemRepository`. This serializes updates to the same cart-item row, ensuring every increment is based on the most recent committed value.
-
-### 10.2 Inventory Decrement (Overselling)
-**Finding:** Code review of the consolidated checkout flow (`POST /api/orderitems`) revealed a potential overselling risk where two concurrent checkouts for the last remaining item could both succeed.
-**Root Cause:** Thread A checks stock (Available: 1) -> Thread B checks stock (Available: 1) -> Both decrement and create orders.
-**Solution:** Implemented **Row-Level Pessimistic Locking** at the repository/use-site level. The checkout implementation in `src/main/java/com/smecs/service/impl/OrderItemServiceImpl.java` previously used an unlocked lookup (`findByProduct_Id`) which allowed a classic check-then-act race. The code now uses a locked lookup provided by `InventoryRepository` (for example `findByProduct_IdWithLock`) inside the same transactional boundary, so the relevant inventory rows are locked for writing while the transaction verifies and decrements stock. This serializes concurrent checkouts for the same product and prevents overselling.
-
-### 10.3 Duplicate Checkout Submissions
-**Finding:** Potential for duplicate orders if a user double-clicks the "Checkout" button.
-**Solution:** 
-- **Frontend:** The "Checkout" button is immediately disabled and replaced with a loading spinner upon the first click.
-- **Backend:** The inventory locking strategy serves as a secondary safeguard, ensuring that even if multiple requests bypass the frontend protection, they are processed sequentially and can be validated against the current database state.
-
-### 10.4 User-Level Cart Locking
-**Finding:** Even with inventory locking, a single user could potentially trigger multiple successful checkouts for the same items if stock is sufficient, leading to duplicate orders.
-**Solution:** Implemented **Pessimistic Locking on the Cart** at the start of the checkout transaction.
-- The `Cart` row for the user is locked using `findByCartId`.
-- This serializes the entire checkout process for a specific user.
-- A validation check ensures the cart is not empty (`cartItems.isEmpty()`) inside the locked transaction. If a second request arrives, it waits for the first to finish, then wakes up to find an empty cart and aborts, effectively preventing duplicate orders at the database level.
