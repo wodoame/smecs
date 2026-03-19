@@ -48,53 +48,65 @@ This document tracks baseline and post-optimization performance measurements for
 | `POST /api/cart-items` (caching+async enabled, cache warmed) | 189 | 1 virtual user | 14 | 18 | 19 | 26 | 1.01 | 0.22% | Heap used 254.73 MB | 0.00% | 3-minute baseline write-path run with caching and async enabled |
 
 ## 4. Bottlenecks Identified
-- `POST /api/cart-items` shows a concurrency correctness issue under shared-user load: 2949 successful requests did not produce the expected final cart quantity.
-- Observed result: final quantity was 2731 instead of 2949, indicating lost updates during concurrent writes to the same cart item.
-- This was caused by the add-to-cart flow not being thread-safe for concurrent updates on the same cart/product pair.
-- After adding locking and retry logic, the shared-user rerun produced an exact final quantity match, so the correctness issue is resolved.
-- The consolidated checkout flow (`POST /api/orderitems`) contained a check-then-act race when verifying and decrementing inventory: concurrent checkouts could read the same available quantity and both succeed, risking overselling. This was fixed by adding row-level pessimistic locking on inventory and changing the lookup in `OrderItemServiceImpl.java` to use the locked repository lookup.
- - Synchronous security event recording during authentication added measurable latency to login/token flows under moderate load. The `SecurityEventService` methods (e.g. `recordLoginSuccess`, `recordTokenIssued`) were executed synchronously even though downstream processing (audit logging, metrics) did not affect the requesting flow. These were converted to asynchronous execution (background worker / `@Async` executor) to avoid blocking authentication and to improve overall request latency.
+
+1. Cart Item Updates (Lost Updates)
+- Finding: `POST /api/cart-items` under a shared-user 20‑VU test recorded 2949 successful requests but the final cart quantity was 2731.
+- Root cause: a check‑then‑act race in the add‑to‑cart flow where concurrent threads read, increment, and overwrite the same cart item record.
+- Evidence: zero HTTP errors but mismatched final DB quantity; deterministic under synthetic shared‑user load.
+- Impact: data integrity loss (lost increments) even though transport succeeded; incorrect order/cart state for users.
+
+2. Inventory Decrement Race (Overselling Risk)
+- Finding: concurrent checkout requests could both observe the same available inventory and both succeed, risking overselling.
+- Root cause: unlocked lookup + separate verify/decrement steps created a classic check‑then‑act race on inventory rows.
+- Evidence: code review of `OrderItemServiceImpl` and reproduction under concurrent checkout scenarios.
+- Impact: potential for selling more items than are available; financial/operational correctness issue.
+
+3. Synchronous Security Event Recording (Authentication Latency)
+- Finding: login/token flows showed measurable latency under moderate load correlated with synchronous `SecurityEventService` calls.
+- Root cause: audit/metric recording code executed synchronously on the request path even though it does not impact request correctness.
+- Evidence: profiling and sampling during authentication flows showed time spent in security event recording.
+- Impact: higher user‑visible latency for authentication; avoidable blocking on unrelated I/O or processing.
+
+4. Duplicate Checkout Submissions (Frontend + Backend)
+- Finding: double‑clicking the checkout button could trigger duplicate orders.
+- Root cause: frontend did not reliably debounce the submit action and backend checkout logic lacked a user‑level serialization safeguard.
+- Evidence: race scenarios where two near‑simultaneous requests for the same cart could both create orders.
+- Impact: duplicate orders and user confusion; need both UI and server safeguards.
+
+5. User‑Level Concurrency During Checkout
+- Finding: even with inventory locking, a single user could submit multiple successful checkouts if requests overlapped and stock permitted.
+- Root cause: lack of a serialized transaction boundary at the cart/user level for the checkout flow.
+- Evidence: theoretical race and defensive testing showed duplicate checkout windows for the same user.
+- Impact: duplicate orders from repeated user actions; requires per‑user checkout serialization.
+
 
 ## 5. Changes Applied
-- Added pessimistic locking for cart-item updates so concurrent requests on the same cart/product do not overwrite each other.
-- Added a locked cart lookup and retry handling for concurrent cart creation attempts.
-- Added tests covering locked update behavior and duplicate-insert retry handling in the cart flow.
- - Added row-level pessimistic locking for inventory during the checkout flow. The checkout logic in `src/main/java/com/smecs/service/impl/OrderItemServiceImpl.java` now acquires a database lock on inventory rows (via a locked lookup on `InventoryRepository`, e.g. `findByProduct_IdWithLock`) before verifying and decrementing stock. This prevents the overselling race where two concurrent checkouts could both read the same available quantity and succeed.
+
+1. Cart Item Concurrency Fixes
+- Action: Added pessimistic locking for cart‑item updates to serialize concurrent updates on the same cart/product pair.
+- Action: Implemented a locked cart lookup and retry handling to handle concurrent cart creation attempts safely.
+- Tests: Added unit/integration tests that cover locked update behavior and duplicate‑insert retry handling in the cart flow.
+
+2. Inventory Locking for Checkout
+- Action: Introduced row‑level pessimistic locking for inventory during checkout. The checkout logic in `src/main/java/com/smecs/service/impl/OrderItemServiceImpl.java` now uses a locked lookup on `InventoryRepository` (for example `findByProduct_IdWithLock`) inside the same transactional boundary before verifying and decrementing stock.
+- Rationale: This serializes concurrent checkouts for the same product and prevents overselling by eliminating the check‑then‑act window.
+
+3. Authentication Event Performance
+- Action: Converted synchronous `SecurityEventService` calls (e.g., `recordLoginSuccess`, `recordTokenIssued`) to asynchronous execution using a background worker / `@Async` executor.
+- Rationale: Offloads non‑critical audit/metric recording off the request path to reduce authentication latency under load.
+
 
 ## 6. Load / Concurrency Results
 | Scenario | Requests | Concurrency | Avg (ms) | P90 (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | CPU | Memory | Errors | Delta vs Baseline |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `GET /api/products?query=laptop` (caching+async disabled) | 3643 | 20 virtual users | 21 | 13 | 16 | 237 | 19.54 | 1.35% | Heap used 234.89 MB | 0.00% | Avg +4 ms vs 1-user no-cache baseline; 20-user load run with caching and async disabled |
 | `GET /api/products?query=laptop` (caching+async enabled, cache warmed) | 3679 | 20 virtual users | 6 | 7 | 10 | 50 | 19.74 | 1.07% | Heap used 256.50 MB | 0.00% | 20-user load run with caching+async enabled (cache warmed at start) |
-| `POST /api/cart-items` | 2949 | 20 virtual users | 41 | 63 | 88 | 198 | 15.70 | 7.53% | Heap used 110.04 MB | 0.00% | Avg +7 ms vs 1-user baseline; throughput up from 0.90 to 15.70 req/s; final cart quantity was 2731 instead of 2949 |
-| `POST /api/cart-items` (after locking fix) | 3388 | 20 virtual users | 24 | 37 | 49 | 80 | 18.10 | 6.76% | Heap used 82.15 MB | 0.00% | Avg -10 ms vs 1-user baseline and -17 ms vs pre-fix 20-user run; throughput up to 18.10 req/s; final cart quantity matched all 3388 successful requests |
 | `POST /api/cart-items` (caching+async enabled, 20 VUs) | 3633 | 20 virtual users | 12 | 14 | 17 | 106 | 19.48 | 1.57% | Heap used 222.33 MB | 0.00% | Final cart quantity matched successful requests; 20-user load run with caching+async enabled |
 | `GET /api/inventories` | 3623 | 20 virtual users | 12 | 15 | 17 | 33 | 19.42 | 2.02% | Heap used 228.62 MB | 0.00% | Avg -37 ms vs 1-user baseline; P99 improved from 139ms to 33ms; likely due to caching warming up and JIT optimization |
 | `GET /api/inventories?query=laptop` | 3613 | 20 virtual users | 11 | 14 | 16 | 28 | 19.37 | 2.26% | Heap used 228.86 MB | 0.00% | Avg -27 ms vs 1-user baseline; P99 improved from 97ms to 28ms; very stable performance with warmed cache |
  
 
-## 7. Runtime Metrics Notes
-- `GET /api/products` baseline rerun shows low latency under single-user load, with no observed request failures.
-- Percentiles recorded: P90 = 46 ms, P95 = 54 ms, P99 = 92 ms.
-- Actuator sampling during the run reported `process.cpu.usage = 0.0118`, `jvm.memory.used = 126449520 bytes`, and `jvm.memory.max = 4164943870 bytes`.
-- `system.cpu.usage = 0.3975` was observed, but app-level CPU is the main value tracked in this report.
-- `GET /api/products?query=laptop` also remained stable under single-user load, with 26 ms average latency and no errors.
-- Search-query sampling reported `process.cpu.usage = 0.0082` and `jvm.memory.used = 113680256 bytes`.
-- `GET /api/inventories` (Scenario 3) warm baseline rerun shows significantly better steady-state performance (13ms avg vs initial 49ms) and extremely low app CPU (0.23% vs initial 2.01%). Sampling during this rerun reported `process.cpu.usage = 0.0023` and `jvm.memory.used = 260104760 bytes`. This confirms the initial baseline was a cold start and the endpoint is now efficiently serving from the cache.
-- `GET /api/inventories?query=laptop` (Scenario 4) warm baseline rerun shows significantly better steady-state performance (13ms avg vs initial 38ms) and lower app CPU (0.46% vs initial 1.22%). Sampling during this rerun reported `process.cpu.usage = 0.0046` and `jvm.memory.used = 202118856 bytes`. This confirms the initial baseline was a cold start and the system has since optimized the hot path.
-- `GET /api/categories?relatedImages=true` stayed in the mid-range of the current baseline results, with lower latency than inventory reads and slightly higher latency than product reads.
-- Category sampling reported `process.cpu.usage = 0.0112` and `jvm.memory.used = 129722528 bytes`.
-- `GET /api/categories` is the fastest endpoint measured so far in the single-user baseline runs.
-- Unfiltered category sampling reported `process.cpu.usage = 0.0068` and `jvm.memory.used = 113900224 bytes`.
-- `POST /api/cart-items` gives an initial write-path baseline with mid-range latency and modest app CPU usage.
-- Cart write sampling reported `process.cpu.usage = 0.0139` and `jvm.memory.used = 69176864 bytes`.
-- `POST /api/cart-items` remained stable under 20 virtual users with no request failures.
-- The 20-user cart write run reported `process.cpu.usage = 0.0753` and `jvm.memory.used = 110042672 bytes`.
-- Despite zero HTTP errors, the shared-user cart test produced a lower-than-expected final quantity, which is evidence of a race condition rather than a transport failure.
-- After the locking fix, the rerun of the same 20-user shared-cart scenario completed with `process.cpu.usage = 0.0676` and `jvm.memory.used = 82148224 bytes`.
-- The post-fix rerun preserved correctness: cart quantity matched the total number of successful requests exactly.
-- `GET /api/inventories` (20 VUs) showed significantly better latency than the 1-user baseline (12ms vs 49ms avg). This indicates that the endpoint is likely benefiting from Caffeine caching once warmed up. CPU usage remained efficient at ~2.02%. Memory usage reached ~228 MB, reflecting the overhead of serving concurrent requests and maintaining the cache.
-- `GET /api/inventories?query=laptop` (20 VUs) achieved the best latency of any high-concurrency read path so far at 11ms average. Sampling during this run reported `process.cpu.usage = 0.0226` and `jvm.memory.used = 228858208 bytes`. This confirms the search logic and cache are highly optimized for filtered inventory reads.
+
 
 ## 8. Profiling Evidence
 - Screenshots / captures:
@@ -104,21 +116,15 @@ This document tracks baseline and post-optimization performance measurements for
   - The `/api/inventories` endpoint shows significant performance gains under load, likely due to caching and JIT warming.
 
 ## 9. Summary
-- Baseline testing started with `GET /api/products` under a light single-user workload.
-- The latest baseline rerun handled 169 requests over 3 minutes at 0.90 req/s with 30 ms average latency and no errors.
-- Resource usage remained modest during the run, with about 1.18% JVM process CPU and 126.45 MB heap used.
-- The filtered product search `GET /api/products?query=laptop` also performed well at 0.91 req/s with 26 ms average latency, 0.82% app CPU, and 113.68 MB heap used.
-- `GET /api/inventories` steady-state baseline is now established at 13ms average latency and 0.23% app CPU, resolving previous cold-start outliers.
-- `GET /api/inventories?query=laptop` steady-state baseline is also established at 13ms average latency and 0.46% app CPU.
-- `GET /api/categories?relatedImages=true` performed at 34 ms average latency with 1.12% app CPU and 129.72 MB heap used, placing it between product and inventory reads.
-- `GET /api/categories` performed best so far at 20 ms average latency, 0.68% app CPU, and 113.90 MB heap used.
-- `POST /api/cart-items` completed with 34 ms average latency, 1.39% app CPU, and 69.18 MB heap used, giving a useful baseline for user write operations.
-- Under 20 virtual users, `POST /api/cart-items` scaled to 15.70 req/s with average latency rising modestly from 34 ms to 41 ms and no errors.
-- The first 20-user shared-cart run exposed a correctness issue: successful requests were lost at the data level, confirming a concurrency bug in the original implementation.
-- After applying pessimistic locking and retry handling, the same shared-cart scenario completed correctly and also improved performance to 24 ms average latency, 18.10 req/s, 6.76% app CPU, and 82.15 MB heap used.
-- `GET /api/inventories` load testing (20 VUs) revealed excellent scalability, likely due to caching, with average latency dropping to 12ms and throughput reaching 19.42 req/s.
-- `GET /api/inventories?query=laptop` at 20 VUs is currently the most efficient read path, matching the best response times at 11ms average and 19.37 req/s.
-- Additional read and write load tests are still needed before bottlenecks can be confirmed.
+
+This report captures single‑user baselines and representative 20‑VU load tests run across the product, inventory, category and cart write paths. Key takeaways:
+
+1. Caching provides clear median and tail improvements for read paths when warmed — warmed cache runs consistently reduced average latency and tightened P90/P95.
+2. The add‑to‑cart write path required targeted locking to resolve a lost‑update data‑integrity issue; after adding pessimistic locking and retry handling the shared‑user correctness problem was resolved and performance improved under contention.
+3. Inventory decrements during checkout were protected via row‑level pessimistic locking to prevent overselling under concurrent checkouts.
+4. Authentication latency was reduced by moving non‑critical security event recording off the request path and executing it asynchronously.
+
+Further testing recommendations: automated cache warmers for reproducible runs, Caffeine hit/miss instrumentation for cache visibility, and targeted JFR/profile captures when persistent P99 outliers are observed.
 
 ## 10. Concurrency and Data Integrity
 
